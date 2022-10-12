@@ -1,23 +1,11 @@
-{ config, pkgs, lib, ... }:
-{
+{ config, pkgs, lib, ... }: {
   programs.home-manager.enable = true;
-
-  programs.awscli.enable = true;
-  programs.awscli.package = pkgs.awscli2;
-  programs.awscli.enableBashIntegration = true;
-  programs.awscli.enableZshIntegration = true;
-  programs.awscli.awsVault = {
-    enable = true;
-    prompt = "ykman";
-    backend = "pass";
-    passPrefix = "aws_vault/";
-  };
 
   programs.browserpass.enable = true;
   programs.browserpass.browsers = [ "firefox" ];
 
   programs.direnv.enable = true;
-  programs.direnv.nix-direnv.  enable = true;
+  programs.direnv.nix-direnv.enable = true;
 
   programs.dircolors.enable = true;
   programs.dircolors.enableZshIntegration = true;
@@ -36,73 +24,78 @@
   programs.ssh.forwardAgent = true;
   programs.ssh.serverAliveInterval = 60;
   programs.ssh.hashKnownHosts = true;
-  programs.ssh.extraConfig = ''
-    Host remarkable
-      Hostname 10.11.99.1
-      User root
-      ForwardX11 no
-      ForwardAgent no
-  '';
+  programs.ssh.extraConfig = "";
 
-  programs.tmux.enable = true;
-  programs.tmux.aggressiveResize = true;
-  programs.tmux.clock24 = true;
-  programs.tmux.keyMode = "vi";
-  programs.tmux.terminal = "screen-256color";
+  home.packages = with pkgs;
+    [
+      # basics
+      coreutils
+      curl
+      fd # fancy `find`
+      findutils # GNU find utils
+      htop # fancy `top`
+      less # more advanced file pager than `more`
+      ripgrep # fancy `grep`
+      rsync # incremental file transfer util
+      tree # depth indented directory listing
+      wget
 
-  home.packages = with pkgs; [
-    # basics
-    coreutils
-    curl
-    fd # fancy `find`
-    findutils # GNU find utils
-    htop # fancy `top`
-    less # more advanced file pager than `more`
-    #renameutils # rename files faster
-    ripgrep # fancy `grep`
-    rsync # incremental file transfer util
-    tree # depth indented directory listing
-    wget
+      # code tools
+      nodePackages.prettier # code formatter
+      shellcheck
+      shfmt # shell parser and formatter
 
-    # dev stuff
-    gh # github cli tool
-    gnumake
-    jq # command line json processor
-    just # save and run project specific commands
-    plantuml # draw uml diagrams
-    # steampipe # select * from cloud
-    vim
-    # visidata # terminal multitool for tabular data
+      # programming languages 
+      go_1_18
+      nodejs
+      nodePackages.typescript
 
-    # code tools
-    gdbgui
-    jsonnet-language-server
-    nodePackages.bash-language-server
-    nodePackages.prettier # code formatter
-    nodePackages.vim-language-server
-    pqrs
-    python39Packages.sqlparse
-    shellcheck
-    shfmt # shell parser and formatter
-    universal-ctags # maintained ctags implementation
+      # Useful nix related tools
+      cachix # adding/managing alternative binary caches hosted by Cachix
+      niv # easy dependency management for nix projects
+      nix-prefetch-scripts
+      nixfmt
 
-    # nix tools
-    cachix
-    nixpkgs-fmt
-    nodePackages.node2nix
+      # dev stuff
+      gh # github cli tool
+      git-lfs
+      top-git
+      ruby
+      rbenv
+      python310
 
-    # opsec
-    gnupg
-    gpgme # make gnupg easier
-    pass # "password manager"
-    xkcdpass # generate passwords
-    yubikey-manager # configure yubikeys
-
-    # other
-    graphviz # graph visualization tools
-    nmap
-    openssl
-    watch
-    qemu
-  ];
+      thefuck
+      postgresql
+      openssl
+      bash-completion
+      browserpass
+      cacert
+      curl
+      direnv
+      fd
+      ffmpeg
+      findutils
+      gnugrep
+      gnumake
+      gnuplot
+      gnused
+      gnutar
+      pre-commit
+      less
+      socat
+      unixtools.ifconfig
+      unixtools.netstat
+      unixtools.ping
+      unixtools.route
+      unixtools.top
+      nmap
+      unzip
+      watchman
+      wget
+      zsh
+      oh-my-zsh
+    ] ++ lib.optionals stdenv.isDarwin [
+      cocoapods
+      m-cli # useful macOS CLI commands
+    ];
 }

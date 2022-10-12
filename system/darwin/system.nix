@@ -1,5 +1,10 @@
 {
   system = {
+    defaults.trackpad = {
+      Clicking = true;
+      TrackpadThreeFingerDrag = true;
+    };
+
     defaults.LaunchServices.LSQuarantine = false;
 
     defaults.NSGlobalDomain = {
@@ -21,7 +26,7 @@
     defaults.dock = {
       autohide = true;
       mru-spaces = false;
-      orientation = "bottom";
+      orientation = "left";
       showhidden = true;
     };
 

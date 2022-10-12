@@ -1,8 +1,6 @@
 { config, pkgs, lib, ... }:
-let
-  fontFamily = "Hack";
-in
-{
+let fontFamily = "FiraCode Nerd Font Mono";
+in {
   programs = {
     alacritty.enable = true;
     alacritty.settings.window = {
@@ -11,13 +9,11 @@ in
       dynamic_title = true;
     };
     alacritty.settings.scrolling.history = 10000;
-    alacritty.settings.key_bindings = [
-      {
-        key = "Q";
-        mods = "Control";
-        chars = "\\x11";
-      }
-    ] ++ lib.optionals pkgs.stdenv.isDarwin [
+    alacritty.settings.key_bindings = [{
+      key = "Q";
+      mods = "Control";
+      chars = "\\x11";
+    }] ++ lib.optionals pkgs.stdenv.isDarwin [
       # macOS tabs
       # System Preferences > General > Prefer tabs: always
       # must be set in order for this to work.
@@ -35,4 +31,6 @@ in
       size = 13.0;
     };
   };
+
+  fonts.fontconfig.enable = true;
 }
