@@ -62,7 +62,11 @@
       top-git
       ruby
       rbenv
-      python310
+      python310Full
+      python310Full.pkgs.pip
+      python310Full.pkgs.setuptools
+      python310Full.pkgs.wheel
+      python310Full.pkgs.poetry
 
       thefuck
       postgresql
