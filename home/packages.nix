@@ -66,7 +66,7 @@
       python310Full.pkgs.pip
       python310Full.pkgs.setuptools
       python310Full.pkgs.wheel
-      python310Full.pkgs.poetry
+      pkgs.poetry
 
       thefuck
       postgresql

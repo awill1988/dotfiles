@@ -3,5 +3,5 @@
 {
   programs.nix-index.enable = true;
 
-  environment.systemPackages = with pkgs; [ vscodium ];
+  environment.systemPackages = with pkgs; [ ];
 }
