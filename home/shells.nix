@@ -162,6 +162,7 @@
     };
 
     shellAliases = {
+      loadenv = "set -a; source .env; set +a";
       nixre = "darwin-rebuild switch";
       nixgc = "nix-collect-garbage -d";
       nixq = "nix-env -qaP";
@@ -170,6 +171,7 @@
       nixup = "nix-env -u";
       go-cov =
         "go test -coverprofile='coverage.out' ./... && gcov2lcov -infile=coverage.out -outfile=lcov.info";
+      nixshow = "nix show-derivation -r";
     };
 
     initExtra = ''
