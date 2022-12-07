@@ -6,8 +6,6 @@
     LESSCHARSET = "utf-8";
     TERM = "xterm-256color";
     VISUAL = "vim";
-    EDITOR = "${pkgs.vim}/bin/vim";
-    PAGER = "${pkgs.less}/bin/less";
     CLICOLOR = true;
     GPG_TTY = "$TTY";
     PATH = "$PATH:$HOME/.local/bin";
@@ -151,14 +149,15 @@
     };
 
     sessionVariables = {
-      EDITOR = "vim";
       LC_CTYPE = "en_US.UTF-8";
       LEDGER_COLOR = "true";
       LESS = "-FRSXM";
       LESSCHARSET = "utf-8";
+      EDITOR = "vim";
       PAGER = "less";
       TERM = "xterm-256color";
       VISUAL = "vim";
+      PKG_CONFIG_PATH = "$PKG_CONFIG_PATH:${pkgs.openssl_1_1.dev}/lib/pkgconfig";
     };
 
     shellAliases = {

@@ -28,6 +28,12 @@
 
   home.packages = with pkgs;
     [
+      terraform
+      cmake
+      gcc
+      gdal
+      proj
+      jq.bin
       # basics
       coreutils
       curl
@@ -44,12 +50,10 @@
       nodePackages.prettier # code formatter
       shellcheck
       shfmt # shell parser and formatter
-
       # programming languages 
-      go_1_18
+      go_1_19
       nodejs
       nodePackages.typescript
-
       # Useful nix related tools
       cachix # adding/managing alternative binary caches hosted by Cachix
       niv # easy dependency management for nix projects
@@ -66,11 +70,12 @@
       python310Full.pkgs.pip
       python310Full.pkgs.setuptools
       python310Full.pkgs.wheel
-      pkgs.poetry
-
+      poetry
+      pkg-config
+      shellcheck
       thefuck
       postgresql
-      openssl
+      openssl_1_1.dev
       bash-completion
       browserpass
       cacert
@@ -96,8 +101,6 @@
       unzip
       watchman
       wget
-      zsh
-      oh-my-zsh
     ] ++ lib.optionals stdenv.isDarwin [
       cocoapods
       m-cli # useful macOS CLI commands
