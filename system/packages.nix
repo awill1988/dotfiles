@@ -4,7 +4,7 @@
     alacritty
     pkg-config
     git
-    # vim
+    vim
     wget
     (bazel.overrideAttrs (old: {
       doCheck = false;

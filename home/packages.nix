@@ -101,6 +101,8 @@
       unzip
       watchman
       wget
+      zsh
+      oh-my-zsh
     ] ++ lib.optionals stdenv.isDarwin [
       cocoapods
       m-cli # useful macOS CLI commands

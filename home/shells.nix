@@ -111,6 +111,14 @@
     enableCompletion = true;
     enableAutosuggestions = true;
     enableSyntaxHighlighting = true;
+    completionInit = ''
+      autoload bashcompinit && bashcompinit
+      autoload -Uz compinit && compinit
+      compinit
+    '';
+    cdpath = [ "." "~" ];
+    dotDir = ".config/zsh";
+
     plugins = [{
       name = "git-extra-commands";
       src = pkgs.fetchFromGitHub {
@@ -157,7 +165,8 @@
       PAGER = "less";
       TERM = "xterm-256color";
       VISUAL = "vim";
-      PKG_CONFIG_PATH = "$PKG_CONFIG_PATH:${pkgs.openssl_1_1.dev}/lib/pkgconfig";
+      PKG_CONFIG_PATH =
+        "$PKG_CONFIG_PATH:${pkgs.openssl_1_1.dev}/lib/pkgconfig";
     };
 
     shellAliases = {
@@ -174,35 +183,40 @@
     };
 
     initExtra = ''
-      ZSH_AUTOSUGGEST_HIGHLIGHT_STYLE='fg=238'
-      setopt HIST_IGNORE_ALL_DUPS
-      eval $(thefuck --alias)
+        ZSH_AUTOSUGGEST_HIGHLIGHT_STYLE='fg=238'
+        setopt HIST_IGNORE_ALL_DUPS
+        eval $(thefuck --alias)
 
-      SPACESHIP_PROMPT_ORDER=(
-        time          # Time stampts section
-        user          # Username section
-        host          # Hostname section
-        dir           # Current directory section
-        git           # Git section (git_branch + git_status)
-        line_sep      # Line break
-        jobs          # Backgound jobs indicator
-        exit_code     # Exit code section
-        char          # Prompt character
-      )
+        SPACESHIP_PROMPT_ORDER=(
+          time          # Time stampts section
+          user          # Username section
+          host          # Hostname section
+          dir           # Current directory section
+          git           # Git section (git_branch + git_status)
+          line_sep      # Line break
+          jobs          # Backgound jobs indicator
+          exit_code     # Exit code section
+          char          # Prompt character
+        )
 
-	# using ripgrep combined with preview
-	# find-in-file - usage: fif <searchTerm>
-	fif() {
-	  if [ ! "$#" -gt 0 ]; then echo "Need a string to search for!"; return 1; fi
-	  rg --files-with-matches --no-messages "$1" | fzf --preview "highlight -O ansi -l {} 2> /dev/null | rg --colors 'match:bg:yellow' --ignore-case --pretty --context 10 '$1' || rg --ignore-case --pretty --context 10 '$1' {}"
-	}
+        # using ripgrep combined with preview
+        # find-in-file - usage: fif <searchTerm>
+        fif() {
+          if [ ! "$#" -gt 0 ]; then echo "Need a string to search for!"; return 1; fi
+          rg --files-with-matches --no-messages "$1" | fzf --preview "highlight -O ansi -l {} 2> /dev/null | rg --colors 'match:bg:yellow' --ignore-case --pretty --context 10 '$1' || rg --ignore-case --pretty --context 10 '$1' {}"
+        }
+
+      function ls() {
+          ${pkgs.coreutils}/bin/ls --color=auto --group-directories-first "$@"
+      }
+      autoload -U promptinit; promptinit
     '';
 
     profileExtra = ''
-    export GPG_TTY=$(tty)
-    if ! pgrep -x "gpg-agent" > /dev/null; then
-	${pkgs.gnupg}/bin/gpgconf --launch gpg-agent
-    fi
+          export GPG_TTY=$(tty)
+          if ! pgrep -x "gpg-agent" > /dev/null; then
+      	${pkgs.gnupg}/bin/gpgconf --launch gpg-agent
+          fi
 
     '';
   };

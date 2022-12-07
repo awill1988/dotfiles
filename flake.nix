@@ -11,7 +11,7 @@
     darwin.url = "github:LnL7/nix-darwin";
     darwin.inputs.nixpkgs.follows = "nixpkgs-unstable";
 
-    home-manager.url = "github:nix-community/home-manager/release-22.05";
+    home-manager.url = "github:nix-community/home-manager";
     home-manager.inputs.nixpkgs.follows = "nixpkgs-unstable";
 
     # Supportive inputs
@@ -46,10 +46,11 @@
           let inherit (config.users) primaryUser;
           in rec {
             nixpkgs = nixpkgsConfig;
-            users.users.${primaryUser.username}.home =
-              "/Users/${primaryUser.username}";
+            users.users.${primaryUser.username} = {
+              home = "/Users/${primaryUser.username}";
+              shell = pkgs.zsh;
+            };
             home-manager.useGlobalPkgs = true;
-            home-manager.useUserPackages = false;
             home-manager.users.${primaryUser.username} = {
               imports = attrValues self.homeManagerModules;
               home.stateVersion = homeManagerStateVersion;
