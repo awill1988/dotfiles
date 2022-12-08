@@ -3,5 +3,5 @@
 {
   programs.nix-index.enable = true;
 
-  environment.systemPackages = with pkgs; [ google-cloud-sdk.out ];
+  environment.systemPackages = with pkgs; [ google-cloud-sdk.out gnupg.out ];
 }

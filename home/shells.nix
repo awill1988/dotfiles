@@ -9,6 +9,7 @@
     CLICOLOR = true;
     GPG_TTY = "$TTY";
     PATH = "$PATH:$HOME/.local/bin";
+    PKG_CONFIG_PATH = "$PKG_CONFIG_PATH:${pkgs.openssl_1_1.dev}/lib/pkgconfig";
   };
   home.file.".config/starship.toml".text = ''
     [battery]
@@ -165,8 +166,6 @@
       PAGER = "less";
       TERM = "xterm-256color";
       VISUAL = "vim";
-      PKG_CONFIG_PATH =
-        "$PKG_CONFIG_PATH:${pkgs.openssl_1_1.dev}/lib/pkgconfig";
     };
 
     shellAliases = {
