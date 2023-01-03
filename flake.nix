@@ -37,6 +37,7 @@
 
       primaryUserInfo = {
         username = "adam";
+        fullName = "Adam Williams";
         github = "awill1988";
       };
 

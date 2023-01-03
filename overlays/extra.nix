@@ -3,7 +3,7 @@ final: prev: {
   # GDAL - Industry standard transformation geometries
   # ---------------------------------------------------------------------------------------
   gdal = prev.gdal.overrideAttrs (old:
-    let version = "3.5.2";
+    let version = "3.6.1";
     in {
       name = "gdal-${version}";
       inherit version;
@@ -11,35 +11,154 @@ final: prev: {
         owner = "OSGeo";
         repo = "gdal";
         rev = "v${version}";
-        hash = "sha256-jtAFI1J64ZaTqIljqQL1xOiTGC79AZWcIgidozWczMM=";
+        hash = "sha256-hWuV73b7czmbxpnd82V2FHM+ak9JviDHVodVXAHh/pc=";
       };
-      sourceRoot = "source";
-      buildInputs = old.buildInputs;
-      configureFlags = [
-        "--with-libspatialindex=${final.libspatialindex}"
-        "--with-expat=${final.expat.dev}"
-        "--with-jpeg=${final.libjpeg.dev}"
-        "--with-libtiff=${final.libtiff.dev}" # optional (without largetiff support)
-        "--with-png=${final.libpng.dev}" # optional
-        "--with-poppler=${final.poppler.dev}" # optional
-        "--with-libz=${final.zlib.dev}" # optional
-        "--with-pg=yes" # since gdal 3.0 doesn't use ${postgresql}/bin/pg_config
-        "--with-geotiff=${final.libgeotiff}"
-        "--with-libwebp=${final.libwebp}"
-        "--with-shapelib=${final.shapelib}"
-        "--with-sqlite3=${final.sqlite.dev}"
-        "--with-spatialite=${final.libspatialite.dev}"
-        "--with-python=${final.python310Full.out}/bin/python" # optional
-        "--with-proj=${final.proj.dev}" # optional
-        "--with-geos=${final.geos}/bin/geos-config" # optional
-        "--with-hdf4=${final.hdf4.dev}" # optional
-        "--with-xml2=yes" # optional
-        "--with-netcdf=${final.netcdf}"
+
+      # -------------------------------------------------------------------------------------------
+      # because gdal 3.4.2 wants to be installed, I have to
+      # override the derivation as it is written at this particular point in time:
+      # https://github.com/NixOS/nixpkgs/blob/e52d6c1260e37aa6b3413f7dfa3846481325342d/pkgs/development/libraries/gdal/default.nix
+      hardeningDisable = [ ];
+      CXXFLAGS = "";
+      preConfigure = "";
+      preBuild = "";
+      # -------------------------------------------------------------------------------------------
+
+      # defining (not overriding), because @3.4.2, CMake builds were unavailable
+      cmakeFlags = with final;
+        [
+          "-DGDAL_USE_INTERNAL_LIBS=OFF"
+          "-DGEOTIFF_INCLUDE_DIR=${lib.getDev libgeotiff}/include"
+          "-DGEOTIFF_LIBRARY_RELEASE=${
+            lib.getLib libgeotiff
+          }/lib/libgeotiff${stdenv.hostPlatform.extensions.sharedLibrary}"
+          "-DMYSQL_INCLUDE_DIR=${lib.getDev libmysqlclient}/include/mysql"
+          "-DMYSQL_LIBRARY=${
+            lib.getLib libmysqlclient
+          }/lib/mysql/libmysqlclient${stdenv.hostPlatform.extensions.sharedLibrary}"
+          "-DBUILD_TESTING=OFF"
+          "-DENABLE_IPO=ON" # what is this?
+          "-DCMAKE_BUILD_TYPE=Release"
+          "-DBUILD_SHARED_LIBS=ON"
+          "-DBUILD_APPS=ON"
+        ] ++ final.lib.optionals (!final.stdenv.isDarwin) [
+          "-DCMAKE_SKIP_BUILD_RPATH=ON" # without, libgdal.so can't find libmariadb.so
+        ] ++ final.lib.optionals final.stdenv.isDarwin
+        [ "-DCMAKE_BUILD_WITH_INSTALL_NAME_DIR=ON" ];
+
+      # defining (overriding) b/c codebase was different when it was @3.4.2
+      nativeBuildInputs = with final.pkgs; [
+        bison
+        cmake
+        doxygen
+        graphviz
+        pkg-config
+        python310Full.pkgs.setuptools
+        python310Full.pkgs.wrapPython
+        swig
       ];
 
-      # nixpkgs check phase refers to files that do not exist in recent versions of gdal
-      doInstallCheck = false;
-      doCheck = false;
+      # defining (overriding) b/c codebase was different when it was @3.4.2
+      buildInputs = with final.pkgs;
+        [
+          armadillo
+          c-blosc
+
+          cfitsio
+          crunch
+          curl
+          libdeflate
+          expat
+
+          geos
+
+          libheif
+          dav1d # required by libheif
+          libaom # required by libheif
+          libde265 # required by libheif
+          rav1e # required by libheif
+          x265 # required by libheif
+
+          hdf4
+          hdf5-cpp
+
+          shapelib
+          json_c
+
+          libjxl
+          libhwy # required by libjxl
+
+          xz
+
+          lz4
+          netcdf
+
+          # Security
+          cryptopp
+          openssl_1_1.dev
+          pcre2
+
+          # Data
+          libspatialite
+          libspatialindex
+          libmysqlclient
+
+          libxml2.dev
+
+          # Media File Formats
+          libjpeg
+          libpng
+          libwebp
+          openjpeg
+          giflib
+          libgeotiff
+
+          poppler
+
+          postgresql
+          proj
+          qhull
+          sqlite.dev
+          tiledb
+          zlib
+          zstd
+          python310Full
+          python310Full.pkgs.numpy
+        ] ++ final.lib.optionals (!final.stdenv.isDarwin) [
+          # tests for formats enabled by these packages fail on macos
+          arrow-cpp
+          brunsli
+          lerc
+          openexr
+          xercesc
+        ] ++ lib.optional final.stdenv.isDarwin final.libiconv;
+
+      # defining (overriding) b/c codebase was different when it was @3.4.2
+      sourceRoot = "source";
+
+      # defining (overriding) b/c weird permission fix that is unnecessary
+      preCheck = ''
+        pushd ../autotest
+        export HOME=$(mktemp -d)
+        export PYTHONPATH="$out/${final.python310Full.sitePackages}:$PYTHONPATH"
+      '';
+
+      # defining (overriding) to override so Python env is the same (special case)
+      installCheckInputs = with final.python310Full.pkgs; [
+        pytestCheckHook
+        pytest-env
+        lxml
+      ];
+
+      # extended by examining nixpkgs.gdal source code @ 3.4.2 <-> 3.6.1
+      disabledTests = old.disabledTests ++ [
+        "test_tiff_srs_compound_crs_with_local_cs" # tests that fail because error message specificity too high
+        " test_sentinel2_zipped" # ZIP does not support timestamps before 1980
+      ] ++ final.lib.optionals (!final.stdenv.isx86_64) [ ]
+        ++ final.lib.optionals final.stdenv.isDarwin [ ]
+        ++ final.lib.optionals (final.lib.versionOlder final.proj.version "8")
+        [ "test_ogr_parquet_write_crs_without_id_in_datum_ensemble_members" ];
+
     });
 
   # ---------------------------------------------------------------------------------------

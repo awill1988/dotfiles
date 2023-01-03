@@ -8,7 +8,7 @@
     VISUAL = "vim";
     CLICOLOR = true;
     GPG_TTY = "$TTY";
-    PATH = "$PATH:$HOME/.local/bin";
+    PATH = "$PATH:$HOME/.local/bin:$HOME/google-cloud-sdk/bin";
     PKG_CONFIG_PATH = "$PKG_CONFIG_PATH:${pkgs.openssl_1_1.dev}/lib/pkgconfig";
   };
   home.file.".config/starship.toml".text = ''

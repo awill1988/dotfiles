@@ -14,9 +14,6 @@
   programs.fzf.enableBashIntegration = true;
   programs.fzf.enableZshIntegration = true;
 
-  programs.htop.enable = true;
-  programs.htop.settings.show_program_path = true;
-
   programs.ssh.enable = true;
   programs.ssh.controlMaster = "auto";
   programs.ssh.controlPath = "/tmp/ssh-%u-%r@%h:%p";
@@ -31,8 +28,6 @@
       terraform
       cmake
       gcc
-      gdal
-      proj
       jq.bin
       # basics
       coreutils
@@ -53,7 +48,9 @@
       # programming languages 
       go_1_19
       nodejs
-      nodePackages.typescript
+       nodePackages.typescript
+      
+      
       # Useful nix related tools
       cachix # adding/managing alternative binary caches hosted by Cachix
       niv # easy dependency management for nix projects
@@ -66,15 +63,20 @@
       top-git
       ruby
       rbenv
+
+      # global python stuff
       python310Full
       python310Full.pkgs.pip
       python310Full.pkgs.setuptools
       python310Full.pkgs.wheel
+      python310Full.pkgs.numpy
+      # still python.. but installed standalone?
       poetry
+      
       pkg-config
       shellcheck
       thefuck
-      postgresql
+      postgresql.out
       openssl_1_1.dev
       bash-completion
       browserpass
@@ -97,14 +99,16 @@
       unixtools.ping
       unixtools.route
       unixtools.top
+      autoconf
+      automake
+      gettext
+      xz
       nmap
       unzip
       watchman
       wget
       zsh
       oh-my-zsh
-    ] ++ lib.optionals stdenv.isDarwin [
-      cocoapods
-      m-cli # useful macOS CLI commands
+      gdal
     ];
 }
