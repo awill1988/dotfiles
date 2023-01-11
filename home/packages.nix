@@ -110,5 +110,6 @@
       zsh
       oh-my-zsh
       gdal
+      cargo
     ];
 }
