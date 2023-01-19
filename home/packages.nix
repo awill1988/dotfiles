@@ -47,8 +47,10 @@
       shfmt # shell parser and formatter
       # programming languages 
       go_1_19
-      nodejs
-       nodePackages.typescript
+      nodejs-16_x-openssl_1_1
+      nodePackages.typescript
+      nodePackages.yarn
+      nodePackages.lerna
       
       
       # Useful nix related tools
