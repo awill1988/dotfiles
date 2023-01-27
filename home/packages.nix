@@ -25,6 +25,7 @@
 
   home.packages = with pkgs;
     [
+      act # local github actions testing
       terraform
       cmake
       gcc
@@ -51,7 +52,7 @@
       nodePackages.typescript
       nodePackages.yarn
       nodePackages.lerna
-      
+      nodePackages."@vue/cli"
       
       # Useful nix related tools
       cachix # adding/managing alternative binary caches hosted by Cachix
