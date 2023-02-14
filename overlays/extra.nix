@@ -53,8 +53,8 @@ final: prev: {
         doxygen
         graphviz
         pkg-config
-        python310Full.pkgs.setuptools
-        python310Full.pkgs.wrapPython
+        python38Full.pkgs.setuptools
+        python38Full.pkgs.wrapPython
         swig
       ];
 
@@ -122,8 +122,8 @@ final: prev: {
           tiledb
           zlib
           zstd
-          python310Full
-          python310Full.pkgs.numpy
+          python38Full
+          python38Full.pkgs.numpy
         ] ++ final.lib.optionals (!final.stdenv.isDarwin) [
           # tests for formats enabled by these packages fail on macos
           arrow-cpp
@@ -140,11 +140,11 @@ final: prev: {
       preCheck = ''
         pushd ../autotest
         export HOME=$(mktemp -d)
-        export PYTHONPATH="$out/${final.python310Full.sitePackages}:$PYTHONPATH"
+        export PYTHONPATH="$out/${final.python38Full.sitePackages}:$PYTHONPATH"
       '';
 
       # defining (overriding) to override so Python env is the same (special case)
-      installCheckInputs = with final.python310Full.pkgs; [
+      installCheckInputs = with final.python38Full.pkgs; [
         pytestCheckHook
         pytest-env
         lxml
