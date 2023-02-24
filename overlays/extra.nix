@@ -3,7 +3,7 @@ final: prev: {
   # GDAL - Industry standard transformation geometries
   # ---------------------------------------------------------------------------------------
   gdal = prev.gdal.overrideAttrs (old:
-    let version = "3.6.1";
+    let version = "3.6.2";
     in {
       name = "gdal-${version}";
       inherit version;
@@ -11,7 +11,7 @@ final: prev: {
         owner = "OSGeo";
         repo = "gdal";
         rev = "v${version}";
-        hash = "sha256-hWuV73b7czmbxpnd82V2FHM+ak9JviDHVodVXAHh/pc=";
+        hash = "sha256-fdj/o+dm7V8QLrjnaQobaFX80+penn+ohx/yNmUryRA=";
       };
 
       # -------------------------------------------------------------------------------------------
@@ -37,10 +37,6 @@ final: prev: {
             lib.getLib libmysqlclient
           }/lib/mysql/libmysqlclient${stdenv.hostPlatform.extensions.sharedLibrary}"
           "-DBUILD_TESTING=OFF"
-          "-DENABLE_IPO=ON" # what is this?
-          "-DCMAKE_BUILD_TYPE=Release"
-          "-DBUILD_SHARED_LIBS=ON"
-          "-DBUILD_APPS=ON"
         ] ++ final.lib.optionals (!final.stdenv.isDarwin) [
           "-DCMAKE_SKIP_BUILD_RPATH=ON" # without, libgdal.so can't find libmariadb.so
         ] ++ final.lib.optionals final.stdenv.isDarwin
@@ -53,8 +49,8 @@ final: prev: {
         doxygen
         graphviz
         pkg-config
-        python38Full.pkgs.setuptools
-        python38Full.pkgs.wrapPython
+        python310.pkgs.setuptools
+        python310.pkgs.wrapPython
         swig
       ];
 
@@ -122,8 +118,8 @@ final: prev: {
           tiledb
           zlib
           zstd
-          python38Full
-          python38Full.pkgs.numpy
+          python310
+          python310.pkgs.numpy
         ] ++ final.lib.optionals (!final.stdenv.isDarwin) [
           # tests for formats enabled by these packages fail on macos
           arrow-cpp
@@ -140,11 +136,21 @@ final: prev: {
       preCheck = ''
         pushd ../autotest
         export HOME=$(mktemp -d)
-        export PYTHONPATH="$out/${final.python38Full.sitePackages}:$PYTHONPATH"
+        export PYTHONPATH="$out/${final.python310.sitePackages}:$PYTHONPATH"
       '';
 
+      postInstall = ''
+        wrapPythonPrograms
+      '';
+
+      enableParallelBuilding = true;
+
+      doInstallCheck = true;
+
       # defining (overriding) to override so Python env is the same (special case)
-      installCheckInputs = with final.python38Full.pkgs; [
+      installCheckInputs = [ ];
+
+      nativeInstallCheckInputs = with final.python310.pkgs; [
         pytestCheckHook
         pytest-env
         lxml
@@ -152,34 +158,22 @@ final: prev: {
 
       # extended by examining nixpkgs.gdal source code @ 3.4.2 <-> 3.6.1
       disabledTests = old.disabledTests ++ [
+        "test_jp2openjpeg_45"
+        "test_transformer_dem_overrride_srs"
+        "test_osr_ct_options_area_of_interest"
+        # ZIP does not support timestamps before 1980
+        " test_sentinel2_zipped"
         "test_tiff_srs_compound_crs_with_local_cs" # tests that fail because error message specificity too high
         " test_sentinel2_zipped" # ZIP does not support timestamps before 1980
-      ] ++ final.lib.optionals (!final.stdenv.isx86_64) [ ]
-        ++ final.lib.optionals final.stdenv.isDarwin [ ]
-        ++ final.lib.optionals (final.lib.versionOlder final.proj.version "8")
+      ] ++ final.lib.optionals (!final.stdenv.isx86_64) [
+        # likely precision-related expecting x87 behaviour
+        "test_jp2openjpeg_22"
+      ] ++ final.lib.optionals final.stdenv.isDarwin [
+        # flaky on macos
+        "test_rda_download_queue"
+      ] ++ final.lib.optionals (final.lib.versionOlder final.proj.version "8")
         [ "test_ogr_parquet_write_crs_without_id_in_datum_ensemble_members" ];
 
     });
 
-  # ---------------------------------------------------------------------------------------
-  # PROJ: Cartographic Projections and Coordinate Transformations Library
-  # ---------------------------------------------------------------------------------------
-  proj = prev.proj.overrideAttrs (old:
-    let version = "9.1.0";
-    in {
-      name = "proj-${version}";
-      inherit version;
-      src = final.fetchFromGitHub {
-        owner = "OSGeo";
-        repo = "PROJ";
-        rev = version;
-        hash = "sha256-Upsp72RorV+5PFPHOK3zCJgVTRZ6fSVVFRope8Bp8/M=";
-      };
-      cmakeFlags = old.cmakeFlags ++ [
-        "-DBUILD_TESTING=OFF"
-        "-DENABLE_IPO=ON"
-        "-DCMAKE_BUILD_TYPE=Release"
-        "-DBUILD_SHARED_LIBS=ON"
-      ];
-    });
 }

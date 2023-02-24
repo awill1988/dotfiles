@@ -67,12 +67,12 @@
     rbenv
 
     # Python 3.8
-    python38Full
-    python38Full.pkgs.pip
-    python38Full.pkgs.setuptools
-    python38Full.pkgs.wheel
-    python38Full.pkgs.numpy
-    python38Full.pkgs.cython
+    # python38Full
+    # python38Full.pkgs.pip
+    # python38Full.pkgs.setuptools
+    # python38Full.pkgs.wheel
+    # python38Full.pkgs.numpy
+    # python38Full.pkgs.cython
 
     # Python 3.9
     # python39Full
@@ -83,14 +83,19 @@
     # python39Full.pkgs.cython
 
     # Python 3.10
-    # python310Full
-    # python310Full.pkgs.pip
-    # python310Full.pkgs.setuptools
-    # python310Full.pkgs.wheel
-    # python310Full.pkgs.numpy
-    # python310Full.pkgs.cython
+    python310
+    python310.pkgs.pip
+    python310.pkgs.setuptools
+    python310.pkgs.wheel
+    python310.pkgs.gdal
+    python310.pkgs.numpy
+    python310.pkgs.python
+    python310.pkgs.cython
 
     # still python.. but installed standalone?
+
+    # GDAL has an overlay in extra.nix
+    gdal
 
     poetry
 
@@ -130,7 +135,6 @@
     wget
     zsh
     oh-my-zsh
-    gdal
     cargo
   ];
 }
