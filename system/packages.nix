@@ -4,11 +4,17 @@
     alacritty
     pkg-config
     git
+    git-lfs
+    top-git
     vim
-    wget
-    (bazel.overrideAttrs (old: {
-      doCheck = false;
-      doInstallCheck = false;
-    }))
+
+    # (bazel.overrideAttrs (old: {
+    #   doCheck = false;
+    #   doInstallCheck = false;
+    # }))
+  
+    bazelisk
+    weechat
+    gnupg
   ];
 }

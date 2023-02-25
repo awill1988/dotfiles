@@ -40,7 +40,7 @@
     rsync # incremental file transfer util
     tree # depth indented directory listing
     wget
-
+    gh # github cli tool
     # code tools
     nodePackages.prettier # code formatter
     shellcheck
@@ -59,10 +59,7 @@
     nix-prefetch-scripts
     nixfmt
 
-    # dev stuff
-    gh # github cli tool
-    git-lfs
-    top-git
+
     ruby
     rbenv
 
@@ -132,9 +129,9 @@
     nmap
     unzip
     watchman
-    wget
+
+    # Shell Environment
     zsh
     oh-my-zsh
-    cargo
   ];
 }
