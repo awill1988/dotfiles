@@ -133,5 +133,9 @@
     # Shell Environment
     zsh
     oh-my-zsh
+
+    git
+    git-lfs
+    top-git
   ];
 }

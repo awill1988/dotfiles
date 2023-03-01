@@ -118,7 +118,7 @@
       autoload -Uz compinit && compinit
       compinit
     '';
-    cdpath = [ "." "~" ];
+    # cdpath = [ "." "~" ];
     dotDir = ".config/zsh";
 
     plugins = [{
@@ -185,6 +185,9 @@
     initExtra = ''
         ZSH_AUTOSUGGEST_HIGHLIGHT_STYLE='fg=238'
         setopt HIST_IGNORE_ALL_DUPS
+        
+        source "$HOME/.cargo/env"
+        
         eval $(thefuck --alias)
 
         SPACESHIP_PROMPT_ORDER=(
@@ -201,23 +204,23 @@
 
         # using ripgrep combined with preview
         # find-in-file - usage: fif <searchTerm>
-        fif() {
+        function fif() {
           if [ ! "$#" -gt 0 ]; then echo "Need a string to search for!"; return 1; fi
           rg --files-with-matches --no-messages "$1" | fzf --preview "highlight -O ansi -l {} 2> /dev/null | rg --colors 'match:bg:yellow' --ignore-case --pretty --context 10 '$1' || rg --ignore-case --pretty --context 10 '$1' {}"
         }
 
-      function ls() {
+        function ls() {
           ${pkgs.coreutils}/bin/ls --color=auto --group-directories-first "$@"
-      }
-      autoload -U promptinit; promptinit
+        }
+        
+        autoload -U promptinit; promptinit
     '';
 
     profileExtra = ''
           export GPG_TTY=$(tty)
           if ! pgrep -x "gpg-agent" > /dev/null; then
-      	${pkgs.gnupg}/bin/gpgconf --launch gpg-agent
+      	    ${pkgs.gnupg}/bin/gpgconf --launch gpg-agent
           fi
-
     '';
   };
 
