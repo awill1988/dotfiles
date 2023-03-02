@@ -27,7 +27,6 @@
     act # local github actions testing
     terraform
     cmake
-    gcc
     jq.bin
     # basics
     coreutils
@@ -41,17 +40,11 @@
     tree # depth indented directory listing
     wget
     gh # github cli tool
-    # code tools
-    nodePackages.prettier # code formatter
+    
     shellcheck
     shfmt # shell parser and formatter
     # programming languages 
     go_1_19
-    nodejs-16_x-openssl_1_1
-    nodePackages.typescript
-    nodePackages.yarn
-    nodePackages.lerna
-    nodePackages."@vue/cli"
 
     # Useful nix related tools
     cachix # adding/managing alternative binary caches hosted by Cachix
@@ -137,5 +130,6 @@
     git
     git-lfs
     top-git
+    gradle
   ];
 }
