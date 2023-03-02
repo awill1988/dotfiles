@@ -26,7 +26,7 @@
     defaults.dock = {
       autohide = true;
       mru-spaces = false;
-      orientation = "right";
+      orientation = "bottom";
       showhidden = true;
     };
 

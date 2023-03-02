@@ -8,7 +8,7 @@
     VISUAL = "vim";
     CLICOLOR = true;
     GPG_TTY = "$TTY";
-    PATH = "$PATH:$HOME/.local/bin:$HOME/google-cloud-sdk/bin";
+    PATH = "$HOME/.rbenv/plugins/ruby-build/bin:$HOME/.local/bin:$HOME/google-cloud-sdk/bin:$PATH";
     PKG_CONFIG_PATH =
       "$PKG_CONFIG_PATH:${pkgs.openssl_1_1.dev}/lib/pkgconfig:${pkgs.gdal}/lib/pkgconfig";
   };
@@ -185,10 +185,6 @@
     initExtra = ''
         ZSH_AUTOSUGGEST_HIGHLIGHT_STYLE='fg=238'
         setopt HIST_IGNORE_ALL_DUPS
-        
-        source "$HOME/.cargo/env"
-        
-        eval $(thefuck --alias)
 
         SPACESHIP_PROMPT_ORDER=(
           time          # Time stampts section
@@ -212,15 +208,23 @@
         function ls() {
           ${pkgs.coreutils}/bin/ls --color=auto --group-directories-first "$@"
         }
-        
+
         autoload -U promptinit; promptinit
     '';
 
     profileExtra = ''
-          export GPG_TTY=$(tty)
-          if ! pgrep -x "gpg-agent" > /dev/null; then
-      	    ${pkgs.gnupg}/bin/gpgconf --launch gpg-agent
-          fi
+      export GPG_TTY=$(tty)
+      if ! pgrep -x "gpg-agent" > /dev/null; then
+        ${pkgs.gnupg}/bin/gpgconf --launch gpg-agent
+      fi
+
+      eval "$(/opt/homebrew/bin/brew shellenv)"
+      
+      source "$HOME/.cargo/env"
+        
+      eval "$(thefuck --alias)"
+
+      eval "$(rbenv init -)"
     '';
   };
 
