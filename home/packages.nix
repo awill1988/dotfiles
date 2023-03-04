@@ -56,6 +56,8 @@
     ruby
     rbenv
 
+    androidenv.androidPkgs_9_0.platform-tools
+    jdk
     # Python 3.8
     # python38Full
     # python38Full.pkgs.pip

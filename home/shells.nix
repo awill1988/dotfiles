@@ -11,6 +11,9 @@
     PATH = "$HOME/.rbenv/plugins/ruby-build/bin:$HOME/.local/bin:$HOME/google-cloud-sdk/bin:$PATH";
     PKG_CONFIG_PATH =
       "$PKG_CONFIG_PATH:${pkgs.openssl_1_1.dev}/lib/pkgconfig:${pkgs.gdal}/lib/pkgconfig";
+    ANDROID_JAVA_HOME = "${pkgs.jdk.home}";
+    ALLOW_NINJA_ENV = true;
+    USE_CCACHE = 1;
   };
   home.file.".config/starship.toml".text = ''
     [battery]

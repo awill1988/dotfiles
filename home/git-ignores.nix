@@ -35,5 +35,6 @@
     ".envrc"
     "shell.nix"
     ".direnv/"
+    ".swiftpm"
   ];
 }
