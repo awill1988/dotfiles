@@ -1,5 +1,10 @@
 {
   system = {
+    defaults.trackpad = {
+      Clicking = true;
+      TrackpadThreeFingerDrag = true;
+    };
+
     defaults.LaunchServices.LSQuarantine = false;
 
     defaults.NSGlobalDomain = {

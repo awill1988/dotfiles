@@ -2,35 +2,29 @@
   description = "Martin's dotfiles";
 
   inputs = {
-    nixpkgs-master.url = github:nixos/nixpkgs/master;
-    nixpkgs-stable.url = github:nixos/nixpkgs/nixpkgs-22.05-darwin;
-    nixpkgs-unstable.url = github:nixos/nixpkgs/nixpkgs-unstable;
-    nixos-stable.url = github:nixos/nixpkgs/nixos-22.05;
+    # Principle inputs
+    nixpkgs-master.url = "github:nixos/nixpkgs/master";
+    nixpkgs-stable.url = "github:nixos/nixpkgs/nixpkgs-22.05-darwin";
+    nixpkgs-unstable.url = "github:nixos/nixpkgs/nixpkgs-unstable";
+    nixos-stable.url = "github:nixos/nixpkgs/nixos-22.05";
 
-    darwin.url = github:LnL7/nix-darwin;
+    darwin.url = "github:LnL7/nix-darwin";
     darwin.inputs.nixpkgs.follows = "nixpkgs-unstable";
-    home-manager.url = github:nix-community/home-manager;
-    home-manager.inputs.nixpkgs.follows = "nixpkgs-unstable";
-    nixos-wsl.url = github:nix-community/NixOS-WSL;
-    nixos-wsl.inputs.nixpkgs.follows = "nixpkgs-unstable";
 
+    home-manager.url = "github:nix-community/home-manager";
+    home-manager.inputs.nixpkgs.follows = "nixpkgs-unstable";
+
+    # Supportive inputs
     flake-utils.url = "github:numtide/flake-utils";
-    flake-compat = {
-      url = "github:edolstra/flake-compat";
-      flake = false;
-    };
   };
 
-  outputs = { self, nixpkgs, darwin, home-manager, nixos-wsl, flake-utils, ... } @ inputs:
+  outputs = { self, nixpkgs, darwin, home-manager, flake-utils, ... }@inputs:
     let
       inherit (darwin.lib) darwinSystem;
-      inherit (inputs.nixpkgs-unstable.lib) attrValues makeOverridable optionalAttrs singleton;
+      inherit (inputs.nixpkgs-unstable.lib)
+        attrValues makeOverridable optionalAttrs singleton;
 
-      systems = [
-        "x86_64-darwin"
-        "aarch64-darwin"
-        "x86_64-linux"
-      ];
+      systems = [ "x86_64-darwin" "aarch64-darwin" ];
       forAllSystems = f: nixpkgs.lib.genAttrs systems (system: f system);
 
       nixpkgsConfig = with inputs; rec {
@@ -42,46 +36,19 @@
       nixosStateVersion = "22.05";
 
       primaryUserInfo = {
-        username = "mch";
-        fullName = "Martin Hardselius";
-        email = "martin@hardselius.dev";
-        github = "hardselius";
-        gpg.enable = true;
-        gpg.masterKey = "3F35E4CACBF42DE12E9053E503A6E6F786936619";
+        username = "adam";
+        fullName = "Adam Williams";
+        github = "awill1988";
       };
 
       nixDarwinCommonModules = attrValues self.darwinModules ++ [
         home-manager.darwinModules.home-manager
         ({ config, lib, pkgs, ... }:
-          let
-            inherit (config.users) primaryUser;
-          in
-          rec {
-            nixpkgs = nixpkgsConfig;
-            users.users.${primaryUser.username}.home = "/Users/${primaryUser.username}";
-            home-manager.useGlobalPkgs = true;
-            home-manager.users.${primaryUser.username} = {
-              imports = attrValues self.homeManagerModules;
-              home.stateVersion = homeManagerStateVersion;
-              home.user-info = config.users.primaryUser;
-            };
-          })
-      ];
-
-      nixosCommonModules = attrValues self.nixosModules ++ [
-        home-manager.nixosModules.home-manager
-        ({ config, lib, pkgs, ... }:
-          let
-            inherit (config.users) primaryUser;
-          in
-          rec {
+          let inherit (config.users) primaryUser;
+          in rec {
             nixpkgs = nixpkgsConfig;
             users.users.${primaryUser.username} = {
-              home = "/home/${primaryUser.username}";
-              isNormalUser = true;
-              isSystemUser = false;
-              initialPassword = "helloworld";
-              extraGroups = [ "wheel" ];
+              home = "/Users/${primaryUser.username}";
               shell = pkgs.zsh;
             };
             home-manager.useGlobalPkgs = true;
@@ -92,9 +59,7 @@
             };
           })
       ];
-
-    in
-    {
+    in {
       darwinConfigurations = rec {
 
         # Minimal configuration to bootstrap systems
@@ -114,9 +79,7 @@
           system = "x86_64-darwin";
           modules = nixDarwinCommonModules ++ [
             ./system/darwin/host-mac.nix
-            {
-              users.primaryUser = primaryUserInfo;
-            }
+            { users.primaryUser = primaryUserInfo; }
           ];
         };
 
@@ -124,68 +87,8 @@
           system = "aarch64-darwin";
           modules = nixDarwinCommonModules ++ [
             ./system/darwin/host-mac.nix
-            {
-              users.primaryUser = primaryUserInfo;
-            }
+            { users.primaryUser = primaryUserInfo; }
           ];
-        };
-
-        # Configuration used for CI with GitHub actions
-        gitHubActions = darwinSystem {
-          system = "x86_64-darwin";
-          modules = nixDarwinCommonModules ++ [
-            ./system/darwin/host-github.nix
-            ({ lib, ... }: {
-              users.primaryUser = primaryUserInfo // {
-                username = "runner";
-                gpg.enable = false;
-              };
-            })
-          ];
-        };
-      };
-
-      nixosConfigurations = {
-        wsl = nixpkgs.lib.nixosSystem {
-          system = "x86_64-linux";
-          modules = nixosCommonModules ++ [
-            nixos-wsl.nixosModules.wsl
-            ./system/nixos/host-wsl.nix
-            {
-              users.primaryUser = primaryUserInfo;
-            }
-          ];
-        };
-      };
-
-      homeConfigurations = {
-        linuxGitHubActions = home-manager.lib.homeManagerConfiguration {
-          pkgs = import inputs.nixpkgs-unstable {
-            system = "x86_64-linux";
-            inherit (nixpkgsConfig) config overlays;
-          };
-          modules = attrValues self.homeManagerModules ++ singleton ({ config, ... }: {
-            home.username = config.home.user-info.username;
-            home.homeDirectory = "/home/${config.home.username}";
-            home.stateVersion = homeManagerStateVersion;
-            home.user-info = primaryUserInfo // {
-              username = "runner";
-              gpg.enable = false;
-            };
-          });
-        };
-
-        linuxWsl = home-manager.lib.homeManagerConfiguration {
-          pkgs = import inputs.nixpkgs-unstable {
-            system = "x86_64-linux";
-            inherit (nixpkgsConfig) config overlays;
-          };
-          modules = attrValues self.homeManagerModules ++ singleton ({ config, ... }: {
-            home.username = config.home.user-info.username;
-            home.homeDirectory = "/home/${config.home.username}";
-            home.stateVersion = homeManagerStateVersion;
-            home.user-info = primaryUserInfo;
-          });
         };
       };
 
@@ -200,30 +103,17 @@
         users-primaryUser = import ./modules/users.nix;
       };
 
-      nixosModules = {
-        common = import ./system/common.nix;
-        stateVersion = { system.stateVersion = nixosStateVersion; };
-        packages = import ./system/packages.nix;
-
-        users-primaryUser = import ./modules/users.nix;
-      };
-
       homeManagerModules = {
         home-config-files = import ./home/config-files.nix;
         home-git = import ./home/git.nix;
-        home-git-aliases = import ./home/git-aliases.nix;
         home-git-ignores = import ./home/git-ignores.nix;
-        home-git-templates = import ./home/git-templates.nix;
-        home-gpg = import ./home/gpg.nix;
         home-packages = import ./home/packages.nix;
         home-shells = import ./home/shells.nix;
         home-terminal = import ./home/terminal.nix;
-
-        home-awscli = import ./modules/home/programs/awscli.nix;
-
         home-user-info = { lib, ... }: {
-          options.home.user-info =
-            (self.darwinModules.users-primaryUser { inherit lib; }).options.users.primaryUser;
+          options.home.user-info = (self.darwinModules.users-primaryUser {
+            inherit lib;
+          }).options.users.primaryUser;
         };
       };
 
@@ -246,30 +136,26 @@
             inherit (nixpkgsConfig) config;
           };
         };
+
         # Overlay useful on Macs with Apple Silicon
-        apple-silicon = _: prev: optionalAttrs (prev.stdenv.system == "aarch64-darwin") {
-          # Add access to x86 packages system is running Apple Silicon
-          pkgs-x86 = import inputs.nixpkgs-unstable {
-            system = "x86_64-darwin";
-            inherit (nixpkgsConfig) config;
+        apple-silicon = _: prev:
+          optionalAttrs (prev.stdenv.system == "aarch64-darwin") {
+            # Add access to x86 packages system is running Apple Silicon
+            pkgs-x86 = import inputs.nixpkgs-unstable {
+              system = "x86_64-darwin";
+              inherit (nixpkgsConfig) config;
+            };
           };
-        };
-        pure-prompt = import ./overlays/pure-prompt.nix;
-        wsl2-ssh-pageant = import ./overlays/wsl2-ssh-pageant.nix;
+
+        extra = import ./overlays/extra.nix;
       };
 
-      # `nix develop`
-      devShell = forAllSystems
-        (system:
-          let
-            pkgs = nixpkgs.legacyPackages.${system};
-          in
-          pkgs.mkShell {
-            nativeBuildInputs = with pkgs; [
-              rnix-lsp
-              nixpkgs-fmt
-            ];
-          }
-        );
+      devShell = forAllSystems (system:
+        let pkgs = nixpkgs.legacyPackages.${system};
+        in pkgs.mkShell {
+          nativeBuildInputs = with pkgs; [ rnix-lsp nixpkgs-fmt ];
+        });
+      formatter =
+        forAllSystems (system: nixpkgs.legacyPackages.${system}.nixpkgs-fmt);
     };
 }

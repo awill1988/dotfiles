@@ -1,9 +1,10 @@
-{ pkgs, ... }:
-{
+{ pkgs, ... }: {
+  programs.nix-index.enable = true;
   environment.systemPackages = with pkgs; [
     alacritty
-    git
+    pkg-config
     vim
-    wget
+    weechat
+    gnupg
   ];
 }

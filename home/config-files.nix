@@ -1,9 +1,7 @@
 { config, pkgs, lib, ... }:
-let
-  inherit (config.home) homeDirectory;
-in
+let inherit (config.home) homeDirectory;
 
-{
+in {
   xdg = {
     enable = true;
     configHome = "${homeDirectory}/.config";

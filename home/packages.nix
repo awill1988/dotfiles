@@ -1,23 +1,11 @@
-{ config, pkgs, lib, ... }:
-{
+{ config, pkgs, lib, ... }: {
   programs.home-manager.enable = true;
-
-  programs.awscli.enable = true;
-  programs.awscli.package = pkgs.awscli2;
-  programs.awscli.enableBashIntegration = true;
-  programs.awscli.enableZshIntegration = true;
-  programs.awscli.awsVault = {
-    enable = true;
-    prompt = "ykman";
-    backend = "pass";
-    passPrefix = "aws_vault/";
-  };
 
   programs.browserpass.enable = true;
   programs.browserpass.browsers = [ "firefox" ];
 
   programs.direnv.enable = true;
-  programs.direnv.nix-direnv.  enable = true;
+  programs.direnv.nix-direnv.enable = true;
 
   programs.dircolors.enable = true;
   programs.dircolors.enableZshIntegration = true;
@@ -26,9 +14,6 @@
   programs.fzf.enableBashIntegration = true;
   programs.fzf.enableZshIntegration = true;
 
-  programs.htop.enable = true;
-  programs.htop.settings.show_program_path = true;
-
   programs.ssh.enable = true;
   programs.ssh.controlMaster = "auto";
   programs.ssh.controlPath = "/tmp/ssh-%u-%r@%h:%p";
@@ -36,21 +21,13 @@
   programs.ssh.forwardAgent = true;
   programs.ssh.serverAliveInterval = 60;
   programs.ssh.hashKnownHosts = true;
-  programs.ssh.extraConfig = ''
-    Host remarkable
-      Hostname 10.11.99.1
-      User root
-      ForwardX11 no
-      ForwardAgent no
-  '';
-
-  programs.tmux.enable = true;
-  programs.tmux.aggressiveResize = true;
-  programs.tmux.clock24 = true;
-  programs.tmux.keyMode = "vi";
-  programs.tmux.terminal = "screen-256color";
+  programs.ssh.extraConfig = "";
 
   home.packages = with pkgs; [
+    act # local github actions testing
+    terraform
+    cmake
+    jq.bin
     # basics
     coreutils
     curl
@@ -58,51 +35,103 @@
     findutils # GNU find utils
     htop # fancy `top`
     less # more advanced file pager than `more`
-    #renameutils # rename files faster
     ripgrep # fancy `grep`
     rsync # incremental file transfer util
     tree # depth indented directory listing
     wget
-
-    # dev stuff
     gh # github cli tool
-    gnumake
-    jq # command line json processor
-    just # save and run project specific commands
-    plantuml # draw uml diagrams
-    # steampipe # select * from cloud
-    vim
-    # visidata # terminal multitool for tabular data
-
-    # code tools
-    gdbgui
-    jsonnet-language-server
-    nodePackages.bash-language-server
-    nodePackages.prettier # code formatter
-    nodePackages.vim-language-server
-    pqrs
-    python39Packages.sqlparse
+    
     shellcheck
     shfmt # shell parser and formatter
-    universal-ctags # maintained ctags implementation
+    # programming languages 
+    go_1_19
 
-    # nix tools
-    cachix
-    nixpkgs-fmt
-    nodePackages.node2nix
+    # Useful nix related tools
+    cachix # adding/managing alternative binary caches hosted by Cachix
+    niv # easy dependency management for nix projects
+    nix-prefetch-scripts
+    nixfmt
 
-    # opsec
-    gnupg
-    gpgme # make gnupg easier
-    pass # "password manager"
-    xkcdpass # generate passwords
-    yubikey-manager # configure yubikeys
 
-    # other
-    graphviz # graph visualization tools
+    ruby
+    rbenv
+
+    androidenv.androidPkgs_9_0.platform-tools
+    jdk
+    # Python 3.8
+    # python38Full
+    # python38Full.pkgs.pip
+    # python38Full.pkgs.setuptools
+    # python38Full.pkgs.wheel
+    # python38Full.pkgs.numpy
+    # python38Full.pkgs.cython
+
+    # Python 3.9
+    # python39Full
+    # python39Full.pkgs.pip
+    # python39Full.pkgs.setuptools
+    # python39Full.pkgs.wheel
+    # python39Full.pkgs.numpy
+    # python39Full.pkgs.cython
+
+    # Python 3.10
+    python310
+    python310.pkgs.pip
+    python310.pkgs.setuptools
+    python310.pkgs.wheel
+    python310.pkgs.gdal
+    python310.pkgs.numpy
+    python310.pkgs.python
+    python310.pkgs.cython
+
+    # still python.. but installed standalone?
+
+    # GDAL has an overlay in extra.nix
+    gdal
+
+    poetry
+
+    pkg-config
+    shellcheck
+    thefuck
+    postgresql.out
+    openssl_1_1.dev
+    bash-completion
+    browserpass
+    cacert
+    curl
+    direnv
+    fd
+    ffmpeg
+    findutils
+    gnugrep
+    gnumake
+    gnuplot
+    gnused
+    gnutar
+    pre-commit
+    less
+    socat
+    unixtools.ifconfig
+    unixtools.netstat
+    unixtools.ping
+    unixtools.route
+    unixtools.top
+    autoconf
+    automake
+    gettext
+    xz
     nmap
-    openssl
-    watch
-    qemu
+    unzip
+    watchman
+
+    # Shell Environment
+    zsh
+    oh-my-zsh
+
+    git
+    git-lfs
+    top-git
+    gradle
   ];
 }
