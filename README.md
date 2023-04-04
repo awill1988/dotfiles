@@ -82,13 +82,13 @@ ahead and run:
 #### Option #1
 
 ```bash
-git clone --branch develop git@github.com:awill1988/dotfiles.git
+git clone git@github.com:awill1988/dotfiles.git
 cd dotfiles
 nix build \
     --extra-experimental-features nix-command \
     --extra-experimental-features flakes \
-    .#darwinConfigurations.bootstrap-x86.system
-./result/sw/bin/darwin-rebuild switch --flake .#bootstrap-x86
+    .#darwinConfigurations.bootstrap-arm.system
+./result/sw/bin/darwin-rebuild switch --flake .#bootstrap-arm
 ```
 
 #### Option #2
@@ -98,8 +98,8 @@ pushd /tmp
 nix build \                                                                            
     --extra-experimental-features nix-command \
     --extra-experimental-features flakes \
-    'git+ssh://git@github.com/awill1988/dotfiles?ref=develop#darwinConfigurations.bootstrap-arm.system'
-./result/sw/bin/darwin-rebuild switch --flake .#bootstrap-x86
+    'git+ssh://git@github.com/awill1988/dotfiles?ref=master#darwinConfigurations.bootstrap-arm.system'
+./result/sw/bin/darwin-rebuild switch --flake .#bootstrap-arm
 popd
 ```
 
@@ -107,7 +107,7 @@ popd
 Then open up a new terminal session and run:
 
 ```bash
-darwin-rebuild switch --flake .#macbook-x86
+darwin-rebuild switch --flake .#macbook-arm
 ```
 
 ## You're done
