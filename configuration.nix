@@ -34,10 +34,10 @@
 
   users = {
     users = {
-      adam = {
+      adam.williams = {
         shell = pkgs.zsh;
         description = "Adam Williams";
-        home = "/Users/adam";
+        home = "/Users/adam.williams";
       };
     };
   };
@@ -51,7 +51,7 @@
 
   programs.zsh.enable = true;
 
-  environment.systemPackages = with pkgs; [ vscode ];
+  environment.systemPackages = with pkgs; [ ];
 
   programs.nix-index.enable = true;
   fonts = {

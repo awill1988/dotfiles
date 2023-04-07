@@ -1,5 +1,5 @@
 {
-  description = "Martin's dotfiles";
+  description = "Adam Williams' dotfiles";
 
   inputs = {
     # Principle inputs
@@ -36,7 +36,7 @@
       nixosStateVersion = "22.05";
 
       primaryUserInfo = {
-        username = "adam";
+        username = "adam.williams";
         fullName = "Adam Williams";
         github = "awill1988";
       };

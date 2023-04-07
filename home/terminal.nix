@@ -1,5 +1,5 @@
 { config, pkgs, lib, ... }:
-let fontFamily = "FiraCode Nerd Font Mono";
+let fontFamily = "FiraCode";
 in {
   programs = {
     alacritty.enable = true;
@@ -28,7 +28,7 @@ in {
       bold.family = "${fontFamily}";
       italic.family = "${fontFamily}";
       bold_italic.family = "${fontFamily}";
-      size = 13.0;
+      size = 15.0;
     };
   };
 
