@@ -2,11 +2,10 @@
   description = "Adam Williams' dotfiles";
 
   inputs = {
-    # Principle inputs
     nixpkgs-master.url = "github:nixos/nixpkgs/master";
-    nixpkgs-stable.url = "github:nixos/nixpkgs/nixpkgs-22.05-darwin";
+    nixpkgs-stable.url = "github:nixos/nixpkgs/nixpkgs-22.11-darwin";
     nixpkgs-unstable.url = "github:nixos/nixpkgs/nixpkgs-unstable";
-    nixos-stable.url = "github:nixos/nixpkgs/nixos-22.05";
+    nixos-stable.url = "github:nixos/nixpkgs/nixos-22.11";
 
     darwin.url = "github:LnL7/nix-darwin";
     darwin.inputs.nixpkgs.follows = "nixpkgs-unstable";
@@ -14,7 +13,6 @@
     home-manager.url = "github:nix-community/home-manager";
     home-manager.inputs.nixpkgs.follows = "nixpkgs-unstable";
 
-    # Supportive inputs
     flake-utils.url = "github:numtide/flake-utils";
   };
 
@@ -32,8 +30,8 @@
         overlays = attrValues self.overlays;
       };
 
-      homeManagerStateVersion = "22.05";
-      nixosStateVersion = "22.05";
+      homeManagerStateVersion = "22.11";
+      nixosStateVersion = "22.11";
 
       primaryUserInfo = {
         username = "adam.williams";
@@ -49,6 +47,9 @@
             nixpkgs = nixpkgsConfig;
             users.users.${primaryUser.username} = {
               home = "/Users/${primaryUser.username}";
+              isNormalUser = true;
+              isSystemUser = false;
+              extraGroups = [ "wheel" ];
               shell = pkgs.zsh;
             };
             home-manager.useGlobalPkgs = true;

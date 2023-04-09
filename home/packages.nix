@@ -40,7 +40,7 @@
     tree # depth indented directory listing
     wget
     gh # github cli tool
-    
+
     shellcheck
     shfmt # shell parser and formatter
     # programming languages 
@@ -51,7 +51,6 @@
     niv # easy dependency management for nix projects
     nix-prefetch-scripts
     nixfmt
-
 
     ruby
     rbenv

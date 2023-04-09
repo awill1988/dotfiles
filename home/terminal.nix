@@ -1,5 +1,5 @@
 { config, pkgs, lib, ... }:
-let fontFamily = "FiraCode";
+let fontFamily = "JetBrainsMono Nerd Font";
 in {
   programs = {
     alacritty.enable = true;
@@ -13,16 +13,7 @@ in {
       key = "Q";
       mods = "Control";
       chars = "\\x11";
-    }] ++ lib.optionals pkgs.stdenv.isDarwin [
-      # macOS tabs
-      # System Preferences > General > Prefer tabs: always
-      # must be set in order for this to work.
-      {
-        key = "T";
-        mods = "Command";
-        action = "CreateNewWindow";
-      }
-    ];
+    }];
     alacritty.settings.font = {
       normal.family = "${fontFamily}";
       bold.family = "${fontFamily}";

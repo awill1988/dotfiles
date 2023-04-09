@@ -17,9 +17,7 @@
   programs.zsh.enable = true;
   programs.zsh.promptInit = "";
 
-  fonts.fontDir.enable = false;
-  fonts.fonts = with pkgs; [
-    recursive
-    (nerdfonts.override { fonts = [ "FiraCode" ]; })
-  ];
+  fonts.fontDir.enable = true;
+  fonts.fonts = with pkgs;
+    [ (nerdfonts.override { fonts = [ "JetBrainsMono" ]; }) ];
 }

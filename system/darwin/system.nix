@@ -29,6 +29,14 @@
       orientation = "bottom";
       showhidden = true;
     };
+    # Keyboard
+    # keyboard = {
+    #   enableKeyMapping = true;
+    #   remapCapsLockToEscape = true;
+    # }
+
+    # Add ability to used TouchID for sudo authentication
+    security.pam.enableSudoTouchIdAuth = true;
 
     defaults.finder = {
       AppleShowAllExtensions = true;

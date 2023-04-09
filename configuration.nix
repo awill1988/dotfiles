@@ -4,11 +4,9 @@
   # Nix configuration ------------------------------------------------------------------------------
 
   nix.settings = {
-    substituters = [ "https://cache.nixos.org/" "https://malo.cachix.org" ];
-    trusted-public-keys = [
-      "cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY="
-      "malo.cachix.org-1:fJL4+lpyMs/1cdZ23nPQXArGj8AS7x9U67O8rMkkMIo="
-    ];
+    substituters = [ "https://cache.nixos.org/" ];
+    trusted-public-keys =
+      [ "cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=" ];
 
     trusted-users = [ "@admin" ];
 
@@ -73,5 +71,5 @@
   #system.keyboard.remapCapsLockToEscape = true;
 
   # Add ability to used TouchID for sudo authentication
-  #security.pam.enableSudoTouchIdAuth = true;
+  security.pam.enableSudoTouchIdAuth = true;
 }

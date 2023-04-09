@@ -1,20 +1,24 @@
 { config, pkgs, lib, ... }: {
   home.sessionVariables = {
+    GPG_TTY = "$TTY";
     LC_CTYPE = "en_US.UTF-8";
     LEDGER_COLOR = "true";
     LESS = "-FRSXM";
     LESSCHARSET = "utf-8";
+    EDITOR = "${pkgs.vim}/bin/vim";
+    PAGER = "less";
     TERM = "xterm-256color";
-    VISUAL = "vim";
+    VISUAL = "${pkgs.vim}/bin/vim";
     CLICOLOR = true;
-    GPG_TTY = "$TTY";
-    PATH = "$HOME/.rbenv/plugins/ruby-build/bin:$HOME/.local/bin:$HOME/google-cloud-sdk/bin:$PATH";
+    PATH =
+      "$HOME/.rbenv/plugins/ruby-build/bin:$HOME/.local/bin:$HOME/google-cloud-sdk/bin:$PATH";
     PKG_CONFIG_PATH =
       "$PKG_CONFIG_PATH:${pkgs.openssl_1_1.dev}/lib/pkgconfig:${pkgs.gdal}/lib/pkgconfig";
     ANDROID_JAVA_HOME = "${pkgs.jdk.home}";
     ALLOW_NINJA_ENV = true;
     USE_CCACHE = 1;
   };
+
   home.file.".config/starship.toml".text = ''
     [battery]
     full_symbol = ""
@@ -41,8 +45,10 @@
     [nix_shell]
     symbol = "nix-shell "
   '';
+
   home.shellAliases = {
     tf = "terraform";
+    switch-yubikey = ''gpg-connect-agent "scd serialno" "learn --force" /bye'';
 
     # Get public ip directly from a DNS server instead of from some hip
     # whatsmyip HTTP service. https://unix.stackexchange.com/a/81699
@@ -54,7 +60,21 @@
     lightswitch =
       "osascript -e  'tell application \"System Events\" to tell appearance preferences to set dark mode to not dark mode'";
     restartaudio = "sudo killall coreaudiod";
+    loadenv = "set -a; source .env; set +a";
+    nixgc = "nix-collect-garbage -d";
+    nixq = "nix-env -qaP";
+    nixupgrade =
+      "sudo -i sh -c 'nix-channel --update && nix-env -iA nixpkgs.nix && launchctl remove org.nixos.nix-daemon && launchctl load /Library/LaunchDaemons/org.nixos.nix-daemon.plist'";
+    nixup = "nix-env -u";
+    go-cov =
+      "go test -coverprofile='coverage.out' ./... && gcov2lcov -infile=coverage.out -outfile=lcov.info";
+    nixshow = "nix show-derivation -r";
   };
+
+  programs.starship.enable = true;
+  programs.starship.enableBashIntegration = false;
+  programs.starship.enableZshIntegration = true;
+
   programs.tmux = {
     enable = true;
 
@@ -111,7 +131,9 @@
       run 'plugins/tpm/tpm'
     '';
   };
+
   programs.zsh = {
+
     enable = true;
     enableCompletion = true;
     enableAutosuggestions = true;
@@ -121,7 +143,7 @@
       autoload -Uz compinit && compinit
       compinit
     '';
-    # cdpath = [ "." "~" ];
+    cdpath = [ "." "~" ];
     dotDir = ".config/zsh";
 
     plugins = [{
@@ -161,76 +183,52 @@
       extended = true;
     };
 
-    sessionVariables = {
-      LC_CTYPE = "en_US.UTF-8";
-      LEDGER_COLOR = "true";
-      LESS = "-FRSXM";
-      LESSCHARSET = "utf-8";
-      EDITOR = "vim";
-      PAGER = "less";
-      TERM = "xterm-256color";
-      VISUAL = "vim";
-    };
-
-    shellAliases = {
-      loadenv = "set -a; source .env; set +a";
-      nixre = "darwin-rebuild switch";
-      nixgc = "nix-collect-garbage -d";
-      nixq = "nix-env -qaP";
-      nixupgrade =
-        "sudo -i sh -c 'nix-channel --update && nix-env -iA nixpkgs.nix && launchctl remove org.nixos.nix-daemon && launchctl load /Library/LaunchDaemons/org.nixos.nix-daemon.plist'";
-      nixup = "nix-env -u";
-      go-cov =
-        "go test -coverprofile='coverage.out' ./... && gcov2lcov -infile=coverage.out -outfile=lcov.info";
-      nixshow = "nix show-derivation -r";
-    };
-
-    initExtra = ''
-        ZSH_AUTOSUGGEST_HIGHLIGHT_STYLE='fg=238'
-        setopt HIST_IGNORE_ALL_DUPS
-
-        SPACESHIP_PROMPT_ORDER=(
-          time          # Time stampts section
-          user          # Username section
-          host          # Hostname section
-          dir           # Current directory section
-          git           # Git section (git_branch + git_status)
-          line_sep      # Line break
-          jobs          # Backgound jobs indicator
-          exit_code     # Exit code section
-          char          # Prompt character
-        )
-
-        # using ripgrep combined with preview
-        # find-in-file - usage: fif <searchTerm>
-        function fif() {
-          if [ ! "$#" -gt 0 ]; then echo "Need a string to search for!"; return 1; fi
-          rg --files-with-matches --no-messages "$1" | fzf --preview "highlight -O ansi -l {} 2> /dev/null | rg --colors 'match:bg:yellow' --ignore-case --pretty --context 10 '$1' || rg --ignore-case --pretty --context 10 '$1' {}"
-        }
-
-        function ls() {
-          ${pkgs.coreutils}/bin/ls --color=auto --group-directories-first "$@"
-        }
-
-        autoload -U promptinit; promptinit
-    '';
-
     profileExtra = ''
       export GPG_TTY=$(tty)
+
       if ! pgrep -x "gpg-agent" > /dev/null; then
         ${pkgs.gnupg}/bin/gpgconf --launch gpg-agent
       fi
 
       eval "$(/opt/homebrew/bin/brew shellenv)"
-      
+
       source "$HOME/.cargo/env"
         
       eval "$(thefuck --alias)"
 
       eval "$(rbenv init -)"
     '';
+
+    initExtra = ''
+      ZSH_AUTOSUGGEST_HIGHLIGHT_STYLE='fg=238'
+      setopt HIST_IGNORE_ALL_DUPS
+
+      SPACESHIP_PROMPT_ORDER=(
+        time          # Time stampts section
+        user          # Username section
+        host          # Hostname section
+        dir           # Current directory section
+        git           # Git section (git_branch + git_status)
+        line_sep      # Line break
+        jobs          # Backgound jobs indicator
+        exit_code     # Exit code section
+        char          # Prompt character
+      )
+
+      # using ripgrep combined with preview
+      # find-in-file - usage: fif <searchTerm>
+      function fif() {
+        if [ ! "$#" -gt 0 ]; then echo "Need a string to search for!"; return 1; fi
+        rg --files-with-matches --no-messages "$1" | fzf --preview "highlight -O ansi -l {} 2> /dev/null | rg --colors 'match:bg:yellow' --ignore-case --pretty --context 10 '$1' || rg --ignore-case --pretty --context 10 '$1' {}"
+      }
+
+      function ls() {
+        ${pkgs.coreutils}/bin/ls --color=auto --group-directories-first "$@"
+      }
+
+      autoload -U promptinit; promptinit
+    '';
+
   };
 
-  programs.starship.enable = true;
-  programs.starship.enableZshIntegration = true;
 }
