@@ -45,8 +45,8 @@
 
     shellcheck # bash scripts 'n stuff
     shfmt # shell parser and formatter
-    
-    go_1_20 # Go programming language
+
+    go # Go programming language
 
     # Nix stuff
     cachix # adding/managing alternative binary caches hosted by Cachix
@@ -61,22 +61,6 @@
     androidenv.androidPkgs_9_0.platform-tools
     jdk
 
-    # Python 3.8
-    # python38Full
-    # python38Full.pkgs.pip
-    # python38Full.pkgs.setuptools
-    # python38Full.pkgs.wheel
-    # python38Full.pkgs.numpy
-    # python38Full.pkgs.cython
-
-    # Python 3.9
-    # python39Full
-    # python39Full.pkgs.pip
-    # python39Full.pkgs.setuptools
-    # python39Full.pkgs.wheel
-    # python39Full.pkgs.numpy
-    # python39Full.pkgs.cython
-
     # Python 3.10
     python310
     python310.pkgs.pip
@@ -87,19 +71,19 @@
     python310.pkgs.python
     python310.pkgs.cython
 
-    # still python.. but installed standalone?
-
-    # GDAL has an overlay in extra.nix
-    gdal
-
     poetry
+
+    gdal # GDAL
+
+    postgresql.out # psql cli only
 
     pkg-config
     shellcheck
     thefuck
-    postgresql.out
     openssl_1_1.dev
     bash-completion
+    
+    # security
     browserpass
     cacert
     curl
@@ -126,6 +110,7 @@
     xz
     nmap
     unzip
+    
     watchman
 
     # Shell Environment
