@@ -8,10 +8,11 @@
   programs.direnv.nix-direnv.enable = true;
 
   programs.dircolors.enable = true;
+  programs.dircolors.enableBashIntegration = false;
   programs.dircolors.enableZshIntegration = true;
 
   programs.fzf.enable = true;
-  programs.fzf.enableBashIntegration = true;
+  programs.fzf.enableBashIntegration = false;
   programs.fzf.enableZshIntegration = true;
 
   programs.ssh.enable = true;
@@ -24,7 +25,6 @@
   programs.ssh.extraConfig = "";
 
   home.packages = with pkgs; [
-    act # local github actions testing
     terraform
     cmake
     jq.bin
@@ -38,15 +38,17 @@
     ripgrep # fancy `grep`
     rsync # incremental file transfer util
     tree # depth indented directory listing
-    wget
+    wget # basic tool
+
+    act # local github actions testing
     gh # github cli tool
 
-    shellcheck
+    shellcheck # bash scripts 'n stuff
     shfmt # shell parser and formatter
-    # programming languages 
-    go_1_19
 
-    # Useful nix related tools
+    go # Go programming language
+
+    # Nix stuff
     cachix # adding/managing alternative binary caches hosted by Cachix
     niv # easy dependency management for nix projects
     nix-prefetch-scripts
@@ -55,23 +57,9 @@
     ruby
     rbenv
 
+    # for Android Studio
     androidenv.androidPkgs_9_0.platform-tools
     jdk
-    # Python 3.8
-    # python38Full
-    # python38Full.pkgs.pip
-    # python38Full.pkgs.setuptools
-    # python38Full.pkgs.wheel
-    # python38Full.pkgs.numpy
-    # python38Full.pkgs.cython
-
-    # Python 3.9
-    # python39Full
-    # python39Full.pkgs.pip
-    # python39Full.pkgs.setuptools
-    # python39Full.pkgs.wheel
-    # python39Full.pkgs.numpy
-    # python39Full.pkgs.cython
 
     # Python 3.10
     python310
@@ -83,19 +71,19 @@
     python310.pkgs.python
     python310.pkgs.cython
 
-    # still python.. but installed standalone?
-
-    # GDAL has an overlay in extra.nix
-    gdal
-
     poetry
+
+    gdal # GDAL
+
+    postgresql.out # psql cli only
 
     pkg-config
     shellcheck
     thefuck
-    postgresql.out
     openssl_1_1.dev
     bash-completion
+    
+    # security
     browserpass
     cacert
     curl
@@ -122,6 +110,7 @@
     xz
     nmap
     unzip
+    
     watchman
 
     # Shell Environment
@@ -132,5 +121,7 @@
     git-lfs
     top-git
     gradle
+    gnupg
+    pinentry
   ];
 }

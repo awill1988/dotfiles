@@ -35,6 +35,7 @@
 
       primaryUserInfo = {
         username = "adam.williams";
+        email = "adam@williams.engineer";
         fullName = "Adam Williams";
         github = "awill1988";
       };
@@ -47,9 +48,6 @@
             nixpkgs = nixpkgsConfig;
             users.users.${primaryUser.username} = {
               home = "/Users/${primaryUser.username}";
-              isNormalUser = true;
-              isSystemUser = false;
-              extraGroups = [ "wheel" ];
               shell = pkgs.zsh;
             };
             home-manager.useGlobalPkgs = true;

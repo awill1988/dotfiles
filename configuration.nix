@@ -59,7 +59,7 @@
         fonts = [ "JetBrainsMono" "FiraCode" "DroidSansMono" ];
       })
     ];
-    fontDir.enable = true;
+    fontDir.false = true;
   };
 
   # Used for backwards compatibility, please read the changelog before changing.

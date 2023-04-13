@@ -95,11 +95,11 @@ nix build \
 
 ```bash
 pushd /tmp
-nix build \                                                                            
+nix build \
     --extra-experimental-features nix-command \
     --extra-experimental-features flakes \
-    'git+ssh://git@github.com/awill1988/dotfiles?ref=develop#darwinConfigurations.bootstrap-arm.system'
-./result/sw/bin/darwin-rebuild switch --flake .#bootstrap-x86
+    'git+ssh://git@github.com/awill1988/dotfiles?ref=master#darwinConfigurations.bootstrap-arm.system' && \
+./result/sw/bin/darwin-rebuild switch --flake .#bootstrap-arm
 popd
 ```
 

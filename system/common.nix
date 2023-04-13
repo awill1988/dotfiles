@@ -17,7 +17,7 @@
   programs.zsh.enable = true;
   programs.zsh.promptInit = "";
 
-  fonts.fontDir.enable = true;
+  fonts.fontDir.enable = false;
   fonts.fonts = with pkgs;
     [ (nerdfonts.override { fonts = [ "JetBrainsMono" ]; }) ];
 }
