@@ -12,9 +12,23 @@ in {
       type = with types; nullOr string;
       default = null;
     };
+    email = mkOption {
+      type = with types; nullOr string;
+      default = null;
+    };
     github = mkOption {
       type = with types; nullOr string;
       default = null;
+    };
+    gpg = {
+      enable = mkOption {
+        type = with types; bool;
+        default = false;
+      };
+      masterKey = mkOption {
+        type = with types; nullOr string;
+        default = null;
+      };
     };
   };
 }

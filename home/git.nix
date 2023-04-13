@@ -5,6 +5,7 @@ in {
   programs.git = {
     enable = true;
     package = pkgs.git;
+    userEmail = user-info.email;
     userName = user-info.fullName;
     extraConfig = {
       core = {
@@ -31,6 +32,11 @@ in {
       rerere.enabled = true;
       status.submoduleSummary = true;
       github.user = user-info.github;
+    } // lib.optionalAttrs user-info.gpg.enable {
+      signing = {
+        key = user-info.email;
+        signByDefault = user-info.gpg.enable;
+      };
     };
   };
 }

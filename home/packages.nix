@@ -8,10 +8,11 @@
   programs.direnv.nix-direnv.enable = true;
 
   programs.dircolors.enable = true;
+  programs.dircolors.enableBashIntegration = false;
   programs.dircolors.enableZshIntegration = true;
 
   programs.fzf.enable = true;
-  programs.fzf.enableBashIntegration = true;
+  programs.fzf.enableBashIntegration = false;
   programs.fzf.enableZshIntegration = true;
 
   programs.ssh.enable = true;
@@ -24,7 +25,6 @@
   programs.ssh.extraConfig = "";
 
   home.packages = with pkgs; [
-    act # local github actions testing
     terraform
     cmake
     jq.bin
@@ -38,15 +38,17 @@
     ripgrep # fancy `grep`
     rsync # incremental file transfer util
     tree # depth indented directory listing
-    wget
+    wget # basic tool
+
+    act # local github actions testing
     gh # github cli tool
 
-    shellcheck
+    shellcheck # bash scripts 'n stuff
     shfmt # shell parser and formatter
-    # programming languages 
-    go_1_19
+    
+    go_1_20 # Go programming language
 
-    # Useful nix related tools
+    # Nix stuff
     cachix # adding/managing alternative binary caches hosted by Cachix
     niv # easy dependency management for nix projects
     nix-prefetch-scripts
@@ -55,8 +57,10 @@
     ruby
     rbenv
 
+    # for Android Studio
     androidenv.androidPkgs_9_0.platform-tools
     jdk
+
     # Python 3.8
     # python38Full
     # python38Full.pkgs.pip
@@ -132,5 +136,7 @@
     git-lfs
     top-git
     gradle
+    gnupg
+    pinentry
   ];
 }

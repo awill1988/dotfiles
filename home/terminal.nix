@@ -1,5 +1,5 @@
 { config, pkgs, lib, ... }:
-let fontFamily = "JetBrainsMono Nerd Font";
+let fontFamily = "JetBrainsMono";
 in {
   programs = {
     alacritty.enable = true;
