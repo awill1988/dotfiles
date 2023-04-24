@@ -105,6 +105,33 @@
     shortcut = "a";
     terminal = "screen-256color";
 
+    plugins = with pkgs.tmuxPlugins; [
+      sensible
+      yank
+      {
+        plugin = dracula;
+        extraConfig = ''
+          # -------------------- Plugins ------------------------
+          # -----------------------------------------------------
+          set -g @plugin 'tmux-plugins/tpm'
+          set -g @plugin 'tmux-plugins/tmux-sensible'
+          set -g @plugin 'dracula/tmux'
+          set -g @plugin 'tmux-plugins/tmux-resurrect'
+          set -g @plugin 'tmux-plugins/tmux-continuum'
+          set -g @plugin 'tmux-plugins/tmux-yank'
+          set -g @plugin 'nhdaly/tmux-better-mouse-mode'
+          set -g @plugin 'dracula/tmux'
+
+          set -g @emulate-scroll-for-no-mouse-alternate-buffer "on"
+          set -g @dracula-plugins "cpu-usage ram-usage git"
+          set -g @dracula-show-powerline true
+          set -g @dracula-show-left-icon session
+          set -g @dracula-show-flags true
+          set -g @dracula-refresh-rate 10
+        '';
+      }
+    ];
+
     extraConfig = ''
       bind-key C-b last-window
       set -g history-limit 10000
@@ -128,24 +155,8 @@
       unbind C-S
       bind C-Y set-window-option synchronize-panes
 
-      # -------------------- Plugins ------------------------
-      # -----------------------------------------------------
-      set -g @plugin 'tmux-plugins/tpm'
-      set -g @plugin 'tmux-plugins/tmux-sensible'
-      set -g @plugin 'dracula/tmux'
-      set -g @plugin 'tmux-plugins/tmux-resurrect'
-      set -g @plugin 'tmux-plugins/tmux-continuum'
-      set -g @plugin 'tmux-plugins/tmux-yank'
-      set -g @plugin 'nhdaly/tmux-better-mouse-mode'
-      set -g @emulate-scroll-for-no-mouse-alternate-buffer "on"
-      set -g @plugin 'dracula/tmux'
-      set -g @dracula-plugins "cpu-usage ram-usage git"
-      set -g @dracula-show-powerline true
-      set -g @dracula-show-left-icon session
-      set -g @dracula-show-flags true
-
       # Initialize TMUX plugin manager (keep this line at the very bottom of tmux.conf)
-      run 'plugins/tpm/tpm'
+      run '$HOME/.tmux/plugins/tpm/tpm'
     '';
   };
 
