@@ -20,9 +20,8 @@
 
     # Android SDK Environment Variables
     ANDROID_JAVA_HOME = "${pkgs.jdk.home}";
-<<<<<<< Updated upstream
-    # ALLOW_NINJA_ENV = true;
-    # USE_CCACHE = 1;
+    ALLOW_NINJA_ENV = true;
+    USE_CCACHE = 1;
 
     # Rust
     RUSTUP_HOME = "$XDG_DATA_HOME/rustup";
@@ -35,12 +34,8 @@
 
     PATH =
       "$CARGO_HOME:$GOPATH:$HOME/.rbenv/plugins/ruby-build/bin:$HOME/.local/bin:$HOME/google-cloud-sdk/bin:$PATH";
-=======
-    ALLOW_NINJA_ENV = true;
-    USE_CCACHE = 1;
-    # for kubectl
-    USE_GKE_GCLOUD_AUTH_PLUGIN = 1;
->>>>>>> Stashed changes
+
+    USE_GKE_GCLOUD_AUTH_PLUGIN = 1; # for kubectl
   };
 
   home.file.".config/starship.toml".text = ''
