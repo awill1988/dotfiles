@@ -35,7 +35,7 @@
 
       primaryUserInfo = {
         username = "adam.williams";
-        email = "adam@williams.engineer";
+        email = "adam.williams@onxmaps.com";
         fullName = "Adam Williams";
         github = "awill1988";
       };

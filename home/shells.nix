@@ -20,6 +20,7 @@
 
     # Android SDK Environment Variables
     ANDROID_JAVA_HOME = "${pkgs.jdk.home}";
+<<<<<<< Updated upstream
     # ALLOW_NINJA_ENV = true;
     # USE_CCACHE = 1;
 
@@ -34,6 +35,12 @@
 
     PATH =
       "$CARGO_HOME:$GOPATH:$HOME/.rbenv/plugins/ruby-build/bin:$HOME/.local/bin:$HOME/google-cloud-sdk/bin:$PATH";
+=======
+    ALLOW_NINJA_ENV = true;
+    USE_CCACHE = 1;
+    # for kubectl
+    USE_GKE_GCLOUD_AUTH_PLUGIN = 1;
+>>>>>>> Stashed changes
   };
 
   home.file.".config/starship.toml".text = ''
@@ -252,6 +259,14 @@
 
       function ls() {
         ${pkgs.coreutils}/bin/ls --color=auto --group-directories-first "$@"
+      }
+
+      function optimize-screen-record() {
+        filename=$1
+        mov_file="''${filename%.*}.mov"
+        mp4_file="''${filename%.*}.mp4"
+        ${pkgs.ffmpeg}/bin/ffmpeg -i $mov_file -c:v libx265 -an -x265-params crf=25 $mp4_file
+        ${pkgs.ffmpeg}/bin/ffmpeg -i $mp4_file -filter_complex "[0:v]setpts=0.5*PTS[v];[0:a]atempo=2[a]" -map "[v]" -map "[a]" $mp4_file
       }
 
       autoload -U promptinit; promptinit

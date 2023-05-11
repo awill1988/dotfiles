@@ -94,8 +94,16 @@
 
     poetry
 
+<<<<<<< Updated upstream
     # visualizing Python profiling
     flamegraph
+=======
+    gdal # GDAL
+
+    gfortran
+
+    postgresql.out # psql cli only
+>>>>>>> Stashed changes
 
     pkg-config
     shellcheck
@@ -144,5 +152,9 @@
     gradle
     gnupg
     pinentry
+
+    beam.packages.erlangR25.elixir_1_14
+    erlangR25
+    gdb
   ];
 }
