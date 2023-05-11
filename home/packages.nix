@@ -60,6 +60,22 @@
     # for Android Studio
     androidenv.androidPkgs_9_0.platform-tools
     jdk
+    k9s
+    # Python 3.8
+    # python38Full
+    # python38Full.pkgs.pip
+    # python38Full.pkgs.setuptools
+    # python38Full.pkgs.wheel
+    # python38Full.pkgs.numpy
+    # python38Full.pkgs.cython
+
+    # Python 3.9
+    # python39Full
+    # python39Full.pkgs.pip
+    # python39Full.pkgs.setuptools
+    # python39Full.pkgs.wheel
+    # python39Full.pkgs.numpy
+    # python39Full.pkgs.cython
 
     # Python 3.10
     python310
@@ -71,18 +87,22 @@
     python310.pkgs.python
     python310.pkgs.cython
 
+    postgresql.out # psql cli only
+
+    # GDAL has an overlay in extra.nix
+    gdal
+
     poetry
 
-    gdal # GDAL
-
-    postgresql.out # psql cli only
+    # visualizing Python profiling
+    flamegraph
 
     pkg-config
     shellcheck
     thefuck
     openssl_1_1.dev
     bash-completion
-    
+
     # security
     browserpass
     cacert
@@ -91,6 +111,7 @@
     fd
     ffmpeg
     findutils
+    libwebp
     gnugrep
     gnumake
     gnuplot
@@ -110,7 +131,7 @@
     xz
     nmap
     unzip
-    
+
     watchman
 
     # Shell Environment

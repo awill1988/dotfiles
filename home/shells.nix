@@ -10,13 +10,30 @@
     TERM = "xterm-256color";
     VISUAL = "${pkgs.vim}/bin/vim";
     CLICOLOR = true;
-    PATH =
-      "$HOME/.rbenv/plugins/ruby-build/bin:$HOME/.local/bin:$HOME/google-cloud-sdk/bin:$PATH";
+
+    # Golang Environment Variables
+    GO111MODULE = "on";
+    GOPATH = "$HOME/go";
+
     PKG_CONFIG_PATH =
       "$PKG_CONFIG_PATH:${pkgs.openssl_1_1.dev}/lib/pkgconfig:${pkgs.gdal}/lib/pkgconfig";
+
+    # Android SDK Environment Variables
     ANDROID_JAVA_HOME = "${pkgs.jdk.home}";
-    ALLOW_NINJA_ENV = true;
-    USE_CCACHE = 1;
+    # ALLOW_NINJA_ENV = true;
+    # USE_CCACHE = 1;
+
+    # Rust
+    RUSTUP_HOME = "$XDG_DATA_HOME/rustup";
+    CARGO_HOME = "$XDG_DATA_HOME/cargo";
+
+    # NodeJS
+    # NPM_CONFIG_TMP="$XDG_RUNTIME_DIR/npm";
+    # NPM_CONFIG_CACHE="$XDG_CACHE_HOME/npm";
+    # NPM_CACHE_PREFIX="$XDG_CACHE_HOME/npm";
+
+    PATH =
+      "$CARGO_HOME:$GOPATH:$HOME/.rbenv/plugins/ruby-build/bin:$HOME/.local/bin:$HOME/google-cloud-sdk/bin:$PATH";
   };
 
   home.file.".config/starship.toml".text = ''
