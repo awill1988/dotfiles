@@ -3,7 +3,7 @@ final: prev: {
   # Go - Programming Language
   # ---------------------------------------------------------------------------------------
   go = prev.go.overrideAttrs (old:
-    let version = "1.20.3";
+    let version = "1.20.4";
     in {
       name = "go-${version}";
       inherit version;
