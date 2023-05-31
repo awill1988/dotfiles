@@ -1,5 +1,6 @@
 { config, pkgs, lib, ... }: {
   home.packages = with pkgs; [
+
     # Shell Environment
     # -------------------------------
     bash-completion
@@ -27,7 +28,7 @@
     androidenv.androidPkgs_9_0.platform-tools
 
     # Golang
-    go
+    go_1_19
 
     # Python
     python310
@@ -92,16 +93,16 @@
     jq.bin # json query
 
     flamegraph # visualizing / analyzing Python
-    
+
     postgresql.out # psql cli only
-    
+
     pre-commit # git VCS precommit hooks
 
     shellcheck # bash scripts 'n stuff
     shfmt # shell parser and formatter
 
     watchman # file watching by Meta
-    
+
     # Network Utilities
     # -------------------------------
     socat
@@ -120,8 +121,8 @@
     gettext # internationalization and localization system
     gfortran
     gnumake # analog for `make`
-    pkg-config # unified interface for querying installed libraries for 
-               # the purpose of compiling software that depends on them
+    pkg-config # unified interface for querying installed libraries for
+    # the purpose of compiling software that depends on them
 
     # Security / IAM
     # -------------------------------
@@ -130,6 +131,9 @@
     gnupg
     openssl_1_1.dev
     pinentry
+
+    # Convert Bitmap images on command-line
+    imagemagick
   ];
 
   programs.home-manager.enable = true;

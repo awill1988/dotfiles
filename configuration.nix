@@ -32,10 +32,10 @@
 
   users = {
     users = {
-      adam = {
+      adam.williams = {
         shell = pkgs.zsh;
         description = "Adam Williams";
-        home = "/Users/adam";
+        home = "/Users/adam.williams";
       };
     };
   };

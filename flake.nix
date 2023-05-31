@@ -34,8 +34,8 @@
       nixosStateVersion = "22.11";
 
       primaryUserInfo = {
-        username = "adam";
-        email = "adamwt88@gmail.com";
+        username = "adam.williams";
+        email = "adam.williams@onxmaps.com";
         fullName = "Adam Williams";
         github = "awill1988";
       };

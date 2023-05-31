@@ -14,9 +14,8 @@
     # Golang Environment Variables
     GO111MODULE = "on";
     GOPATH = "$HOME/go";
-
     PKG_CONFIG_PATH =
-      "$PKG_CONFIG_PATH:${pkgs.openssl_1_1.dev}/lib/pkgconfig:${pkgs.gdal}/lib/pkgconfig";
+      "${pkgs.openssl_1_1.dev}/lib/pkgconfig:${pkgs.gdal}/lib/pkgconfig";
 
     # Android SDK Environment Variables
     ANDROID_JAVA_HOME = "${pkgs.jdk.home}";
@@ -24,8 +23,15 @@
     USE_CCACHE = 1;
 
     # Rust
-    RUSTUP_HOME = "$XDG_DATA_HOME/rustup";
-    CARGO_HOME = "$XDG_DATA_HOME/cargo";
+    RUSTUP_HOME = "$HOME/rustup";
+    CARGO_HOME = "$HOME/cargo";
+
+    # OpenSSL, iconv is usually some kind of build dependency
+    C_INCLUDE_PATH = "${pkgs.openssl_1_1.dev}/include:${pkgs.libiconv}/include";
+    CPLUS_INCLUDE_PATH =
+      "${pkgs.openssl_1_1.dev}/include:${pkgs.libiconv}/include";
+    LD_LIBRARY_PATH = "${pkgs.openssl_1_1.dev}/lib:${pkgs.libiconv}/lib";
+    LIBRARY_PATH = "${pkgs.openssl_1_1.dev}/lib:${pkgs.libiconv}/lib";
 
     # NodeJS
     # NPM_CONFIG_TMP="$XDG_RUNTIME_DIR/npm";
@@ -198,7 +204,6 @@
         "command-not-found"
         "npm"
         "golang"
-        "thefuck"
         "history-substring-search"
         "tmux"
       ];
@@ -220,11 +225,7 @@
         ${pkgs.gnupg}/bin/gpgconf --launch gpg-agent
       fi
 
-      eval "$(/opt/homebrew/bin/brew shellenv)"
-
       source "$HOME/.cargo/env"
-        
-      eval "$(thefuck --alias)"
 
       eval "$(rbenv init -)"
     '';
@@ -247,21 +248,40 @@
 
       # using ripgrep combined with preview
       # find-in-file - usage: fif <searchTerm>
-      function fif() {
+      function fif {
         if [ ! "$#" -gt 0 ]; then echo "Need a string to search for!"; return 1; fi
         rg --files-with-matches --no-messages "$1" | fzf --preview "highlight -O ansi -l {} 2> /dev/null | rg --colors 'match:bg:yellow' --ignore-case --pretty --context 10 '$1' || rg --ignore-case --pretty --context 10 '$1' {}"
       }
 
-      function ls() {
+      function ls {
         ${pkgs.coreutils}/bin/ls --color=auto --group-directories-first "$@"
       }
 
-      function optimize-screen-record() {
+      function optimize-screen-record {
         filename=$1
         mov_file="''${filename%.*}.mov"
         mp4_file="''${filename%.*}.mp4"
         ${pkgs.ffmpeg}/bin/ffmpeg -i $mov_file -c:v libx265 -an -x265-params crf=25 $mp4_file
         ${pkgs.ffmpeg}/bin/ffmpeg -i $mp4_file -filter_complex "[0:v]setpts=0.5*PTS[v];[0:a]atempo=2[a]" -map "[v]" -map "[a]" $mp4_file
+      }
+
+      function create_cacert {
+        domain=$1
+        echo -n | ${pkgs.openssl} s_client -servername $domain -connect $domain:443 2>/dev/null | sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' > $domain.pem
+      }
+
+      function export_cloudsmith_onx {
+        export CLOUDSMITH_TOKEN=$(gcloud --project=onx-ci secrets versions access latest --secret="cloudsmith_adam-williams");
+        export CARGO_REGISTRIES_CLOUDSMITH_INDEX="sparse+https://dl.cloudsmith.io/$CLOUDSMITH_TOKEN/onxmaps-6aJ/onx-backend-api/cargo/"
+      }
+
+      function mk_favicon {
+        set -u
+        if test -d $2; then
+          convert -resize x16 -gravity center -background transparent -extent 16x16 "$1" "$2/favicon-16x16.ico"
+          convert -resize x32 -gravity center -background transparent -extent 32x32 "$1" "$2/favicon-32x32.ico"
+          convert -resize x64 -gravity center -background transparent -extent 64x64 "$1" "$2/favicon-64x64.ico"
+        fi
       }
 
       autoload -U promptinit; promptinit
