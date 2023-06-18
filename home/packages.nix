@@ -41,9 +41,16 @@
     python310.pkgs.cython
     poetry # python package / project cli
 
+    # NodeJS
+    nodejs
+
     # Ruby
     ruby
     rbenv
+
+    # macOS/iOS Development
+    # -------------------------------
+    fastlane
 
     # Domain-specific Languages
     # -------------------------------

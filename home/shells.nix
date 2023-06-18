@@ -1,5 +1,10 @@
 { config, pkgs, lib, ... }: {
   home.sessionVariables = {
+
+    XDG_CONFIG_HOME = "$HOME/.config";
+    XDG_DATA_HOME = "$HOME/.local/share";
+    XDG_CACHE_HOME = "$HOME/.cache";
+
     GPG_TTY = "$TTY";
     LC_CTYPE = "en_US.UTF-8";
     LEDGER_COLOR = "true";
@@ -34,14 +39,14 @@
     LIBRARY_PATH = "${pkgs.openssl_1_1.dev}/lib:${pkgs.libiconv}/lib";
 
     # NodeJS
-    # NPM_CONFIG_TMP="$XDG_RUNTIME_DIR/npm";
-    # NPM_CONFIG_CACHE="$XDG_CACHE_HOME/npm";
-    # NPM_CACHE_PREFIX="$XDG_CACHE_HOME/npm";
+    NPM_CONFIG_PREFIX = "$HOME/.config/npm";
+    NPM_CACHE_PREFIX = "$HOME/.cache/npm";
 
     PATH =
-      "$CARGO_HOME:$GOPATH:$HOME/.rbenv/plugins/ruby-build/bin:$HOME/.local/bin:$HOME/google-cloud-sdk/bin:$PATH";
+      "$NPM_CONFIG_PREFIX/bin:$CARGO_HOME:$GOPATH:$HOME/.rbenv/plugins/ruby-build/bin:$HOME/.local/bin:$HOME/google-cloud-sdk/bin:$PATH";
 
     USE_GKE_GCLOUD_AUTH_PLUGIN = 1; # for kubectl
+
   };
 
   home.file.".config/starship.toml".text = ''
@@ -283,6 +288,9 @@
           convert -resize x64 -gravity center -background transparent -extent 64x64 "$1" "$2/favicon-64x64.ico"
         fi
       }
+
+      # secrets
+      [[ -f "$HOME/.env" ]] && source "$HOME/.env"
 
       autoload -U promptinit; promptinit
     '';
