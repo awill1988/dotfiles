@@ -284,6 +284,9 @@
         fi
       }
 
+      # secrets
+      [[ -f "$HOME/.env" ]] && source "$HOME/.env"
+
       autoload -U promptinit; promptinit
     '';
 
