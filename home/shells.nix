@@ -43,7 +43,7 @@
     NPM_CACHE_PREFIX = "$HOME/.cache/npm";
 
     PATH =
-      "$NPM_CONFIG_PREFIX/bin:$CARGO_HOME:$GOPATH:$HOME/.rbenv/plugins/ruby-build/bin:$HOME/.local/bin:$HOME/google-cloud-sdk/bin:$PATH";
+      "$NPM_CONFIG_PREFIX/bin:$CARGO_HOME:$GOPATH:$HOME/bin:$HOME/.rbenv/plugins/ruby-build/bin:$HOME/.local/bin:$HOME/google-cloud-sdk/bin:$PATH";
 
     USE_GKE_GCLOUD_AUTH_PLUGIN = 1; # for kubectl
 
