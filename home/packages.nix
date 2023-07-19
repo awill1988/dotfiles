@@ -31,14 +31,15 @@
     go_1_19
 
     # Python
-    python310
-    python310.pkgs.pip
-    python310.pkgs.setuptools
-    python310.pkgs.wheel
-    python310.pkgs.gdal
-    python310.pkgs.numpy
-    python310.pkgs.python
-    python310.pkgs.cython
+    python3
+    python3.pkgs.pip
+    python3.pkgs.setuptools
+    python3.pkgs.wheel
+    python3.pkgs.gdal
+    python3.pkgs.numpy
+    python3.pkgs.python
+    python3.pkgs.cython
+
     poetry # python package / project cli
 
     # Ruby
@@ -63,6 +64,7 @@
 
     # Command-Line Utilities
     # -------------------------------
+    cloudsmith-cli.out # private package hosting
 
     unixtools.top # observe OS processes
 
@@ -134,6 +136,8 @@
 
     # Convert Bitmap images on command-line
     imagemagick
+
+    bazelisk
   ];
 
   programs.home-manager.enable = true;

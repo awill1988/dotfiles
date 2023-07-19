@@ -285,6 +285,9 @@
       }
 
       autoload -U promptinit; promptinit
+
+      mkdir -p $HOME/bin
+      ln -sf $(which bazelisk) $HOME/bin/bazel
     '';
 
   };

@@ -1,4 +1,77 @@
 final: prev: {
+  python3 = prev.python3.override {
+    # Careful, we're using a different final and prev here!
+    packageOverrides = final: prev: {
+      cloudsmith-api = prev.buildPythonPackage rec {
+        pname = "cloudsmith-api";
+        version = "2.0.7";
+        format = "wheel";
+
+        src = prev.fetchPypi {
+          pname = "cloudsmith_api";
+          inherit format version;
+          hash = "sha256-Vw5ifMJ+gwXecYjSe8QKkq+RtrBWxx3B/LdA80ZxuxU=";
+        };
+
+        propagatedBuildInputs = with prev; [
+          certifi
+          python-dateutil
+          six
+          urllib3
+        ];
+
+        doCheck = false;
+
+        pythonImportsCheck = [ "cloudsmith_api" ];
+      };
+    };
+  };
+
+  # ---------------------------------------------------------------------------------------
+  # Cloudsmith CLI
+  # ---------------------------------------------------------------------------------------
+  cloudsmith-cli = final.python3.pkgs.buildPythonPackage rec {
+    pname = "cloudsmith-cli";
+    version = "0.43.0";
+    format = "wheel";
+
+    src = final.python3.pkgs.fetchPypi {
+      pname = "cloudsmith_cli";
+      inherit format version;
+      hash = "sha256-14IearahRIzk18CYwijr6ncKOYuuJUnGa+7IeTsdkw8=";
+    };
+
+    propagatedBuildInputs = with final.python3.pkgs; [
+      click
+      click-configfile
+      click-didyoumean
+      click-spinner
+      cloudsmith-api
+      colorama
+      future
+      requests
+      requests-toolbelt
+      semver
+      simplejson
+      six
+      setuptools # needs pkg_resources
+    ];
+
+    # Wheels have no tests
+    doCheck = false;
+
+    pythonImportsCheck = [ "cloudsmith_cli" ];
+
+    meta = with final.lib; {
+      homepage = "https://help.cloudsmith.io/docs/cli/";
+      description = "Cloudsmith Command Line Interface";
+      changelog =
+        "https://github.com/cloudsmith-io/cloudsmith-cli/blob/v${version}/CHANGELOG.md";
+      maintainers = with maintainers; [ ];
+      license = licenses.asl20;
+      platforms = with platforms; unix;
+    };
+  };
   # ---------------------------------------------------------------------------------------
   # GDAL - Industry standard transformation geometries
   # ---------------------------------------------------------------------------------------
@@ -49,8 +122,8 @@ final: prev: {
         doxygen
         graphviz
         pkg-config
-        python310.pkgs.setuptools
-        python310.pkgs.wrapPython
+        python3.pkgs.setuptools
+        python3.pkgs.wrapPython
         swig
       ];
 
@@ -118,8 +191,8 @@ final: prev: {
           tiledb
           zlib
           zstd
-          python310
-          python310.pkgs.numpy
+          python3
+          python3.pkgs.numpy
         ] ++ final.lib.optionals (!final.stdenv.isDarwin) [
           # tests for formats enabled by these packages fail on macos
           arrow-cpp
@@ -136,7 +209,7 @@ final: prev: {
       preCheck = ''
         pushd ../autotest
         export HOME=$(mktemp -d)
-        export PYTHONPATH="$out/${final.python310.sitePackages}:$PYTHONPATH"
+        export PYTHONPATH="$out/${final.python3.sitePackages}:$PYTHONPATH"
       '';
 
       postInstall = ''
@@ -150,7 +223,7 @@ final: prev: {
       # defining (overriding) to override so Python env is the same (special case)
       installCheckInputs = [ ];
 
-      nativeInstallCheckInputs = with final.python310.pkgs; [
+      nativeInstallCheckInputs = with final.python3.pkgs; [
         pytestCheckHook
         pytest-env
         lxml
