@@ -15,7 +15,7 @@
     GO111MODULE = "on";
     GOPATH = "$HOME/go";
     PKG_CONFIG_PATH =
-      "${pkgs.openssl_1_1.dev}/lib/pkgconfig:${pkgs.gdal}/lib/pkgconfig";
+      "${pkgs.openssl}/lib/pkgconfig:${pkgs.gdal}/lib/pkgconfig";
 
     # Android SDK Environment Variables
     ANDROID_JAVA_HOME = "${pkgs.jdk.home}";
@@ -27,11 +27,10 @@
     CARGO_HOME = "$HOME/cargo";
 
     # OpenSSL, iconv is usually some kind of build dependency
-    C_INCLUDE_PATH = "${pkgs.openssl_1_1.dev}/include:${pkgs.libiconv}/include";
-    CPLUS_INCLUDE_PATH =
-      "${pkgs.openssl_1_1.dev}/include:${pkgs.libiconv}/include";
-    LD_LIBRARY_PATH = "${pkgs.openssl_1_1.dev}/lib:${pkgs.libiconv}/lib";
-    LIBRARY_PATH = "${pkgs.openssl_1_1.dev}/lib:${pkgs.libiconv}/lib";
+    C_INCLUDE_PATH = "${pkgs.openssl.dev}/include:${pkgs.libiconv}/include";
+    CPLUS_INCLUDE_PATH = "${pkgs.openssl.dev}/include:${pkgs.libiconv}/include";
+    LD_LIBRARY_PATH = "${pkgs.openssl.dev}/lib:${pkgs.libiconv}/lib";
+    LIBRARY_PATH = "${pkgs.openssl.dev}/lib:${pkgs.libiconv}/lib";
 
     # NodeJS
     # NPM_CONFIG_TMP="$XDG_RUNTIME_DIR/npm";
