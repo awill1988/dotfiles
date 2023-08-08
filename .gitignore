@@ -1,2 +1,3 @@
 # ignore the result from nix builds
 result
+*.patch
