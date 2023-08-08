@@ -10,15 +10,15 @@
 
     # Geospatial
     # -------------------------------
-    gdal # has an overlay in extra.nix
+    gdal
 
     # Programming Languages
     # -------------------------------
 
     # Elixir / Erlang (OTP)
-    beam.packages.erlangR25.elixir_1_14
-    erlangR25
-    gdb
+    # beam.packages.erlangR25.elixir_1_14
+    # erlangR25
+    # gdb
 
     # java
     gradle
@@ -131,7 +131,6 @@
     browserpass
     cacert
     gnupg
-    openssl_1_1.dev
     pinentry
 
     # Convert Bitmap images on command-line

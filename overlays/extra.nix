@@ -164,7 +164,6 @@ final: prev: {
 
           # Security
           cryptopp
-          openssl_1_1.dev
           pcre2
 
           # Data

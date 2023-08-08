@@ -19,7 +19,7 @@
 
     # Android SDK Environment Variables
     ANDROID_JAVA_HOME = "${pkgs.jdk.home}";
-    ALLOW_NINJA_ENV = true;
+    ALLOW_NINJA_ENV = "true";
     USE_CCACHE = 1;
 
     # Rust
@@ -289,7 +289,8 @@
       ln -sf $(which bazelisk) $HOME/bin/bazel
     '';
 
-    syntaxHighlighting.enable = true;
+    enableSyntaxHighlighting = true;
+
   };
 
 }

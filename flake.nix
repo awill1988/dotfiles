@@ -2,13 +2,13 @@
   description = "Adam Williams' dotfiles";
 
   inputs = {
-    nixpkgs-unstable.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
+    nixpkgs-stable.url = "github:NixOS/nixpkgs/23.05";
 
-    darwin.url = "github:LnL7/nix-darwin";
-    darwin.inputs.nixpkgs.follows = "nixpkgs-unstable";
+    darwin.url = "github:LnL7/nix-darwin/release-23.05";
+    darwin.inputs.nixpkgs.follows = "nixpkgs-stable";
 
-    home-manager.url = "github:nix-community/home-manager";
-    home-manager.inputs.nixpkgs.follows = "nixpkgs-unstable";
+    home-manager.url = "github:nix-community/home-manager/release-23.05";
+    home-manager.inputs.nixpkgs.follows = "nixpkgs-stable";
 
     flake-utils.url = "github:numtide/flake-utils";
   };
@@ -16,7 +16,7 @@
   outputs = { self, nixpkgs, darwin, home-manager, flake-utils, ... }@inputs:
     let
       inherit (darwin.lib) darwinSystem;
-      inherit (inputs.nixpkgs-unstable.lib)
+      inherit (inputs.nixpkgs-stable.lib)
         attrValues makeOverridable optionalAttrs singleton;
 
       systems = [ "x86_64-darwin" "aarch64-darwin" ];
