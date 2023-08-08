@@ -288,9 +288,8 @@
       mkdir -p $HOME/bin
       ln -sf $(which bazelisk) $HOME/bin/bazel
     '';
-    
-    syntaxHighlighting.enable = true;
 
+    syntaxHighlighting.enable = true;
   };
 
 }
