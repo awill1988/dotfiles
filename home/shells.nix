@@ -173,7 +173,6 @@
     enable = true;
     enableCompletion = true;
     enableAutosuggestions = true;
-    enableSyntaxHighlighting = true;
     completionInit = ''
       autoload bashcompinit && bashcompinit
       autoload -Uz compinit && compinit
@@ -289,6 +288,8 @@
       mkdir -p $HOME/bin
       ln -sf $(which bazelisk) $HOME/bin/bazel
     '';
+    
+    syntaxHighlighting.enable = true;
 
   };
 
