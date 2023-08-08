@@ -9,7 +9,7 @@
     PAGER = "less";
     TERM = "xterm-256color";
     VISUAL = "${pkgs.vim}/bin/vim";
-    CLICOLOR = true;
+    CLICOLOR = "true";
 
     # Golang Environment Variables
     GO111MODULE = "on";
