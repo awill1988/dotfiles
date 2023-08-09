@@ -264,8 +264,9 @@
       }
 
       function create_cacert {
+        set -u
         domain=$1
-        echo -n | ${pkgs.openssl} s_client -servername $domain -connect $domain:443 2>/dev/null | sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' > $domain.pem
+        echo -n | ${pkgs.openssl}/bin/openssl s_client -servername $domain -connect $domain:443 2>/dev/null | sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' > $domain.pem
       }
 
       function export_cloudsmith_onx {
@@ -299,6 +300,10 @@
 
       mkdir -p $HOME/bin
       ln -sf $(which bazelisk) $HOME/bin/bazel
+
+      if test -f $HOME/.env; then
+        source $HOME/.env;
+      fi
     '';
 
     enableSyntaxHighlighting = true;
