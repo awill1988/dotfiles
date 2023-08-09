@@ -284,6 +284,19 @@
         fi
       }
 
+      function get_legacy_token {
+        set -u
+        app=$1
+        export ONX_API_TOKEN="$(
+          curl -q "https://$ONX_API_HOST/v1/tokens" \
+          -X POST \
+          -H 'content-type: application/json' \
+          -H 'onx-application-id: $app' \
+          --data "{\"email\": \"$ONX_ACCOUNT_EMAIL\",\"password\": \"$ONX_ACCOUNT_PASSWORD\"}" \
+          | jq -r '.token'
+        )"
+      }
+
       autoload -U promptinit; promptinit
 
       mkdir -p $HOME/bin
