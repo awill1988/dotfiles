@@ -62,6 +62,8 @@
     # -------------------------------
     k9s # kubernetes
 
+    dive # explore container filesystem
+
     # Command-Line Utilities
     # -------------------------------
     cloudsmith-cli.out # private package hosting
