@@ -28,7 +28,7 @@
     androidenv.androidPkgs_9_0.platform-tools
 
     # Golang
-    go_1_19
+    go_1_20
 
     # Python
     python3
@@ -41,6 +41,10 @@
     python3.pkgs.cython
 
     poetry # python package / project cli
+
+    luarocks
+
+    grpcurl
 
     # Ruby
     ruby
@@ -61,8 +65,6 @@
     # Terminal UIs
     # -------------------------------
     k9s # kubernetes
-
-    dive # explore container filesystem
 
     # Command-Line Utilities
     # -------------------------------

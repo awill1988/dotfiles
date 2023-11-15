@@ -38,7 +38,7 @@
     # NPM_CACHE_PREFIX="$XDG_CACHE_HOME/npm";
 
     PATH =
-      "$CARGO_HOME:$GOPATH:$HOME/.rbenv/plugins/ruby-build/bin:$HOME/.local/bin:$HOME/google-cloud-sdk/bin:$PATH";
+      "$CARGO_HOME:$GOPATH/bin:$HOME/.rbenv/plugins/ruby-build/bin:$HOME/.local/bin:$HOME/google-cloud-sdk/bin:$PATH";
 
     USE_GKE_GCLOUD_AUTH_PLUGIN = 1; # for kubectl
   };
@@ -179,7 +179,7 @@
     '';
     cdpath = [ "." "~" ];
     dotDir = ".config/zsh";
-
+    syntaxHighlighting = { enable = true; };
     plugins = [{
       name = "git-extra-commands";
       src = pkgs.fetchFromGitHub {
@@ -296,6 +296,19 @@
         )"
       }
 
+      function decode_x509_crt {
+        set -u
+        loc=$1
+        openssl x509 -in $loc -text -noout
+      }
+
+      function owner {
+        set -u
+        filepath=$(realpath "$1")
+        file_info=$(stat -f "%Su \033[1;36m(%u)\033[0m, %Sg \033[1;36m(%g)\033[0m" "$filepath")
+        echo -e "$file_info"
+      }
+
       autoload -U promptinit; promptinit
 
       mkdir -p $HOME/bin
@@ -304,10 +317,9 @@
       if test -f $HOME/.env; then
         source $HOME/.env;
       fi
+
+      alias dive="docker run -ti --rm  -v /var/run/docker.sock:/var/run/docker.sock wagoodman/dive"
     '';
-
-    enableSyntaxHighlighting = true;
-
   };
 
 }
