@@ -14,11 +14,9 @@
 
     # Programming Languages
     # -------------------------------
-
     # Elixir / Erlang (OTP)
-    # beam.packages.erlangR25.elixir_1_14
-    # erlangR25
-    # gdb
+    beam.packages.erlangR26.elixir_1_14
+    erlangR26
 
     # java
     gradle
@@ -28,7 +26,9 @@
     androidenv.androidPkgs_9_0.platform-tools
 
     # Golang
-    go_1_20
+    go
+
+    nodejs
 
     # Python
     python3
@@ -64,11 +64,10 @@
 
     # Terminal UIs
     # -------------------------------
-    k9s # kubernetes
+    # k9s # kubernetes
 
     # Command-Line Utilities
     # -------------------------------
-    cloudsmith-cli.out # private package hosting
 
     unixtools.top # observe OS processes
 
