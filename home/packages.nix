@@ -8,46 +8,31 @@
     oh-my-zsh
     zsh
 
-    # Geospatial
-    # -------------------------------
-    gdal
-
     # Programming Languages
     # -------------------------------
     # Elixir / Erlang (OTP)
-    beam.packages.erlangR26.elixir_1_14
-    erlangR26
-
+    elixir_1_17
+    erlang_r27
+    (pkgs.writeScriptBin "install-elixir-escripts" ''
+      #!/bin/sh
+      mix local.hex --force
+      mix local.rebar --force
+      mix escript.install --force hex protobuf
+    '')
     # java
     gradle
     jdk
 
-    # for Android Studio
-    androidenv.androidPkgs_9_0.platform-tools
-
     # Golang
     go
 
-    nodejs
-
-    # Python
-    python3
-    python3.pkgs.pip
-    python3.pkgs.setuptools
-    python3.pkgs.wheel
-    python3.pkgs.gdal
-    python3.pkgs.numpy
-    python3.pkgs.python
-    python3.pkgs.cython
-
-    poetry # python package / project cli
-
     luarocks
+    lua
+    lua.pkgs.lua-resty-core
 
     grpcurl
 
     # Ruby
-    ruby
     rbenv
 
     # Domain-specific Languages
@@ -93,7 +78,6 @@
 
     # GitHub.com
     act # local github actions testing
-    gh # github cli tool
 
     jq.bin # json query
 
@@ -105,8 +89,6 @@
 
     shellcheck # bash scripts 'n stuff
     shfmt # shell parser and formatter
-
-    watchman # file watching by Meta
 
     # Network Utilities
     # -------------------------------
@@ -124,7 +106,6 @@
     autoconf # producing configure scripts where a Bourne shell is available
     automake # generates one or more Makefile.in from files called Makefile.am
     gettext # internationalization and localization system
-    gfortran
     gnumake # analog for `make`
     pkg-config # unified interface for querying installed libraries for
     # the purpose of compiling software that depends on them
@@ -134,12 +115,15 @@
     browserpass
     cacert
     gnupg
-    pinentry
 
     # Convert Bitmap images on command-line
     imagemagick
 
     bazelisk
+
+    zig
+    xz
+    cmake
   ];
 
   programs.home-manager.enable = true;

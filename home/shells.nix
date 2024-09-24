@@ -11,11 +11,11 @@
     VISUAL = "${pkgs.vim}/bin/vim";
     CLICOLOR = "true";
 
+    ELIXIR_PATH = "$HOME/.mix/escripts";
+
     # Golang Environment Variables
     GO111MODULE = "on";
     GOPATH = "$HOME/go";
-    PKG_CONFIG_PATH =
-      "${pkgs.openssl}/lib/pkgconfig:${pkgs.gdal}/lib/pkgconfig";
 
     # Android SDK Environment Variables
     ANDROID_JAVA_HOME = "${pkgs.jdk.home}";
@@ -23,22 +23,14 @@
     USE_CCACHE = 1;
 
     # Rust
-    RUSTUP_HOME = "$HOME/rustup";
-    CARGO_HOME = "$HOME/cargo";
-
-    # OpenSSL, iconv is usually some kind of build dependency
-    C_INCLUDE_PATH = "${pkgs.openssl.dev}/include:${pkgs.libiconv}/include";
-    CPLUS_INCLUDE_PATH = "${pkgs.openssl.dev}/include:${pkgs.libiconv}/include";
-    LD_LIBRARY_PATH = "${pkgs.openssl.dev}/lib:${pkgs.libiconv}/lib";
-    LIBRARY_PATH = "${pkgs.openssl.dev}/lib:${pkgs.libiconv}/lib";
-
-    # NodeJS
-    # NPM_CONFIG_TMP="$XDG_RUNTIME_DIR/npm";
-    # NPM_CONFIG_CACHE="$XDG_CACHE_HOME/npm";
-    # NPM_CACHE_PREFIX="$XDG_CACHE_HOME/npm";
+    RUSTUP_HOME = "$HOME/.rustup";
+    CARGO_HOME = "$HOME/.cargo";
+    PKG_CONFIG_PATH =
+      "${pkgs.openssl.dev}/lib/pkgconfig:${pkgs.gdal}/lib/pkgconfig";
+    LIBCLANG_PATH = "${pkgs.llvmPackages.libclang.lib}/lib";
 
     PATH =
-      "$CARGO_HOME:$GOPATH/bin:$HOME/.rbenv/plugins/ruby-build/bin:$HOME/.local/bin:$HOME/google-cloud-sdk/bin:$PATH";
+      "$ELIXIR_PATH:$CARGO_HOME:$GOPATH/bin:$HOME/.rbenv/plugins/ruby-build/bin:$HOME/.local/bin:$HOME/google-cloud-sdk/bin:$PATH";
 
     USE_GKE_GCLOUD_AUTH_PLUGIN = 1; # for kubectl
   };
@@ -84,14 +76,11 @@
     lightswitch =
       "osascript -e  'tell application \"System Events\" to tell appearance preferences to set dark mode to not dark mode'";
     restartaudio = "sudo killall coreaudiod";
-    loadenv = "set -a; source .env; set +a";
     nixgc = "nix-collect-garbage -d";
     nixq = "nix-env -qaP";
     nixupgrade =
       "sudo -i sh -c 'nix-channel --update && nix-env -iA nixpkgs.nix && launchctl remove org.nixos.nix-daemon && launchctl load /Library/LaunchDaemons/org.nixos.nix-daemon.plist'";
     nixup = "nix-env -u";
-    go-cov =
-      "go test -coverprofile='coverage.out' ./... && gcov2lcov -infile=coverage.out -outfile=lcov.info";
     nixshow = "nix show-derivation -r";
   };
 
@@ -217,6 +206,7 @@
     };
 
     profileExtra = ''
+      eval "$(/opt/homebrew/bin/brew shellenv)"
       export GPG_TTY=$(tty)
 
       if ! pgrep -x "gpg-agent" > /dev/null; then
@@ -283,19 +273,6 @@
         fi
       }
 
-      function get_legacy_token {
-        set -u
-        app=$1
-        export ONX_API_TOKEN="$(
-          curl -q "https://$ONX_API_HOST/v1/tokens" \
-          -X POST \
-          -H 'content-type: application/json' \
-          -H 'onx-application-id: $app' \
-          --data "{\"email\": \"$ONX_ACCOUNT_EMAIL\",\"password\": \"$ONX_ACCOUNT_PASSWORD\"}" \
-          | jq -r '.token'
-        )"
-      }
-
       function decode_x509_crt {
         set -u
         loc=$1
@@ -317,7 +294,7 @@
       if test -f $HOME/.env; then
         source $HOME/.env;
       fi
-
+      alias git-prune-local="git fetch -p && git branch -vv | awk '/: gone]/{print $1}' | xargs git branch -D"
       alias dive="docker run -ti --rm  -v /var/run/docker.sock:/var/run/docker.sock wagoodman/dive"
     '';
   };

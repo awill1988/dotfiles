@@ -2,13 +2,14 @@
   description = "Adam Williams' dotfiles";
 
   inputs = {
+    nixpkgs-stable.url = "github:NixOS/nixpkgs/24.05";
     nixpkgs-unstable.url = "github:NixOS/nixpkgs/master";
 
     darwin.url = "github:LnL7/nix-darwin";
-    darwin.inputs.nixpkgs.follows = "nixpkgs-unstable";
+    darwin.inputs.nixpkgs.follows = "nixpkgs-stable";
 
     home-manager.url = "github:nix-community/home-manager";
-    home-manager.inputs.nixpkgs.follows = "nixpkgs-unstable";
+    home-manager.inputs.nixpkgs.follows = "nixpkgs-stable";
 
     flake-utils.url = "github:numtide/flake-utils";
   };
@@ -19,7 +20,7 @@
       inherit (inputs.nixpkgs-unstable.lib)
         attrValues makeOverridable optionalAttrs singleton;
 
-      systems = [ "x86_64-darwin" "aarch64-darwin" ];
+      systems = [ "aarch64-darwin" ];
       forAllSystems = f: nixpkgs.lib.genAttrs systems (system: f system);
 
       nixpkgsConfig = with inputs; rec {
@@ -27,8 +28,7 @@
         overlays = attrValues self.overlays;
       };
 
-      homeManagerStateVersion = "23.05";
-      nixosStateVersion = "23.05";
+      homeManagerStateVersion = "24.11";
 
       primaryUserInfo = {
         username = "adam.williams";
