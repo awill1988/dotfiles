@@ -11,8 +11,8 @@
     # Programming Languages
     # -------------------------------
     # Elixir / Erlang (OTP)
-    elixir_1_17
-    erlang_r27
+    beam.packages.erlang_27.elixir_1_17
+    erlang_27
     (pkgs.writeScriptBin "install-elixir-escripts" ''
       #!/bin/sh
       mix local.hex --force

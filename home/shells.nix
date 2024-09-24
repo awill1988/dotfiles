@@ -25,8 +25,6 @@
     # Rust
     RUSTUP_HOME = "$HOME/.rustup";
     CARGO_HOME = "$HOME/.cargo";
-    PKG_CONFIG_PATH =
-      "${pkgs.openssl.dev}/lib/pkgconfig:${pkgs.gdal}/lib/pkgconfig";
     LIBCLANG_PATH = "${pkgs.llvmPackages.libclang.lib}/lib";
 
     PATH =
@@ -160,7 +158,7 @@
 
     enable = true;
     enableCompletion = true;
-    enableAutosuggestions = true;
+    autosuggestion = { enable = true; };
     completionInit = ''
       autoload bashcompinit && bashcompinit
       autoload -Uz compinit && compinit
@@ -242,21 +240,21 @@
       }
 
       function ls {
-        ${pkgs.coreutils}/bin/ls --color=auto --group-directories-first "$@"
+        ls --color=auto --group-directories-first "$@"
       }
 
       function optimize-screen-record {
         filename=$1
         mov_file="''${filename%.*}.mov"
         mp4_file="''${filename%.*}.mp4"
-        ${pkgs.ffmpeg}/bin/ffmpeg -i $mov_file -c:v libx265 -an -x265-params crf=25 $mp4_file
-        ${pkgs.ffmpeg}/bin/ffmpeg -i $mp4_file -filter_complex "[0:v]setpts=0.5*PTS[v];[0:a]atempo=2[a]" -map "[v]" -map "[a]" $mp4_file
+        ffmpeg -i $mov_file -c:v libx265 -an -x265-params crf=25 $mp4_file
+        ffmpeg -i $mp4_file -filter_complex "[0:v]setpts=0.5*PTS[v];[0:a]atempo=2[a]" -map "[v]" -map "[a]" $mp4_file
       }
 
       function create_cacert {
         set -u
         domain=$1
-        echo -n | ${pkgs.openssl}/bin/openssl s_client -servername $domain -connect $domain:443 2>/dev/null | sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' > $domain.pem
+        echo -n | openssl s_client -servername $domain -connect $domain:443 2>/dev/null | sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' > $domain.pem
       }
 
       function export_cloudsmith_onx {
