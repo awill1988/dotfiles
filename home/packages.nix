@@ -83,6 +83,12 @@
     # Ruby
     rbenv
 
+    terraform
+
+
+    protobuf
+    pkg-config
+
     # basics
     coreutils
     curl
