@@ -37,7 +37,7 @@ in {
         path = "${config.xdg.configHome}/git/personal.gitconfig";
       };
       "includeIf \"gitdir:~/projects/onXmaps/\"" = {
-        path = "${config.xdg.configHome}/git/onxmaps.gitconfig";
+        path = "${config.xdg.configHome}/git/work.gitconfig";
       };
     };
   };

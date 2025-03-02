@@ -36,10 +36,10 @@
       primaryUserInfo = {
         username = "adam";
         fullName = "Adam Williams";
-        email = "adamwt88@gmail.com";
+        email = "adam@williams.engineer";
         github = "awill1988";
         gpg.enable = true;
-        gpg.masterKey = "0C60C6D2EC960FA9E9EE36E47B80760B5AF2B801";
+        gpg.masterKey = "4A0DB07DEDB705FBA45F557B7A0F7A351FABE619";
         work.email = "adam.williams@onxmaps.com";
       };
 

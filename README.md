@@ -21,3 +21,4 @@ nix build \
   .#darwinConfigurations.bootstrap-arm.system && \
   ./result/sw/bin/darwin-rebuild switch --flake .#macbook-arm
 ```
+

@@ -54,7 +54,7 @@ in {
   };
 
   # gpg signing key for work
-  xdg.configFile."git/onxmaps.gitconfig" = {
+  xdg.configFile."git/work.gitconfig" = {
     text = ''
       [user]
         email = "${user-info.work.email}"
@@ -65,9 +65,7 @@ in {
   #
   # STARSHIP
   #
-  xdg.configFile."starship.toml" = {
-    text = builtins.readFile ./jetpack.toml;
-  };
+  xdg.configFile."starship.toml" = { text = builtins.readFile ./jetpack.toml; };
 
   home.shellAliases = {
     tf = "terraform";
