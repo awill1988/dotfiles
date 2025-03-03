@@ -68,6 +68,9 @@
     # Golang
     go_1_23
 
+    # NodeJS
+    nodejs
+
     # Python
     python3
     python3.pkgs.pip

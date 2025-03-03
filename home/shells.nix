@@ -34,6 +34,14 @@ in {
     CARGO_HOME = "$HOME/.cargo";
     LIBCLANG_PATH = "${pkgs.llvmPackages.libclang.lib}/lib";
 
+    # OpenSSL, iconv is usually some kind of build dependency
+    PKG_CONFIG_PATH =
+      "${pkgs.openssl.dev}/lib/pkgconfig:${pkgs.gdal}/lib/pkgconfig";
+    C_INCLUDE_PATH = "${pkgs.openssl.dev}/include:${pkgs.libiconv}/include";
+    CPLUS_INCLUDE_PATH = "${pkgs.openssl.dev}/include:${pkgs.libiconv}/include";
+    LD_LIBRARY_PATH = "${pkgs.openssl.dev}/lib:${pkgs.libiconv}/lib";
+    LIBRARY_PATH = "${pkgs.openssl.dev}/lib:${pkgs.libiconv}/lib";
+
     PATH =
       "$LOCAL_BIN:$ELIXIR_PATH:$CARGO_HOME:$GOPATH/bin:$HOME/.rbenv/plugins/ruby-build/bin:$HOME/.local/bin:$HOME/google-cloud-sdk/bin:$PATH";
 
