@@ -123,9 +123,6 @@
     rustup
     shellcheck
     shfmt # shell parser and formatter
-    tgswitch
-    universal-ctags # maintained ctags implementation
-    xsv
     socat
 
     # nix tools
