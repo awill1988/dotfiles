@@ -1,7 +1,5 @@
 { config, lib, pkgs, ... }: {
   nix.settings.trusted-users = [ "@admin" ];
-  nix.configureBuildUsers = true;
-  services.nix-daemon.enable = true;
 
   # Add shells installed by nix to /etc/shells file
   environment.shells = with pkgs; [ bashInteractive zsh ];
