@@ -22,5 +22,5 @@ in {
 
   homebrew.taps = [ "emqx/mqttx" ];
 
-  homebrew.brews = [ "emqx/mqttx/mqttx-cli" "picotool" ];
+  homebrew.brews = [ "emqx/mqttx/mqttx-cli" "picotool" "pinentry" ];
 }
