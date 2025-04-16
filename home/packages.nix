@@ -116,6 +116,7 @@
 
     # code tools
     jsonnet-language-server
+    nodePackages.eslint
     nodePackages.bash-language-server
     nodePackages.prettier # code formatter
     nodePackages.typescript-language-server

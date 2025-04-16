@@ -43,7 +43,7 @@ in {
     LIBRARY_PATH = "${pkgs.openssl.dev}/lib:${pkgs.libiconv}/lib";
 
     PATH =
-      "$LOCAL_BIN:$ELIXIR_PATH:$CARGO_HOME:$GOPATH/bin:$HOME/.rbenv/plugins/ruby-build/bin:$HOME/.local/bin:$HOME/google-cloud-sdk/bin:$PATH";
+      "$LOCAL_BIN:$ELIXIR_PATH:$CARGO_HOME/bin:$GOPATH/bin:$HOME/.rbenv/plugins/ruby-build/bin:$HOME/.local/bin:$HOME/google-cloud-sdk/bin:$PATH";
 
     USE_GKE_GCLOUD_AUTH_PLUGIN = 1; # for kubectl
   };
