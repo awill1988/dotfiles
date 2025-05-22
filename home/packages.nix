@@ -56,7 +56,7 @@
     # Programming Languages
     # -------------------------------
     # Elixir / Erlang (OTP)
-    beam.packages.erlang_27.elixir_1_17
+    beam.packages.erlang_27.elixir_1_18
     erlang_27
     (pkgs.writeScriptBin "install-elixir-escripts" ''
       #!/bin/sh
