@@ -7,6 +7,8 @@ in {
     userName = user-info.fullName;
     iniContent.gpg.program = lib.mkForce "gpg"; # enables signing from wsl
     extraConfig = {
+      user.signingkey = "${config.home.homeDirectory}/.ssh/id_ed25519.pub";
+      gpg.format = "ssh";
       core = {
         editor = "${pkgs.vim}/bin/vim";
         trustctime = false;

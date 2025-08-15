@@ -70,16 +70,11 @@
 
     # NodeJS
     nodejs
+    pnpm
 
     # Python
-    python3
-    python3.pkgs.pip
-    python3.pkgs.setuptools
-    python3.pkgs.wheel
-    python3.pkgs.gdal
-    python3.pkgs.numpy
-    python3.pkgs.python
-    python3.pkgs.cython
+    (python3.withPackages
+      (ps: with ps; [ pip setuptools wheel gdal numpy cython openai ]))
 
     poetry # python package / project cli
 
@@ -87,7 +82,6 @@
     rbenv
 
     terraform
-
 
     protobuf
     pkg-config
@@ -126,6 +120,8 @@
     shfmt # shell parser and formatter
     socat
 
+    tuist
+
     # nix tools
     alejandra
     cachix
@@ -147,5 +143,6 @@
     renameutils
     watch
     qemu
+    llama-cpp
   ];
 }
