@@ -1,6 +1,8 @@
 { pkgs, ... }: {
   programs.home-manager.enable = true;
 
+  modules.dev.node.enable = true;
+
   programs.awscli-custom.enable = true;
   programs.awscli-custom.package = pkgs.awscli2;
   programs.awscli-custom.enableBashIntegration = true;
@@ -56,8 +58,8 @@
     # Programming Languages
     # -------------------------------
     # Elixir / Erlang (OTP)
-    beam.packages.erlang_27.elixir_1_17
-    erlang_27
+    beam.packages.erlang_27.elixir_1_18
+    erlang_28
     (pkgs.writeScriptBin "install-elixir-escripts" ''
       #!/bin/sh
       mix local.hex --force
@@ -66,20 +68,13 @@
     '')
 
     # Golang
-    go_1_23
+    go_1_24
 
     # NodeJS
-    nodejs
+  # Provided via modules.dev.node
 
     # Python
-    python3
-    python3.pkgs.pip
-    python3.pkgs.setuptools
-    python3.pkgs.wheel
-    python3.pkgs.gdal
-    python3.pkgs.numpy
-    python3.pkgs.python
-    python3.pkgs.cython
+    (python3.withPackages (ps: with ps; [ tkinter ]))
 
     poetry # python package / project cli
 
@@ -87,7 +82,6 @@
     rbenv
 
     terraform
-
 
     protobuf
     pkg-config
@@ -104,6 +98,7 @@
     rsync # incremental file transfer util
     tree # depth indented directory listing
     wget
+    xdg-utils # provides xdg-open and other XDG utilities
     grpcurl
     lsof
 
@@ -126,11 +121,15 @@
     shfmt # shell parser and formatter
     socat
 
+    ruby
+    jekyll
+    codex
+    jsonnet
+
     # nix tools
     alejandra
     cachix
     nixfmt-classic
-    nodePackages.node2nix
 
     # opsec
     gpgme # make gnupg easier
@@ -141,11 +140,12 @@
     # other
     asciidoctor
     chatgpt-cli
+    ffmpeg # video processing and conversion
     graphviz # graph visualization tools
     nmap
-    openssl
     renameutils
     watch
     qemu
+    imagemagick
   ];
 }

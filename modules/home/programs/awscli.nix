@@ -86,7 +86,7 @@ in {
       complete -C '${pkgs.awscli}/bin/aws_completer' aws
     '';
 
-    programs.zsh.initExtra = mkIf cfg.enableZshIntegration ''
+    programs.zsh.initContent = mkIf cfg.enableZshIntegration ''
       complete -C '${pkgs.awscli}/bin/aws_completer' aws
     '';
   };

@@ -1,5 +1,5 @@
 {
-  description = "Martin's dotfiles";
+  description = "Adam's dotfiles";
 
   inputs = {
     nixpkgs-master.url = "github:nixos/nixpkgs/master";
@@ -34,7 +34,7 @@
       homeManagerStateVersion = "25.05";
 
       primaryUserInfo = {
-        username = "adam.williams";
+        username = "adam";
         fullName = "Adam Williams";
         email = "adam@williams.engineer";
         github = "awill1988";
@@ -131,7 +131,8 @@
               home.stateVersion = homeManagerStateVersion;
               home.user-info = primaryUserInfo;
 
-              home.packages = with pkgs; [ hack-font ];
+              # wsl only
+              programs.remoteVscode.enable = true;
             });
         };
       };
@@ -160,6 +161,8 @@
         home-shells = import ./home/shells.nix;
         home-terminal = import ./home/terminal.nix;
         home-awscli = import ./modules/home/programs/awscli.nix;
+        home-node = import ./modules/home/programs/node.nix;
+        home-vscode-remote-wsl = import ./modules/home/programs/vscode-remote-wsl.nix;
         home-user-info = { lib, ... }: {
           options.home.user-info = (self.darwinModules.users-primaryUser {
             inherit lib;
