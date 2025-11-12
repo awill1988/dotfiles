@@ -273,20 +273,8 @@ in {
 
   home.activation.createWslSymlinks =
     lib.optionalString (!pkgs.stdenv.isDarwin) ''
-      if [ ! -L "$HOME/.local/bin/ssh" ]; then
-        ln -s /mnt/c/Windows/System32/OpenSSH/ssh.exe $HOME/.local/bin/ssh
-      fi
-      if [ ! -L "$HOME/.local/bin/ssh-add" ]; then
-        ln -s /mnt/c/Windows/System32/OpenSSH/ssh-add.exe $HOME/.local/bin/ssh-add
-      fi
-      if [ ! -L "$HOME/.local/bin/scp" ]; then
-        ln -s /mnt/c/Windows/System32/OpenSSH/scp.exe $HOME/.local/bin/scp
-      fi
       if [ ! -L "$HOME/.local/bin/gpg" ]; then
         ln -s /mnt/c/Program\ Files\ \(x86\)/GnuPG/bin/gpg.exe $HOME/.local/bin/gpg
-      fi
-      if [ ! -L "$HOME/.local/bin/gpg-connect-agent" ]; then
-        ln -s /mnt/c/Program\ Files\ \(x86\)/GnuPG/bin/gpg-connect-agent.exe $HOME/.local/bin/gpg-connect-agent
       fi
     '';
 
