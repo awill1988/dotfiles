@@ -32,5 +32,5 @@ in {
 
   homebrew.taps = [ "emqx/mqttx" ];
 
-  homebrew.brews = [ "emqx/mqttx/mqttx-cli" "picotool" "pinentry" "ldns" ];
+  homebrew.brews = [ "emqx/mqttx/mqttx-cli" "picotool" "pinentry" "ldns" "imessage-exporter" ];
 }

@@ -14,6 +14,9 @@ in {
     VISUAL = "${pkgs.vim}/bin/vim";
     CLICOLOR = "true";
 
+    RBENV_ROOT = "$HOME/.rbenv";
+    RBENV_SHELL = "zsh";
+
     # Local bin
     LOCAL_BIN = "$HOME/.local/bin";
 
@@ -43,7 +46,7 @@ in {
     LIBRARY_PATH = "${pkgs.openssl.dev}/lib:${pkgs.libiconv}/lib";
 
     PATH =
-      "$LOCAL_BIN:$ELIXIR_PATH:$CARGO_HOME/bin:$GOPATH/bin:$HOME/.rbenv/plugins/ruby-build/bin:$HOME/.local/bin:$HOME/google-cloud-sdk/bin:$PATH";
+      "$LOCAL_BIN:$ELIXIR_PATH:$CARGO_HOME:$GOPATH/bin:$RBENV_ROOT/shims:$RBENV_ROOT/plugins/ruby-build/bin:$HOME/.local/bin:$HOME/google-cloud-sdk/bin:$PATH";
 
     USE_GKE_GCLOUD_AUTH_PLUGIN = 1; # for kubectl
   };
@@ -51,10 +54,10 @@ in {
   xdg.configFile."git/personal.gitconfig" = {
     text = ''
       [commit]
-        gpgSign = true
-        verbose = true
+        gpgSign = false
+        verbose = false
       [tag]
-        gpgSign = true
+        gpgSign = false
       [user]
         email = "${user-info.email}"
         signingkey = "${user-info.email}"
@@ -66,7 +69,6 @@ in {
     text = ''
       [user]
         email = "${user-info.work.email}"
-        signingkey = "${user-info.work.email}"
     '';
   };
 

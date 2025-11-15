@@ -34,7 +34,7 @@
       homeManagerStateVersion = "25.05";
 
       primaryUserInfo = {
-        username = "adam.williams";
+        username = "adam";
         fullName = "Adam Williams";
         email = "adam@williams.engineer";
         github = "awill1988";

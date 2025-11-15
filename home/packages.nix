@@ -108,6 +108,9 @@
     steampipe # select * from cloud
     vim
 
+    jdk
+    gradle
+
     # code tools
     jsonnet-language-server
     nodePackages.eslint
@@ -143,6 +146,12 @@
     renameutils
     watch
     qemu
+    ffmpeg
+    llama-cpp
+    uv
+    cmake
+    jsonnet
+    midicsv
     llama-cpp
   ];
 }

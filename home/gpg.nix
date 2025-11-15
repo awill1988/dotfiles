@@ -59,6 +59,6 @@ in {
       };
     };
     darwin =
-      lib.optionalAttrs pkgs.stdenv.isDarwin { enable = user-info.gpg.enable; };
+      lib.optionalAttrs pkgs.stdenv.isDarwin { enable = false; };
   in common // darwin;
 }
