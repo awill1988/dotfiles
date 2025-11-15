@@ -38,6 +38,15 @@
   programs.ssh.forwardAgent = true;
   programs.ssh.serverAliveInterval = 60;
   programs.ssh.hashKnownHosts = true;
+  programs.ssh.matchBlocks."private-nets" = {
+    host =
+      "master-* node-*";
+    user = "admin";
+    extraOptions = {
+      StrictHostKeyChecking = "accept-new";
+      UserKnownHostsFile = "~/.ssh/known_hosts";
+    };
+  };
   programs.ssh.extraConfig = "";
 
   programs.tmux.enable = true;
@@ -74,7 +83,30 @@
   # Provided via modules.dev.node
 
     # Python
-    (python3.withPackages (ps: with ps; [ tkinter ]))
+    (python3.withPackages (ps: with ps; [
+      tkinter
+      ansible-core
+      (ps.buildPythonPackage rec {
+        pname = "ansibug";
+        version = "0.3.1";
+        pyproject = true;
+
+        src = pkgs.fetchPypi {
+          inherit pname version;
+          sha256 = "10rp4jjqldwm4d31fnwliddzg4c8wiyi2qznvkk8yfbwsvhsjqwq";
+        };
+
+        nativeBuildInputs = with ps; [
+          setuptools
+          wheel
+        ];
+
+        propagatedBuildInputs = with ps; [
+          ansible-core
+        ];
+      })
+    ]))
+
 
     poetry # python package / project cli
 

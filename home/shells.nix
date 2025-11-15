@@ -16,9 +16,10 @@ in {
 
     # Local bin
     LOCAL_BIN = "$HOME/.local/bin";
-    PYENV_ROOT = "$HOME/.pyenv";
     CUDA_HOME = "/usr/local/cuda";
+    PYENV_HOME = "$HOME/.pyenv";
     CUDA_TOOLKIT_ROOT = "/usr/local/cuda";
+
     # Elixir
     ELIXIR_PATH = "$HOME/.mix/escripts";
 
@@ -36,7 +37,7 @@ in {
     CARGO_HOME = "$HOME/.cargo";
 
     PATH =
-      "/usr/local/cuda/bin:$HOME/.pyenv/bin:$LOCAL_BIN:$ELIXIR_PATH:$CARGO_HOME/bin:$GOPATH/bin:$HOME/.rbenv/plugins/ruby-build/bin:$HOME/.local/bin:$HOME/google-cloud-sdk/bin:$PATH";
+      "$LOCAL_BIN:$PYENV_HOME/shims:$PYENV_HOME/bin:$CUDA_HOME/bin:$LOCAL_BIN:$ELIXIR_PATH:$CARGO_HOME/bin:$GOPATH/bin:$HOME/.rbenv/plugins/ruby-build/bin:$HOME/google-cloud-sdk/bin:$PATH";
 
     USE_GKE_GCLOUD_AUTH_PLUGIN = 1; # for kubectl
   };
@@ -267,8 +268,6 @@ in {
     fi
 
     autoload -U promptinit; promptinit
-
-    eval "$(pyenv init -)"
   '';
 
   home.activation.createWslSymlinks =
