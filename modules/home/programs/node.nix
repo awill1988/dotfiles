@@ -1,13 +1,26 @@
 { lib, config, pkgs, ... }:
 
 with lib;
-let nodePkg = pkgs.nodejs_latest;
+let
+  cfg = config.modules.dev.node;
+  nodePkg = cfg.package;
+  pnpmPkg = pkgs.pnpm.override { nodejs = nodePkg; };
 in {
   options.modules.dev.node = {
     enable = mkOption {
       type = types.bool;
       default = false;
       description = "Enable Node.js toolchain";
+    };
+    package = mkOption {
+      type = types.package;
+      default = pkgs.nodejs_latest;
+      description = "Node.js package to install and use for tooling.";
+    };
+    installBun = mkOption {
+      type = types.bool;
+      default = true;
+      description = "Whether to install bun alongside Node.js.";
     };
     xdg.enable = mkOption {
       type = types.bool;
@@ -16,9 +29,10 @@ in {
     };
   };
 
-  config = mkIf config.modules.dev.node.enable {
+  config = mkIf cfg.enable {
     # Provide node & an npx shim using npm exec (corepack preferred now).
-    home.packages = [ nodePkg ];
+    home.packages = [ nodePkg pnpmPkg pkgs.nodePackages.typescript ]
+      ++ optional cfg.installBun pkgs.bun;
     home.sessionVariables = {
       NPM_CONFIG_USERCONFIG = "${config.xdg.configHome}/npm/config";
       NPM_CONFIG_CACHE = "${config.xdg.cacheHome}/npm";

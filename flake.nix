@@ -133,7 +133,6 @@
 
               # wsl only
               programs.remoteVscode.enable = true;
-              programs.wslGpgSystemd.enable = true;
             });
         };
       };
@@ -163,13 +162,15 @@
         home-terminal = import ./home/terminal.nix;
         home-awscli = import ./modules/home/programs/awscli.nix;
         home-node = import ./modules/home/programs/node.nix;
-        home-vscode-remote-wsl = import ./modules/home/programs/vscode-remote-wsl.nix;
-        home-wsl-gpg-systemd = import ./modules/home/programs/wsl-gpg-systemd.nix;
+        home-vscode-remote-wsl =
+          import ./modules/home/programs/vscode-remote-wsl.nix;
         home-user-info = { lib, ... }: {
           options.home.user-info = (self.darwinModules.users-primaryUser {
             inherit lib;
           }).options.users.primaryUser;
         };
+        home-wsl-gpg-systemd =
+          import ./modules/home/programs/wsl-gpg-systemd.nix;
       };
 
       overlays = {

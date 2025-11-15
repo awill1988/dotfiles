@@ -19,6 +19,6 @@ nix build \
   --extra-experimental-features nix-command \
   --extra-experimental-features flakes \
   .#darwinConfigurations.bootstrap-arm.system && \
-  ./result/sw/bin/darwin-rebuild switch --flake .#macbook-arm
+  sudo ./result/sw/bin/darwin-rebuild switch --flake .#macbook-arm
 ```
 

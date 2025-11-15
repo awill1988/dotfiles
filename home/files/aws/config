@@ -1,0 +1,19 @@
+[default]
+
+[profile awill]
+sso_start_url=https://awill.awsapps.com/start
+sso_region=us-east-1
+sso_account_id=463509296941
+sso_role_name=AWSAdministratorAccess
+
+[profile reinadonia]
+role_arn=arn:aws:iam::915541334192:role/Administrator
+include_profile=master
+
+[profile master]
+source_profile=awill
+
+[profile admin]
+source_profile=awill
+role_arn=arn:aws:iam::463509296941:role/Master-Role
+credential_process=aws-vault exec --no-session --json default

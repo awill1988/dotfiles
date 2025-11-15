@@ -1,4 +1,15 @@
-{
+{ config, lib, ... }:
+let inherit (config.users.primaryUser) username;
+in {
+  # nix-darwin now needs a primary user for per-user system defaults
+  assertions = [{
+    assertion = username != null;
+    message =
+      "Set users.primaryUser.username so system.primaryUser can be configured.";
+  }];
+
+  system.primaryUser = username;
+
   system = {
     defaults.LaunchServices.LSQuarantine = false;
 

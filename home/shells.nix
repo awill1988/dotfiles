@@ -10,7 +10,8 @@ in {
 
     # Secrets / crypto
     PASSWORD_STORE_DIR = "${config.xdg.dataHome}/password-store";
-    KEY_ID = if user-info.gpg.masterKey == null then "" else user-info.gpg.masterKey;
+    KEY_ID =
+      if user-info.gpg.masterKey == null then "" else user-info.gpg.masterKey;
 
     LC_CTYPE = "en_US.UTF-8";
     LEDGER_COLOR = "true";
@@ -54,6 +55,7 @@ in {
     AWS_SSO_SESSION_CACHE_DIR = "${config.xdg.cacheHome}/aws/sso/cache";
     AWS_VAULT_PASS_CMD = "${pkgs.pass}/bin/pass";
 
+    # Prefer nix-provided tools (e.g., gnupg) ahead of system binaries to avoid version skew.
     PATH =
       "$LOCAL_BIN:$PYENV_HOME/shims:$PYENV_HOME/bin:$CUDA_HOME/bin:$ELIXIR_PATH:$CARGO_HOME/bin:$GOPATH/bin:$RBENV_ROOT/plugins/ruby-build/bin:$HOME/google-cloud-sdk/bin:$PATH";
   };
@@ -184,24 +186,24 @@ in {
 
     # Decrypt token: hex = IV(24 hex) + CT + TAG(32 hex). Key = base64 or hex.
     decrypt_oidc_token_hex() {
-      local token_hex="''${1:-''$TOKEN_HEX}"
-      local key_in="''${2:-''$CIPHER_KEY}"
+      local token_hex="''${1:-$TOKEN_HEX}"
+      local key_in="''${2:-$CIPHER_KEY}"
 
-      if [[ -z "''$token_hex" || -z "''$key_in" ]]; then
+      if [[ -z "$token_hex" || -z "$key_in" ]]; then
         echo "Usage: decrypt_oidc_token_hex <hex_token> <base64|hex_key>"
         return 1
       fi
 
       # Normalize key (hex lengths 32/48/64 OR base64)
       local key_hex
-      if [[ "''$key_in" =~ ^[0-9a-fA-F]+$ ]] && [[ "''${#key_in}" =~ ^(32|48|64)$ ]]; then
-        key_hex="''$key_in"
+      if [[ "$key_in" =~ ^[0-9a-fA-F]+$ ]] && [[ "''${#key_in}" =~ ^(32|48|64)$ ]]; then
+        key_hex="$key_in"
       else
         local pad=$(( (4 - ''${#key_in} % 4) % 4 ))
         if (( pad > 0 )); then
-          key_in="''$key_in$(printf '=%.0s' $(seq 1 $pad))"
+          key_in="$key_in$(printf '=%.0s' $(seq 1 $pad))"
         fi
-        if ! key_hex="$(echo -n "''$key_in" | ${pkgs.coreutils}/bin/base64 -d 2>/dev/null | ${pkgs.xxd}/bin/xxd -p -c256)"; then
+        if ! key_hex="$(echo -n "$key_in" | ${pkgs.coreutils}/bin/base64 -d 2>/dev/null | ${pkgs.xxd}/bin/xxd -p -c256)"; then
           echo "Key decode failed"
           return 1
         fi
@@ -209,11 +211,11 @@ in {
 
       local key_len_bytes=$(( ''${#key_hex} / 2 ))
       local algo
-      case "''$key_len_bytes" in
+      case "$key_len_bytes" in
         16) algo="aes-128-gcm" ;;
         24) algo="aes-192-gcm" ;;
         32) algo="aes-256-gcm" ;;
-        *) echo "Unsupported key size: ''$key_len_bytes"; return 1 ;;
+        *) echo "Unsupported key size: $key_len_bytes"; return 1 ;;
       esac
 
       # Compute lengths & extract slices using cut/sed to remain fully zsh-safe.
@@ -230,28 +232,28 @@ in {
         return 1
       fi
       # Use cut with 1-based indices: IV spans 1-24, CT spans 25-ct_end, TAG spans ct_end+1-token_len
-      local ct_hex="$(echo "''$token_hex" | cut -c $((24+1))-$ct_end)"
-      local tag_hex="$(echo "''$token_hex" | cut -c $((ct_end+1))-$token_len)"
+      local ct_hex="$(echo "$token_hex" | cut -c $((24+1))-$ct_end)"
+      local tag_hex="$(echo "$token_hex" | cut -c $((ct_end+1))-$token_len)"
 
-      if [[ -n "''$DECRYPT_DEBUG" ]]; then
-        echo "Algo: ''$algo  KeyBytes: ''$key_len_bytes"
-        echo "IV(24): ''$iv_hex"
-        echo "CT(hex) len: ''$ct_len"
-        echo "TAG(32): ''$tag_hex"
-        echo "Token total len: ''$token_len"
+      if [[ -n "$DECRYPT_DEBUG" ]]; then
+        echo "Algo: $algo  KeyBytes: $key_len_bytes"
+        echo "IV(24): $iv_hex"
+        echo "CT(hex) len: $ct_len"
+        echo "TAG(32): $tag_hex"
+        echo "Token total len: $token_len"
       fi
 
       local ct_file
       ct_file="$(mktemp)"
-      echo -n "''$ct_hex" | ${pkgs.xxd}/bin/xxd -r -p > "''$ct_file"
+      echo -n "$ct_hex" | ${pkgs.xxd}/bin/xxd -r -p > "$ct_file"
 
-      if ! ${pkgs.openssl}/bin/openssl enc -"''$algo" -d -in "''$ct_file" \
-           -K "''$key_hex" -iv "''$iv_hex" -tag "''$tag_hex" -nosalt; then
+      if ! ${pkgs.openssl}/bin/openssl enc -"$algo" -d -in "$ct_file" \
+           -K "$key_hex" -iv "$iv_hex" -tag "$tag_hex" -nosalt; then
         echo "Decryption failed"
-        rm -f "''$ct_file"
+        rm -f "$ct_file"
         return 1
       fi
-      rm -f "''$ct_file"
+      rm -f "$ct_file"
     }
 
     # Convert screen recording to optimized GIF for web/GitHub

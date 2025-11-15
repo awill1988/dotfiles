@@ -53,12 +53,11 @@ in {
           throw-keyids = true;
         };
       scdaemonSettings = {
-        disable-ccid = true;
-      } // lib.optionalAttrs pkgs.stdenv.isDarwin {
+        # pcscd removed; use built-in CCID directly.
+        disable-ccid = false;
         reader-port = ''"Yubico YubiKey OTP+FIDO+CCID"'';
       };
     };
-    darwin =
-      lib.optionalAttrs pkgs.stdenv.isDarwin { enable = false; };
+    darwin = lib.optionalAttrs pkgs.stdenv.isDarwin { enable = false; };
   in common // darwin;
 }

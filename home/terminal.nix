@@ -1,7 +1,5 @@
 { config, pkgs, lib, ... }:
-let
-  fontFamily =
-    "Source Code Pro";
+let fontFamily = "Source Code Pro";
 in {
   programs = {
     alacritty.enable = true;
@@ -29,7 +27,7 @@ in {
   # Enable fontconfig here and add the font via home.packages so it merges with
   # other package lists defined in the configuration.
   fonts.fontconfig.enable = true;
-  
+
   home.packages = with pkgs; [
     inconsolata # extra monospace
     noto-fonts-cjk-sans # CJK support

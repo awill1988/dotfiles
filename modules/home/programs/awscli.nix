@@ -34,10 +34,19 @@ in {
 
       backend = mkOption {
         type = types.nullOr types.str;
-        default = null;
-        example = "keychain";
+        default = "pass";
+        example = "file";
         description = ''
           Secret backend to use [keychain pass file]
+        '';
+      };
+
+      fileDir = mkOption {
+        type = types.nullOr types.str;
+        default = "${config.xdg.dataHome}/aws/awsvault";
+        example = "\${config.xdg.dataHome}/aws/awsvault";
+        description = ''
+          Location for file backend vault data (set AWS_VAULT_FILE_DIR)
         '';
       };
 
@@ -80,6 +89,11 @@ in {
         AWS_VAULT_BACKEND = cfg.awsVault.backend;
         AWS_VAULT_PASS_CMD = cfg.awsVault.passCmd;
         AWS_VAULT_PASS_PREFIX = cfg.awsVault.passPrefix;
+        AWS_VAULT_FILE_DIR = cfg.awsVault.fileDir;
+        AWS_CONFIG_FILE = "${config.xdg.configHome}/aws/config";
+        AWS_SHARED_CREDENTIALS_FILE =
+          "${config.xdg.configHome}/aws/credentials";
+        AWS_SSO_SESSION_CACHE_DIR = "${config.xdg.cacheHome}/aws/sso/cache";
       });
 
     programs.bash.initExtra = mkIf cfg.enableBashIntegration ''
