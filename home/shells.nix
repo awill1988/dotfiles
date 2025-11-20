@@ -3,7 +3,15 @@ let inherit (config.home) user-info;
 in {
 
   home.sessionVariables = {
-    GPG_TTY = "$TTY";
+    # XDG locations
+    XDG_CONFIG_HOME = config.xdg.configHome;
+    XDG_DATA_HOME = config.xdg.dataHome;
+    XDG_CACHE_HOME = config.xdg.cacheHome;
+
+    # Secrets / crypto
+    PASSWORD_STORE_DIR = "${config.xdg.dataHome}/password-store";
+    KEY_ID = if user-info.gpg.masterKey == null then "" else user-info.gpg.masterKey;
+
     LC_CTYPE = "en_US.UTF-8";
     LEDGER_COLOR = "true";
     LESS = "-FRSXM";
@@ -13,6 +21,9 @@ in {
     TERM = "xterm-256color";
     VISUAL = "${pkgs.vim}/bin/vim";
     CLICOLOR = "true";
+
+    RBENV_ROOT = "$HOME/.rbenv";
+    RBENV_SHELL = "zsh";
 
     # Local bin
     LOCAL_BIN = "$HOME/.local/bin";
@@ -35,23 +46,22 @@ in {
     # Rust
     RUSTUP_HOME = "$HOME/.rustup";
     CARGO_HOME = "$HOME/.cargo";
+    CODEX_HOME = "${config.xdg.configHome}/codex";
+
+    # Amazon Web Services
+    AWS_CONFIG_FILE = "${config.xdg.configHome}/aws/config";
+    AWS_SHARED_CREDENTIALS_FILE = "${config.xdg.configHome}/aws/credentials";
+    AWS_SSO_SESSION_CACHE_DIR = "${config.xdg.cacheHome}/aws/sso/cache";
+    AWS_VAULT_PASS_CMD = "${pkgs.pass}/bin/pass";
 
     PATH =
-      "$LOCAL_BIN:$PYENV_HOME/shims:$PYENV_HOME/bin:$CUDA_HOME/bin:$LOCAL_BIN:$ELIXIR_PATH:$CARGO_HOME/bin:$GOPATH/bin:$HOME/.rbenv/plugins/ruby-build/bin:$HOME/google-cloud-sdk/bin:$PATH";
-
-    USE_GKE_GCLOUD_AUTH_PLUGIN = 1; # for kubectl
+      "$LOCAL_BIN:$PYENV_HOME/shims:$PYENV_HOME/bin:$CUDA_HOME/bin:$ELIXIR_PATH:$CARGO_HOME/bin:$GOPATH/bin:$RBENV_ROOT/plugins/ruby-build/bin:$HOME/google-cloud-sdk/bin:$PATH";
   };
 
   xdg.configFile."git/personal.gitconfig" = {
     text = ''
-      [commit]
-        gpgSign = true
-        verbose = true
-      [tag]
-        gpgSign = true
       [user]
         email = "${user-info.email}"
-        signingkey = "${user-info.email}"
     '';
   };
 
@@ -60,17 +70,12 @@ in {
     text = ''
       [user]
         email = "${user-info.work.email}"
-        signingkey = "${user-info.work.email}"
     '';
   };
 
-  #
-  # STARSHIP
-  #
-  xdg.configFile."starship.toml" = { text = builtins.readFile ./starship.toml; };
-
   home.shellAliases = {
-    tf = "terraform";
+    terraform = "tofu";
+    tf = "tofu";
     switch-yubikey = ''gpg-connect-agent "scd serialno" "learn --force" /bye'';
 
     # Get public ip directly from a DNS server instead of from some hip
@@ -79,9 +84,9 @@ in {
     wanip4 = "dig @resolver4.opendns.com myip.opendns.com +short -4";
     wanip6 =
       "dig @resolver1.ipv6-sandbox.opendns.com AAAA myip.opendns.com +short -6";
+
     git-prune-local =
       "git fetch -p && git branch -vv | awk '/: gone]/{print $1}' | xargs git branch -D";
-    codeenv = "[ -f ${config.xdg.configHome}/codeenv.env ] && export $(grep -v '^#' ${config.xdg.configHome}/codeenv.env | xargs); code .";
   } // lib.optionalAttrs pkgs.stdenv.isDarwin {
     lightswitch =
       "osascript -e  'tell application \"System Events\" to tell appearance preferences to set dark mode to not dark mode'";
@@ -151,13 +156,31 @@ in {
       "tmux"
     ];
   };
-  programs.zsh.profileExtra = ''
-    export GPG_TTY=$(tty)
-  '';
   programs.zsh.initContent = ''
+    export GPG_TTY="$(${pkgs.coreutils}/bin/tty)"
+
+    # Auto-init password-store with YubiKey-backed key if missing
+    if command -v ${pkgs.pass}/bin/pass >/dev/null 2>&1; then
+      if [ ! -f "''${PASSWORD_STORE_DIR}/.gpg-id" ] && [ -n "''${KEY_ID:-}" ]; then
+        mkdir -p "''${PASSWORD_STORE_DIR}"
+        ${pkgs.pass}/bin/pass init "''${KEY_ID}"
+      fi
+    fi
+
     function ls() {
       ${pkgs.coreutils}/bin/ls --color=auto --group-directories-first "$@"
     }
+
+    # Pipe GitHub token into nix only when it's available in the environment.
+    if [[ -n "''${GITHUB_TOKEN:-}" ]]; then
+      _codex_nix_token="access-tokens=github.com=''${GITHUB_TOKEN}"
+      if [[ -n "''${NIX_CONFIG:-}" ]]; then
+        export NIX_CONFIG="$NIX_CONFIG"$'\n'"$_codex_nix_token"
+      else
+        export NIX_CONFIG="$_codex_nix_token"
+      fi
+      unset _codex_nix_token
+    fi
 
     # Decrypt token: hex = IV(24 hex) + CT + TAG(32 hex). Key = base64 or hex.
     decrypt_oidc_token_hex() {
@@ -270,12 +293,11 @@ in {
     autoload -U promptinit; promptinit
   '';
 
-  home.activation.createWslSymlinks =
-    lib.optionalString (!pkgs.stdenv.isDarwin) ''
-      if [ ! -L "$HOME/.local/bin/gpg" ]; then
-        ln -s /mnt/c/Program\ Files\ \(x86\)/GnuPG/bin/gpg.exe $HOME/.local/bin/gpg
-      fi
+  # Ensure crypto directories exist with proper permissions before shells run.
+  home.activation.ensureCryptoDirs =
+    lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+      set -euo pipefail
+      mkdir -p "${config.xdg.dataHome}/gnupg" "${config.xdg.dataHome}/password-store" "${config.xdg.configHome}/gpg"
+      chmod 700 "${config.xdg.dataHome}/gnupg" "${config.xdg.dataHome}/password-store" "${config.xdg.configHome}/gpg"
     '';
-
-  home.packages = with pkgs; [ pure-prompt ];
 }

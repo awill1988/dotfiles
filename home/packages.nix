@@ -10,7 +10,6 @@
   programs.awscli-custom.awsVault = {
     enable = true;
     prompt = "ykman";
-    backend = "pass";
     passPrefix = "aws_vault/";
   };
 
@@ -31,23 +30,30 @@
   programs.htop.enable = true;
   programs.htop.settings.show_program_path = true;
 
-  programs.ssh.enable = true;
-  programs.ssh.controlMaster = "auto";
-  programs.ssh.controlPath = "/tmp/ssh-%u-%r@%h:%p";
-  programs.ssh.controlPersist = "60";
-  programs.ssh.forwardAgent = true;
-  programs.ssh.serverAliveInterval = 60;
-  programs.ssh.hashKnownHosts = true;
-  programs.ssh.matchBlocks."private-nets" = {
-    host =
-      "master-* node-*";
-    user = "admin";
-    extraOptions = {
-      StrictHostKeyChecking = "accept-new";
-      UserKnownHostsFile = "~/.ssh/known_hosts";
+  programs.ssh = {
+    enable = true;
+    enableDefaultConfig = false;
+    matchBlocks = {
+      "*" = {
+        host = "*";
+        controlMaster = "auto";
+        controlPath = "/tmp/ssh-%u-%r@%h:%p";
+        controlPersist = "60";
+        forwardAgent = true;
+        serverAliveInterval = 60;
+        hashKnownHosts = true;
+      };
+      "private-nets" = {
+        host = "master-* node-*";
+        user = "admin";
+        extraOptions = {
+          StrictHostKeyChecking = "accept-new";
+          UserKnownHostsFile = "~/.ssh/known_hosts";
+        };
+      };
     };
+    extraConfig = "";
   };
-  programs.ssh.extraConfig = "";
 
   programs.tmux.enable = true;
   programs.tmux.aggressiveResize = true;
@@ -77,43 +83,39 @@
     '')
 
     # Golang
-    go_1_24
-
-    # NodeJS
-  # Provided via modules.dev.node
+    go_1_25
 
     # Python
-    (python3.withPackages (ps: with ps; [
-      tkinter
-      ansible-core
-      (ps.buildPythonPackage rec {
-        pname = "ansibug";
-        version = "0.3.1";
-        pyproject = true;
-
-        src = pkgs.fetchPypi {
-          inherit pname version;
-          sha256 = "10rp4jjqldwm4d31fnwliddzg4c8wiyi2qznvkk8yfbwsvhsjqwq";
-        };
-
-        nativeBuildInputs = with ps; [
-          setuptools
-          wheel
-        ];
-
-        propagatedBuildInputs = with ps; [
-          ansible-core
-        ];
-      })
-    ]))
-
+    (python3.withPackages (ps:
+      with ps; [
+        tkinter
+        ansible-core
+        pip
+        setuptools
+        wheel
+        gdal
+        numpy
+        cython
+        openai
+        (ps.buildPythonPackage rec {
+          pname = "ansibug";
+          version = "0.3.1";
+          pyproject = true;
+          src = pkgs.fetchPypi {
+            inherit pname version;
+            sha256 = "10rp4jjqldwm4d31fnwliddzg4c8wiyi2qznvkk8yfbwsvhsjqwq";
+          };
+          nativeBuildInputs = with ps; [ setuptools wheel ];
+          propagatedBuildInputs = with ps; [ ansible-core ];
+        })
+      ]))
 
     poetry # python package / project cli
 
     # Ruby
     rbenv
 
-    terraform
+    opentofu
 
     protobuf
     pkg-config
@@ -141,6 +143,9 @@
     steampipe # select * from cloud
     vim
 
+    jdk
+    gradle
+
     # code tools
     jsonnet-language-server
     nodePackages.eslint
@@ -164,6 +169,7 @@
     nixfmt-classic
 
     # opsec
+    gnupg
     gpgme # make gnupg easier
     pass # "password manager"
     xkcdpass # generate passwords
@@ -179,5 +185,11 @@
     watch
     qemu
     imagemagick
+    ffmpeg
+    uv
+    cmake
+    jsonnet
+    midicsv
+    llama-cpp
   ];
 }
