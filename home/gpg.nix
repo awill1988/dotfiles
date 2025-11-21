@@ -66,6 +66,8 @@ in {
     enableSshSupport = true;
     defaultCacheTtl = 8 * 60 * 60;
     maxCacheTtl = 12 * 60 * 60;
-    pinentry.package = pkgs.pinentry-tty;
+    extraConfig = "allow-loopback-pinentry";
+    # use a GUI pinentry to avoid pty/line-discipline glitches in VS Code's terminal
+    pinentry.package = pkgs.pinentry-gtk2;
   };
 }

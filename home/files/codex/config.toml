@@ -1,13 +1,15 @@
-projects = { "/home/adam/projects/awill1988" = { trust_level = "trusted" } }
+projects = { "/home/adam/projects" = { trust_level = "trusted" } }
 model_reasoning_effort = "high"
 model = "gpt-5.1-codex-max"
 
-[shell_environment_policy]
-include_only = ["PATH", "HOME", "CODEX_HOME"]
-
-[features]
-streamable_shell = true          # enable the streamable exec tool
-web_search_request = true        # allow the model to request web searches
-
 [tools]
-web_search_request = true        # allow the model to request web searches
+websearch = true
+
+features.web_search_request = true
+
+tools.view_image = true
+
+[shell_environment_policy]
+inherit = "all"
+ignore_default_excludes = true
+experimental_use_profile = true
