@@ -116,6 +116,7 @@
     rbenv
 
     opentofu
+    k9s
 
     protobuf
     pkg-config
