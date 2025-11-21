@@ -160,6 +160,7 @@ in {
   };
   programs.zsh.initContent = ''
     export GPG_TTY="$(${pkgs.coreutils}/bin/tty)"
+    export SSH_AUTH_SOCK="''${SSH_AUTH_SOCK:-$(${pkgs.gnupg}/bin/gpgconf --list-dirs agent-ssh-socket)}"
 
     # Auto-init password-store with YubiKey-backed key if missing
     if command -v ${pkgs.pass}/bin/pass >/dev/null 2>&1; then
@@ -183,78 +184,6 @@ in {
       fi
       unset _codex_nix_token
     fi
-
-    # Decrypt token: hex = IV(24 hex) + CT + TAG(32 hex). Key = base64 or hex.
-    decrypt_oidc_token_hex() {
-      local token_hex="''${1:-$TOKEN_HEX}"
-      local key_in="''${2:-$CIPHER_KEY}"
-
-      if [[ -z "$token_hex" || -z "$key_in" ]]; then
-        echo "Usage: decrypt_oidc_token_hex <hex_token> <base64|hex_key>"
-        return 1
-      fi
-
-      # Normalize key (hex lengths 32/48/64 OR base64)
-      local key_hex
-      if [[ "$key_in" =~ ^[0-9a-fA-F]+$ ]] && [[ "''${#key_in}" =~ ^(32|48|64)$ ]]; then
-        key_hex="$key_in"
-      else
-        local pad=$(( (4 - ''${#key_in} % 4) % 4 ))
-        if (( pad > 0 )); then
-          key_in="$key_in$(printf '=%.0s' $(seq 1 $pad))"
-        fi
-        if ! key_hex="$(echo -n "$key_in" | ${pkgs.coreutils}/bin/base64 -d 2>/dev/null | ${pkgs.xxd}/bin/xxd -p -c256)"; then
-          echo "Key decode failed"
-          return 1
-        fi
-      fi
-
-      local key_len_bytes=$(( ''${#key_hex} / 2 ))
-      local algo
-      case "$key_len_bytes" in
-        16) algo="aes-128-gcm" ;;
-        24) algo="aes-192-gcm" ;;
-        32) algo="aes-256-gcm" ;;
-        *) echo "Unsupported key size: $key_len_bytes"; return 1 ;;
-      esac
-
-      # Compute lengths & extract slices using cut/sed to remain fully zsh-safe.
-      local token_len=$(( ''${#token_hex} ))
-      if (( token_len < 24 + 32 )); then
-        echo "Token too short"
-        return 1
-      fi
-      local iv_hex="''${token_hex:0:24}"
-      local ct_end=$(( token_len - 32 ))  # last 32 hex chars are the tag
-      local ct_len=$(( ct_end - 24 ))
-      if (( ct_len <= 0 )); then
-        echo "Malformed token"
-        return 1
-      fi
-      # Use cut with 1-based indices: IV spans 1-24, CT spans 25-ct_end, TAG spans ct_end+1-token_len
-      local ct_hex="$(echo "$token_hex" | cut -c $((24+1))-$ct_end)"
-      local tag_hex="$(echo "$token_hex" | cut -c $((ct_end+1))-$token_len)"
-
-      if [[ -n "$DECRYPT_DEBUG" ]]; then
-        echo "Algo: $algo  KeyBytes: $key_len_bytes"
-        echo "IV(24): $iv_hex"
-        echo "CT(hex) len: $ct_len"
-        echo "TAG(32): $tag_hex"
-        echo "Token total len: $token_len"
-      fi
-
-      local ct_file
-      ct_file="$(mktemp)"
-      echo -n "$ct_hex" | ${pkgs.xxd}/bin/xxd -r -p > "$ct_file"
-
-      if ! ${pkgs.openssl}/bin/openssl enc -"$algo" -d -in "$ct_file" \
-           -K "$key_hex" -iv "$iv_hex" -tag "$tag_hex" -nosalt; then
-        echo "Decryption failed"
-        rm -f "$ct_file"
-        return 1
-      fi
-      rm -f "$ct_file"
-    }
 
     # Convert screen recording to optimized GIF for web/GitHub
     # Optimized for text readability and smaller file sizes

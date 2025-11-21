@@ -60,4 +60,12 @@ in {
     };
     darwin = lib.optionalAttrs pkgs.stdenv.isDarwin { enable = false; };
   in common // darwin;
+
+  services.gpg-agent = {
+    enable = true;
+    enableSshSupport = true;
+    defaultCacheTtl = 8 * 60 * 60;
+    maxCacheTtl = 12 * 60 * 60;
+    pinentry.package = pkgs.pinentry-tty;
+  };
 }
