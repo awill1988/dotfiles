@@ -40,7 +40,6 @@
         github = "awill1988";
         gpg.enable = true;
         gpg.masterKey = "4A0DB07DEDB705FBA45F557B7A0F7A351FABE619";
-        work.email = "adam.williams@onxmaps.com";
       };
 
       nixDarwinCommonModules = attrValues self.darwinModules ++ [
