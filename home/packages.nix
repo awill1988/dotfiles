@@ -63,17 +63,46 @@
 
   home.packages = with pkgs; [
 
-    # Shell Environment
-    # -------------------------------
+    # unix tooling
     bash-completion
     direnv # auto-activating shell envs
     oh-my-zsh
     zsh
+    coreutils
+    findutils # GNU find utils
+    fd # fancy `find`
+    ripgrep # fancy `grep`
+    renameutils # rename files faster
+    tree # depth indented directory listing
+    rsync # incremental file transfer util
+    xdg-utils # provides xdg-open and other XDG utilities
+    htop # fancy `top`
+    less # more advanced file pager than `more`
+    lsof
+    watch
+    wget
+    curl
+    socat
 
-    # Programming Languages
-    # -------------------------------
-    # Elixir / Erlang (OTP)
-    beam.packages.erlang_27.elixir_1_18
+    # software development
+    gnumake
+    cmake
+    pkg-config
+    jq # command line json processor
+    shellcheck
+    shfmt # shell parser and formatter
+    gh # github cli tool
+    vim
+    neovim
+    grpcurl
+    jsonnet
+    qemu
+    protobuf
+    graphviz # graph visualization tools
+
+    # programming languages and runtimes
+    # elixir / erlang (OTP)
+    beam.packages.erlang_28.elixir_1_19
     erlang_28
     (pkgs.writeScriptBin "install-elixir-escripts" ''
       #!/bin/sh
@@ -82,10 +111,10 @@
       mix escript.install --force hex protobuf
     '')
 
-    # Golang
+    # go
     go_1_25
 
-    # Python
+    # python
     (python3.withPackages (ps:
       with ps; [
         tkinter
@@ -93,7 +122,6 @@
         pip
         setuptools
         wheel
-        gdal
         numpy
         cython
         openai
@@ -110,87 +138,48 @@
         })
       ]))
 
-    poetry # python package / project cli
+    # python package management
+    uv
+    poetry
 
-    # Ruby
+    # ruby
     rbenv
+    ruby
+    jekyll
 
-    opentofu
-    k9s
-
-    protobuf
-    pkg-config
-
-    # basics
-    coreutils
-    curl
-    fd # fancy `find`
-    findutils # GNU find utils
-    htop # fancy `top`
-    less # more advanced file pager than `more`
-    #renameutils # rename files faster
-    ripgrep # fancy `grep`
-    rsync # incremental file transfer util
-    tree # depth indented directory listing
-    wget
-    xdg-utils # provides xdg-open and other XDG utilities
-    grpcurl
-    lsof
-
-    # dev stuff
-    gh # github cli tool
-    gnumake
-    jq # command line json processor
-    steampipe # select * from cloud
-    vim
-
+    # java / kotlin
     jdk
     gradle
 
-    # code tools
-    jsonnet-language-server
-    nodePackages.eslint
-    nodePackages.bash-language-server
-    nodePackages.prettier # code formatter
-    nodePackages.typescript-language-server
-    nodePackages.vim-language-server
+    # rust
     rustup
-    shellcheck
-    shfmt # shell parser and formatter
-    socat
 
-    ruby
-    jekyll
+    # cloud and infra
+    opentofu
+    k9s
+    steampipe # select * from cloud
+
+    # ai tooling
+    chatgpt-cli
+    claude-code
     codex
-    jsonnet
+    llama-cpp
 
     # nix tools
-    alejandra
     cachix
     nixfmt-classic
 
-    # opsec
+    # security and credentials
     gnupg
     gpgme # make gnupg easier
     pass # "password manager"
     xkcdpass # generate passwords
     yubikey-manager # configure yubikeys
-
-    # other
-    asciidoctor
-    chatgpt-cli
-    ffmpeg # video processing and conversion
-    graphviz # graph visualization tools
     nmap
-    renameutils
-    watch
-    qemu
+
+    # media and conversion
+    ffmpeg # video processing and conversion
     imagemagick
-    ffmpeg
-    uv
-    cmake
-    jsonnet
     midicsv
-    llama-cpp
   ];
 }

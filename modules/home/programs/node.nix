@@ -5,6 +5,37 @@ let
   cfg = config.modules.dev.node;
   nodePkg = cfg.package;
   pnpmPkg = pkgs.pnpm.override { nodejs = nodePkg; };
+  # npm registry tarball ships prebuilt dist/cli.mjs; wrap with our node to avoid global npm install.
+  aicommitsPkg = pkgs.stdenvNoCC.mkDerivation rec {
+    pname = "aicommits";
+    version = "1.11.0";
+
+    src = pkgs.fetchurl {
+      url = "https://registry.npmjs.org/aicommits/-/${pname}-${version}.tgz";
+      hash = "sha256-t0zyXrMetwmNAfSCzWSofi9Z1++hH1Jz+7NT816FDF0=";
+    };
+
+    sourceRoot = "package";
+    dontBuild = true;
+    nativeBuildInputs = [ pkgs.makeWrapper ];
+
+    installPhase = ''
+      runHook preInstall
+      mkdir -p $out/share/${pname} $out/bin
+      cp -r dist $out/share/${pname}
+      makeWrapper ${nodePkg}/bin/node $out/bin/${pname} \
+        --add-flags $out/share/${pname}/dist/cli.mjs
+      ln -s $out/bin/${pname} $out/bin/aic
+      runHook postInstall
+    '';
+
+    meta = {
+      description = "AI-assisted git commit message generator";
+      homepage = "https://github.com/Nutlope/aicommits";
+      license = lib.licenses.mit;
+      mainProgram = "aicommits";
+    };
+  };
 in {
   options.modules.dev.node = {
     enable = mkOption {
@@ -30,9 +61,18 @@ in {
   };
 
   config = mkIf cfg.enable {
-    # Provide node & an npx shim using npm exec (corepack preferred now).
-    home.packages = [ nodePkg pnpmPkg pkgs.nodePackages.typescript ]
-      ++ optional cfg.installBun pkgs.bun;
+    home.packages = [
+      nodePkg
+      pnpmPkg
+      # global npm packages
+      aicommitsPkg
+      pkgs.nodePackages.typescript
+      pkgs.nodePackages.eslint
+      pkgs.nodePackages.prettier
+      pkgs.nodePackages.bash-language-server
+      pkgs.nodePackages.typescript-language-server
+      pkgs.nodePackages.vim-language-server
+    ] ++ optional cfg.installBun pkgs.bun;
     home.sessionVariables = {
       NPM_CONFIG_USERCONFIG = "${config.xdg.configHome}/npm/config";
       NPM_CONFIG_CACHE = "${config.xdg.cacheHome}/npm";

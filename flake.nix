@@ -87,24 +87,12 @@
       ];
     in {
       darwinConfigurations = rec {
-        # Minimal configuration to bootstrap systems
-        bootstrap-x86 = makeOverridable darwinSystem {
-          system = "x86_64-darwin";
+        bootstrap-arm = makeOverridable darwinSystem {
+          system = "aarch64-darwin";
           modules = [
             self.darwinModules.common
             self.darwinModules.darwin-bootstrap
             { nixpkgs = nixpkgsConfig; }
-          ];
-        };
-
-        bootstrap-arm = bootstrap-x86.override { system = "aarch64-darwin"; };
-
-        # My macOS configuration
-        macbook-x86 = darwinSystem {
-          system = "x86_64-darwin";
-          modules = nixDarwinCommonModules ++ [
-            ./system/darwin/host-mac.nix
-            { users.primaryUser = primaryUserInfo; }
           ];
         };
 
@@ -118,7 +106,6 @@
       };
 
       homeConfigurations = {
-        # WSL Linux (Debian)
         debianWsl = home-manager.lib.homeManagerConfiguration {
           pkgs = import inputs.nixpkgs-unstable {
             system = "x86_64-linux";
@@ -192,23 +179,7 @@
             inherit (nixpkgsConfig) config;
           };
         };
-        # Overlay useful on Macs with Apple Silicon
-        apple-silicon = _: prev:
-          optionalAttrs (prev.stdenv.system == "aarch64-darwin") {
-            # Add access to x86 packages system is running Apple Silicon
-            pkgs-x86 = import inputs.nixpkgs-unstable {
-              system = "x86_64-darwin";
-              inherit (nixpkgsConfig) config;
-            };
-          };
       };
-
-      # `nix develop`
-      devShell = forAllSystems (system:
-        let pkgs = nixpkgs.legacyPackages.${system};
-        in pkgs.mkShell {
-          nativeBuildInputs = with pkgs; [ rnix-lsp nixpkgs-fmt ];
-        });
       formatter =
         forAllSystems (system: nixpkgs.legacyPackages.${system}.nixpkgs-fmt);
     };
