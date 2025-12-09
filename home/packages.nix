@@ -1,4 +1,9 @@
-{ pkgs, ... }: {
+{ config, lib, pkgs, ... }:
+let
+  nodePackages = pkgs.nodePackages_latest.override {
+    nodejs = config.modules.dev.node.package;
+  };
+in {
   programs.home-manager.enable = true;
 
   modules.dev.node.enable = true;
@@ -55,13 +60,76 @@
     extraConfig = "";
   };
 
-  programs.tmux.enable = true;
-  programs.tmux.aggressiveResize = true;
-  programs.tmux.clock24 = true;
-  programs.tmux.keyMode = "vi";
-  programs.tmux.terminal = "screen-256color";
+  programs.tmux = {
+    enable = true;
+    aggressiveResize = true;
+    clock24 = true;
+    keyMode = "vi";
+    terminal = "screen-256color";
+    plugins = with pkgs.tmuxPlugins; [ sensible yank resurrect continuum ];
+    extraConfig = ''
+      # gpakosz-inspired ergonomics
+      set -g prefix2 C-a
+      bind C-a send-prefix -2
+      set -g base-index 1
+      setw -g pane-base-index 1
+      setw -g automatic-rename on
+      set -g renumber-windows on
+      setw -g xterm-keys on
+      set -g history-limit 5000
+      set -g display-time 1000
+      set -g set-titles on
+      set -g mouse on
+      set -g @continuum-restore 'on'
+      # splits and navigation
+      bind - split-window -v
+      bind _ split-window -h
+      bind -r h select-pane -L
+      bind -r j select-pane -D
+      bind -r k select-pane -U
+      bind -r l select-pane -R
+      bind -r H resize-pane -L 2
+      bind -r J resize-pane -D 2
+      bind -r K resize-pane -U 2
+      bind -r L resize-pane -R 2
+      bind r source-file ~/.tmux.conf \; display-message "tmux reloaded"
+      # quick exits (vim-like: prefix + z / Z)
+      bind z confirm-before -p "kill-window? (y/n)" kill-window
+      bind Z confirm-before -p "kill-session? (y/n)" kill-session
+    '';
+  };
 
-  home.packages = with pkgs; [
+  programs.neovim = {
+    enable = true;
+    viAlias = true;
+    vimAlias = true;
+    withNodeJs = true;
+    withPython3 = true;
+    plugins = (with pkgs.vimPlugins; [
+      plenary-nvim
+      nvim-web-devicons
+      nui-nvim
+      neo-tree-nvim
+      nvim-lspconfig
+      nvim-cmp
+      cmp-nvim-lsp
+      cmp-buffer
+      cmp-path
+      luasnip
+      friendly-snippets
+      lspkind-nvim
+      nvim-treesitter
+      telescope-nvim
+      telescope-fzf-native-nvim
+      which-key-nvim
+      gitsigns-nvim
+      mini-nvim
+    ]);
+    extraPackages = with pkgs; [ ripgrep fd tree-sitter ];
+    extraLuaConfig = ''require("aw")'';
+  };
+
+  home.packages = (with pkgs; [
 
     # unix tooling
     bash-completion
@@ -91,14 +159,30 @@
     jq # command line json processor
     shellcheck
     shfmt # shell parser and formatter
+    vale
     gh # github cli tool
-    vim
-    neovim
+    (pkgs.writeShellScriptBin "ide" ''
+      #!/bin/sh
+      # tmux + neovim "IDE" launcher:
+      # - left: neo-tree file explorer inside neovim
+      # - bottom: tmux shell pane
+      set -euo pipefail
+      target_path="''${1:-.}"
+      resolved_path="$(realpath "$target_path")"
+      session="ide-$(basename "$resolved_path")"
+
+      if ! tmux has-session -t "$session" 2>/dev/null; then
+        tmux new-session -d -s "$session" -c "$resolved_path" "cd -- \"$resolved_path\" && nvim '+Neotree left reveal' ."
+        tmux split-window -t "$session":1 -v -p 30 -c "$resolved_path"
+        tmux select-pane -t "$session":1.1
+      fi
+
+      tmux attach -t "$session"
+    '')
     grpcurl
     jsonnet
     qemu
     protobuf
-    graphviz # graph visualization tools
 
     # programming languages and runtimes
     # elixir / erlang (OTP)
@@ -154,6 +238,17 @@
     # rust
     rustup
 
+    # language servers
+    gopls
+    beam.packages.erlang_28."elixir-ls"
+    nodePackages.bash-language-server
+    nodePackages.typescript-language-server
+    nodePackages.vim-language-server
+    pyright
+    rubyPackages.solargraph
+    jdt-language-server
+    kotlin-language-server
+
     # cloud and infra
     opentofu
     k9s
@@ -181,5 +276,5 @@
     ffmpeg # video processing and conversion
     imagemagick
     midicsv
-  ];
+  ]) ++ lib.optional (builtins.hasAttr "vale-ls" pkgs) pkgs."vale-ls";
 }

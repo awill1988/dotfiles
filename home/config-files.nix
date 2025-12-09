@@ -7,10 +7,12 @@ in {
     dataHome = "${homeDirectory}/.local/share";
     cacheHome = "${homeDirectory}/.cache";
 
-    configFile."aws/config".source = ./files/aws/config;
-    configFile."starship.toml".source = ./files/starship.toml;
-    configFile."codex/config.toml".source = ./files/codex/config.toml;
+    configFile."aws/config".source = ./config/aws/config;
+    configFile."starship.toml".source = ./config/starship.toml;
+    configFile."codex/config.toml".source = ./config/codex/config.toml;
     configFile."codex/AGENTS.override.md".source =
-      ./files/codex/AGENTS.override.md;
+      ./config/codex/AGENTS.override.md;
+    configFile."nvim/init.lua".source = ./config/nvim/init.lua;
+    configFile."nvim/lua/aw".source = ./config/nvim/lua/aw;
   };
 }

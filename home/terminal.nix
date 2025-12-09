@@ -1,5 +1,5 @@
 { config, pkgs, lib, ... }:
-let fontFamily = "Source Code Pro";
+let fontFamily = "FiraCode Nerd Font Mono";
 in {
   programs = {
     alacritty.enable = true;

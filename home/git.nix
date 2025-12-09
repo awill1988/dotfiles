@@ -20,11 +20,9 @@ in {
       };
       alias = let
         # run aicommits, then amend to lowercase the full message
-        aicommits_lowercase =
-          "!sh -c 'aicommits --type conventional \"$@\" && git log -1 --format=%B HEAD | tr \"[:upper:]\" \"[:lower:]\" | git commit --amend --no-edit -F -' -";
-      in {
-        ccommit = aicommits_lowercase;
-      };
+        aicommits_lowercase = ''
+          !sh -c 'aicommits --type conventional "$@" && git log -1 --format=%B HEAD | tr "[:upper:]" "[:lower:]" | git commit --amend --no-edit -F -' -'';
+      in { ccommit = aicommits_lowercase; };
       branch.autosetupmerge = true;
       color.ui = "auto";
       commit.gpgsign = true;

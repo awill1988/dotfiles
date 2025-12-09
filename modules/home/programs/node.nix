@@ -69,9 +69,6 @@ in {
       pkgs.nodePackages.typescript
       pkgs.nodePackages.eslint
       pkgs.nodePackages.prettier
-      pkgs.nodePackages.bash-language-server
-      pkgs.nodePackages.typescript-language-server
-      pkgs.nodePackages.vim-language-server
     ] ++ optional cfg.installBun pkgs.bun;
     home.sessionVariables = {
       NPM_CONFIG_USERCONFIG = "${config.xdg.configHome}/npm/config";
