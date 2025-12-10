@@ -47,7 +47,6 @@ in {
     # Rust
     RUSTUP_HOME = "$HOME/.rustup";
     CARGO_HOME = "$HOME/.cargo";
-    CODEX_HOME = "${config.xdg.configHome}/codex";
 
     # Amazon Web Services
     AWS_CONFIG_FILE = "${config.xdg.configHome}/aws/config";

@@ -8,6 +8,8 @@ in {
 
   modules.dev.node.enable = true;
 
+  programs.codex.enable = true;
+
   programs.awscli-custom.enable = true;
   programs.awscli-custom.package = pkgs.awscli2;
   programs.awscli-custom.enableBashIntegration = true;
@@ -129,7 +131,7 @@ in {
     extraLuaConfig = ''require("aw")'';
   };
 
-  home.packages = (with pkgs; [
+  home.packages = with pkgs; [
 
     # unix tooling
     bash-completion
@@ -255,9 +257,7 @@ in {
     steampipe # select * from cloud
 
     # ai tooling
-    chatgpt-cli
     claude-code
-    codex
     llama-cpp
 
     # nix tools
@@ -276,5 +276,5 @@ in {
     ffmpeg # video processing and conversion
     imagemagick
     midicsv
-  ]) ++ lib.optional (builtins.hasAttr "vale-ls" pkgs) pkgs."vale-ls";
+  ];
 }

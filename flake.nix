@@ -119,6 +119,10 @@
 
               # wsl only
               programs.remoteVscode.enable = true;
+              # codex: skip tests on WSL to avoid flaky upstream suite
+              programs.codex.package = pkgs.codex.overrideAttrs (old: {
+                doCheck = false;
+              });
             });
         };
       };
@@ -147,6 +151,7 @@
         home-shells = import ./home/shells.nix;
         home-terminal = import ./home/terminal.nix;
         home-awscli = import ./modules/home/programs/awscli.nix;
+        home-codex = import ./modules/home/programs/codex.nix;
         home-node = import ./modules/home/programs/node.nix;
         home-vscode-remote-wsl =
           import ./modules/home/programs/vscode-remote-wsl.nix;
@@ -160,6 +165,7 @@
       };
 
       overlays = {
+        codex = import ./overlays/codex.nix;
         pkgs-master = _: prev: {
           pkgs-master = import inputs.nixpkgs-master {
             inherit (prev.stdenv) system;

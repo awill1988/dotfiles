@@ -11,8 +11,7 @@
 - WSL: `nix build --extra-experimental-features nix-command --extra-experimental-features flakes .#homeConfigurations.debianWsl.activationPackage && ./result/activate` builds and activates the WSL home profile.
 - macOS bootstrap: `nix build --extra-experimental-features nix-command --extra-experimental-features flakes .#darwinConfigurations.bootstrap-arm.system`.
 - macOS host: `sudo ./result/sw/bin/darwin-rebuild switch --flake .#macbook-arm` applies the built system profile.
-- Lint/format: `nix fmt` runs nixpkgs-fmt across Nix files; `vale .` lint-checks Markdown prose; use `nix develop` to enter a shell with pinned toolchains if needed.
-- Neovim linting: Markdown/text buffers use `vale-ls` when available; ensure the binary is installed or on PATH.
+- Lint/format: `nix fmt` runs nixpkgs-fmt across Nix files; use `nix develop` to enter a shell with pinned toolchains if needed.
 - Validation: `nix flake check` to evaluate flake correctness before pushing.
 
 ## Coding Style & Naming Conventions
@@ -32,5 +31,4 @@
 - Pull requests should state the target host/profile, list affected modules or overlays, and note any manual steps (e.g., rerunning `./result/activate` or `darwin-rebuild switch`).
 
 ## Docs & Writing Quality
-- Run `vale .` before merging to keep Markdown concise and consistent; config lives in `.vale.ini`.
 - Keep prose direct and operational; prefer imperative sentences for steps and configuration guidance.
