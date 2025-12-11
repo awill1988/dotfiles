@@ -40,3 +40,13 @@ cmp.setup({
     format = lspkind.cmp_format({ mode = "symbol_text", maxwidth = 50 }),
   },
 })
+
+cmp.setup.filetype({ "sql", "mysql", "plsql" }, {
+  sources = cmp.config.sources({
+    { name = "vim-dadbod-completion" },
+    { name = "nvim_lsp" },
+    { name = "path" },
+  }, {
+    { name = "buffer" },
+  }),
+})

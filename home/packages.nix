@@ -126,6 +126,9 @@ in {
       which-key-nvim
       gitsigns-nvim
       mini-nvim
+      vim-dadbod
+      vim-dadbod-ui
+      vim-dadbod-completion
     ]);
     extraPackages = with pkgs; [ ripgrep fd tree-sitter ];
     extraLuaConfig = ''require("aw")'';
@@ -181,7 +184,26 @@ in {
 
       tmux attach -t "$session"
     '')
+    (pkgs.writeShellScriptBin "dbui" ''
+      #!/bin/sh
+      # tmux + neovim dadbod UI launcher:
+      # - starts Neovim directly in dadbod-ui
+      # - keeps a bottom tmux shell pane
+      set -euo pipefail
+      target_path="''${1:-.}"
+      resolved_path="$(realpath "$target_path")"
+      session="dbui-$(basename "$resolved_path")"
+
+      if ! tmux has-session -t "$session" 2>/dev/null; then
+        tmux new-session -d -s "$session" -c "$resolved_path" "cd -- \"$resolved_path\" && nvim '+DBUI' ."
+        tmux split-window -t "$session":1 -v -p 30 -c "$resolved_path"
+        tmux select-pane -t "$session":1.1
+      fi
+
+      tmux attach -t "$session"
+    '')
     grpcurl
+    sqlite
     jsonnet
     qemu
     protobuf

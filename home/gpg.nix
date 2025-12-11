@@ -67,7 +67,14 @@ in {
     defaultCacheTtl = 8 * 60 * 60;
     maxCacheTtl = 12 * 60 * 60;
     extraConfig = "allow-loopback-pinentry";
-    # use a GUI pinentry to avoid pty/line-discipline glitches in VS Code's terminal
-    pinentry.package = pkgs.pinentry-gtk2;
+    # prefer GUI pinentry when DISPLAY/WAYLAND is available; fallback to curses otherwise
+    pinentry.package = pkgs.writeShellScriptBin "pinentry" ''
+      #!/bin/sh
+      set -e
+      if [ -n "''${DISPLAY:-}" ] || [ -n "''${WAYLAND_DISPLAY:-}" ]; then
+        exec ${pkgs.pinentry-gtk2}/bin/pinentry "$@"
+      fi
+      exec ${pkgs.pinentry-curses}/bin/pinentry-curses "$@"
+    '';
   };
 }
