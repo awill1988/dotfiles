@@ -23,7 +23,7 @@
       inherit (inputs.nixpkgs-unstable.lib)
         attrValues makeOverridable mkForce optionalAttrs singleton;
 
-      systems = [ "x86_64-darwin" "aarch64-darwin" "x86_64-linux" ];
+      systems = [ "aarch64-darwin" "x86_64-linux" ];
       forAllSystems = f: nixpkgs.lib.genAttrs systems (system: f system);
 
       nixpkgsConfig = {
@@ -160,8 +160,6 @@
             inherit lib;
           }).options.users.primaryUser;
         };
-        home-wsl-gpg-systemd =
-          import ./modules/home/programs/wsl-gpg-systemd.nix;
       };
 
       overlays = {
