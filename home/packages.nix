@@ -9,6 +9,8 @@ in {
   modules.dev.node.enable = true;
 
   programs.codex.enable = true;
+  programs.claude.enable = true;
+  programs.gemini.enable = true;
 
   programs.awscli-custom.enable = true;
   programs.awscli-custom.package = pkgs.awscli2;
@@ -120,7 +122,7 @@ in {
       luasnip
       friendly-snippets
       lspkind-nvim
-      nvim-treesitter
+      nvim-treesitter.withAllGrammars
       telescope-nvim
       telescope-fzf-native-nvim
       which-key-nvim
@@ -170,15 +172,20 @@ in {
       #!/bin/sh
       # tmux + neovim "IDE" launcher:
       # - left: neo-tree file explorer inside neovim
-      # - bottom: tmux shell pane
+      # - right: two stacked tmux shell panes (30% column)
       set -euo pipefail
       target_path="''${1:-.}"
       resolved_path="$(realpath "$target_path")"
       session="ide-$(basename "$resolved_path")"
+      shell_cmd="''${SHELL:-/bin/zsh}"
+      if ! command -v "$shell_cmd" >/dev/null 2>&1; then
+        shell_cmd="/bin/sh"
+      fi
 
       if ! tmux has-session -t "$session" 2>/dev/null; then
         tmux new-session -d -s "$session" -c "$resolved_path" "cd -- \"$resolved_path\" && nvim '+Neotree left reveal' ."
-        tmux split-window -t "$session":1 -v -p 30 -c "$resolved_path"
+        tmux split-window -t "$session":1 -h -p 30 -c "$resolved_path" "$shell_cmd"
+        tmux split-window -t "$session":1.2 -v -c "$resolved_path" "$shell_cmd"
         tmux select-pane -t "$session":1.1
       fi
 
@@ -279,7 +286,6 @@ in {
     steampipe # select * from cloud
 
     # ai tooling
-    claude-code
     llama-cpp
 
     # nix tools

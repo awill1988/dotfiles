@@ -1,13 +1,19 @@
 projects = { "/home/adam/projects" = { trust_level = "trusted" } }
 model_reasoning_effort = "high"
-model = "gpt-5.1-codex-max"
+approval_policy = "on-request"
+sandbox_mode = "danger-full-access"
 
 [tools]
 websearch = true
 
 features.web_search_request = true
+features.rmcp_client = true
 
 tools.view_image = true
+
+[mcp_servers.github]
+url = "https://api.githubcopilot.com/mcp/"
+bearer_token_env_var = "GITHUB_PAT_TOKEN"
 
 [shell_environment_policy]
 inherit = "all"

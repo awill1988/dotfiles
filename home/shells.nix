@@ -28,9 +28,7 @@ in {
 
     # Local bin
     LOCAL_BIN = "$HOME/.local/bin";
-    CUDA_HOME = "/usr/local/cuda";
     PYENV_HOME = "$HOME/.pyenv";
-    CUDA_TOOLKIT_ROOT = "/usr/local/cuda";
 
     # Elixir
     ELIXIR_PATH = "$HOME/.mix/escripts";
@@ -56,7 +54,15 @@ in {
 
     # Prefer nix-provided tools (e.g., gnupg) ahead of system binaries to avoid version skew.
     PATH =
-      "$LOCAL_BIN:$PYENV_HOME/shims:$PYENV_HOME/bin:$CUDA_HOME/bin:$ELIXIR_PATH:$CARGO_HOME/bin:$GOPATH/bin:$RBENV_ROOT/plugins/ruby-build/bin:$HOME/google-cloud-sdk/bin:$PATH";
+      "$LOCAL_BIN:$PYENV_HOME/shims:$PYENV_HOME/bin:$ELIXIR_PATH:$CARGO_HOME/bin:$GOPATH/bin:$RBENV_ROOT/plugins/ruby-build/bin:$HOME/google-cloud-sdk/bin:$PATH";
+  } // lib.optionalAttrs (user-info.work.email != null) {
+    # gpg signing key for work
+    "git/work.gitconfig" = {
+      text = ''
+        [user]
+          email = "${user-info.work.email}"
+      '';
+    };
   };
 
   xdg.configFile = {
@@ -64,14 +70,6 @@ in {
       text = ''
         [user]
           email = "${user-info.email}"
-      '';
-    };
-  } // lib.optionalAttrs (user-info.work.email != null) {
-    # gpg signing key for work
-    "git/work.gitconfig" = {
-      text = ''
-        [user]
-          email = "${user-info.work.email}"
       '';
     };
   };
@@ -129,8 +127,8 @@ in {
     src = pkgs.fetchFromGitHub {
       owner = "unixorn";
       repo = "git-extra-commands";
-      rev = "10163075bd97a49d74c510283a9d7b4fe9e123e1";
-      sha256 = "sha256-uc0zODi02X6a6igTpqSCxLzg7dh3W8ePzZG0+EesTc0=";
+      rev = "4d39286f349a7f50171829f06da77c5097b41f9d";
+      sha256 = "sha256-Dr9fOhVKrd3+t7dMBHX5PCRCwkeblAc9t2F/vvWiHc0=";
     };
   }];
   programs.zsh.history = {
@@ -177,7 +175,7 @@ in {
 
     # Pipe GitHub token into nix only when it's available in the environment.
     if [[ -n "''${GITHUB_TOKEN:-}" ]]; then
-      _codex_nix_token="access-tokens=github.com=''${GITHUB_TOKEN}"
+      _codex_nix_token="access-tokens = github.com=''${GITHUB_TOKEN}"
       if [[ -n "''${NIX_CONFIG:-}" ]]; then
         export NIX_CONFIG="$NIX_CONFIG"$'\n'"$_codex_nix_token"
       else

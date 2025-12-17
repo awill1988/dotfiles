@@ -2,10 +2,8 @@
   description = "Adam's dotfiles";
 
   inputs = {
-    nixpkgs-master.url = "github:nixos/nixpkgs/master";
-    nixpkgs-stable.url = "github:nixos/nixpkgs/nixpkgs-22.11-darwin";
     nixpkgs-unstable.url = "github:nixos/nixpkgs/nixpkgs-unstable";
-    nixos-stable.url = "github:nixos/nixpkgs/nixos-22.11";
+
     darwin.url = "github:LnL7/nix-darwin";
     darwin.inputs.nixpkgs.follows = "nixpkgs-unstable";
 
@@ -116,9 +114,9 @@
               home.homeDirectory = "/home/${config.home.username}";
               home.stateVersion = homeManagerStateVersion;
               home.user-info = primaryUserInfo;
+              home.sessionVariables.LD_LIBRARY_PATH =
+                "/usr/lib/wsl/lib:$LD_LIBRARY_PATH";
 
-              # wsl only
-              programs.remoteVscode.enable = true;
               # codex: skip tests on WSL to avoid flaky upstream suite
               programs.codex.package = pkgs.codex.overrideAttrs (old: {
                 doCheck = false;
@@ -147,14 +145,14 @@
         home-git = import ./home/git.nix;
         home-git-ignores = import ./home/git-ignores.nix;
         home-gpg = import ./home/gpg.nix;
+        home-gemini = import ./modules/home/programs/gemini;
+        home-claude = import ./modules/home/programs/claude;
         home-packages = import ./home/packages.nix;
         home-shells = import ./home/shells.nix;
         home-terminal = import ./home/terminal.nix;
-        home-awscli = import ./modules/home/programs/awscli.nix;
-        home-codex = import ./modules/home/programs/codex.nix;
-        home-node = import ./modules/home/programs/node.nix;
-        home-vscode-remote-wsl =
-          import ./modules/home/programs/vscode-remote-wsl.nix;
+        home-awscli = import ./modules/home/programs/awscli;
+        home-codex = import ./modules/home/programs/codex;
+        home-node = import ./modules/home/programs/node;
         home-user-info = { lib, ... }: {
           options.home.user-info = (self.darwinModules.users-primaryUser {
             inherit lib;
@@ -163,27 +161,26 @@
       };
 
       overlays = {
+        gemini = import ./overlays/gemini.nix;
+        claude = import ./overlays/claude.nix;
         codex = import ./overlays/codex.nix;
-        pkgs-master = _: prev: {
-          pkgs-master = import inputs.nixpkgs-master {
-            inherit (prev.stdenv) system;
-            inherit (nixpkgsConfig) config;
-          };
-        };
-        pkgs-stable = _: prev: {
-          pkgs-stable = import inputs.nixpkgs-stable {
-            inherit (prev.stdenv) system;
-            inherit (nixpkgsConfig) config;
-          };
-        };
         pkgs-unstable = _: prev: {
           pkgs-unstable = import inputs.nixpkgs-unstable {
-            inherit (prev.stdenv) system;
+            inherit (prev.stdenv.hostPlatform) system;
             inherit (nixpkgsConfig) config;
           };
         };
       };
       formatter =
         forAllSystems (system: nixpkgs.legacyPackages.${system}.nixpkgs-fmt);
+
+      packages = forAllSystems (system:
+        let pkgs = import inputs.nixpkgs-unstable {
+          inherit system;
+          inherit (nixpkgsConfig) config overlays;
+        };
+        in {
+          inherit (pkgs) gemini codex;
+        });
     };
 }

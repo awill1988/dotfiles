@@ -2,8 +2,8 @@
 let
   cfg = config.programs.codex;
   codex_config_dir = "${config.xdg.configHome}/codex";
-  config_source = ../../../home/config/codex/config.toml;
-  agents_override_source = ../../../home/config/codex/AGENTS.override.md;
+  config_source = ./config.toml;
+  agents_override_source = ./AGENTS.override.md;
 in {
   config = lib.mkIf cfg.enable {
     programs.codex.package = lib.mkDefault pkgs.codex;

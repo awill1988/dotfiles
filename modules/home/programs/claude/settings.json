@@ -1,0 +1,15 @@
+{
+  "telemetry": {
+    "enabled": false,
+    "analytics": false,
+    "statsig": {
+      "enabled": false
+    }
+  },
+  "feedback": {
+    "prompt": false,
+    "surveys": {
+      "enabled": false
+    }
+  }
+}

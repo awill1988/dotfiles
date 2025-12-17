@@ -20,6 +20,9 @@
 - Keep log and script output lower-case; gate verbosity with `LOG_LEVEL` when applicable.
 - Do not hardcode secrets; prefer environment variables or GPG-backed inputs.
 
+## Build & Toolchain Semantics
+- Prefer defaults: avoid restating compilation flags or toolchain settings (any language) when the default matches; duplicated defaults are treated as a quality regression.
+
 ## Testing Guidelines
 - Primary check is successful evaluation/build of flake targets (`nix flake check`, targeted `nix build` commands above).
 - After building a home profile, run `./result/activate` and confirm no errors; for darwin, ensure `darwin-rebuild switch` completes cleanly.

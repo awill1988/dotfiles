@@ -19,3 +19,4 @@
 - Code defensively, validate inputs early, never hardcode secrets—pull from environment variables.
 - Keep scripts and playbooks idempotent.
 - Comments should capture intent and rationale; documentation stays in standard Markdown.
+- When using fixed binary sizes, add a comment with the human-readable value (e.g., `# 200 MiB`).

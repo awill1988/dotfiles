@@ -1,6 +1,8 @@
 { config, lib, pkgs, ... }:
 with lib;
-let cfg = config.programs.awscli-custom;
+let
+  cfg = config.programs.awscli-custom;
+  aws_config_source = ./config;
 in {
   options.programs.awscli-custom = {
     enable = mkEnableOption "awscli - manage your AWS services";
@@ -103,5 +105,10 @@ in {
     programs.zsh.initContent = mkIf cfg.enableZshIntegration ''
       complete -C '${pkgs.awscli}/bin/aws_completer' aws
     '';
+
+    xdg.configFile."aws/config" = {
+      source = aws_config_source;
+      force = true;
+    };
   };
 }

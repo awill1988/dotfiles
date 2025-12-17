@@ -1,6 +1,11 @@
 vim.g.mapleader = " "
 
 local o = vim.o
+local shell = vim.env.SHELL
+if shell == nil or shell == "" or vim.fn.executable(shell) == 0 then
+  shell = "/bin/zsh"
+end
+o.shell = shell
 o.termguicolors = true
 o.number = true
 o.relativenumber = true
