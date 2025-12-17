@@ -42,7 +42,8 @@ let
       maintainers = [ ];
     };
   };
-in {
+in
+{
   claude =
     let pkg = mkClaude { };
     in pkg // {

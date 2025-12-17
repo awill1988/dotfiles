@@ -14,8 +14,15 @@
     mac-app-util.url = "github:hraban/mac-app-util";
   };
 
-  outputs = { self, nixpkgs, darwin, home-manager, flake-utils, mac-app-util
-    , ... }@inputs:
+  outputs =
+    { self
+    , nixpkgs
+    , darwin
+    , home-manager
+    , flake-utils
+    , mac-app-util
+    , ...
+    }@inputs:
     let
       inherit (darwin.lib) darwinSystem;
       inherit (inputs.nixpkgs-unstable.lib)
@@ -82,7 +89,8 @@
             };
           })
       ];
-    in {
+    in
+    {
       darwinConfigurations = rec {
         bootstrap-arm = makeOverridable darwinSystem {
           system = "aarch64-darwin";
@@ -114,6 +122,11 @@
               home.homeDirectory = "/home/${config.home.username}";
               home.stateVersion = homeManagerStateVersion;
               home.user-info = primaryUserInfo;
+              aw.wsl.enable = true;
+              aw.wsl.usbipd.enable = true;
+              aw.wsl.usbipd.busid = "1-1";
+              aw.wsl.usbipd.auto_attach = true;
+              aw.wsl.usbipd.distro_name = "Debian";
               home.sessionVariables.LD_LIBRARY_PATH =
                 "/usr/lib/wsl/lib:$LD_LIBRARY_PATH";
 
@@ -142,6 +155,8 @@
 
       homeManagerModules = {
         home-config-files = import ./home/config-files.nix;
+        home-fonts = import ./home/fonts.nix;
+        home-wsl = import ./home/wsl.nix;
         home-git = import ./home/git.nix;
         home-git-ignores = import ./home/git-ignores.nix;
         home-gpg = import ./home/gpg.nix;
@@ -153,6 +168,7 @@
         home-awscli = import ./modules/home/programs/awscli;
         home-codex = import ./modules/home/programs/codex;
         home-node = import ./modules/home/programs/node;
+        home-nvim = import ./home/nvim.nix;
         home-user-info = { lib, ... }: {
           options.home.user-info = (self.darwinModules.users-primaryUser {
             inherit lib;
@@ -175,11 +191,13 @@
         forAllSystems (system: nixpkgs.legacyPackages.${system}.nixpkgs-fmt);
 
       packages = forAllSystems (system:
-        let pkgs = import inputs.nixpkgs-unstable {
-          inherit system;
-          inherit (nixpkgsConfig) config overlays;
-        };
-        in {
+        let
+          pkgs = import inputs.nixpkgs-unstable {
+            inherit system;
+            inherit (nixpkgsConfig) config overlays;
+          };
+        in
+        {
           inherit (pkgs) gemini codex;
         });
     };

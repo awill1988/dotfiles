@@ -3,7 +3,8 @@ let
   nodePackages = pkgs.nodePackages_latest.override {
     nodejs = config.modules.dev.node.package;
   };
-in {
+in
+{
   programs.home-manager.enable = true;
 
   modules.dev.node.enable = true;
@@ -112,6 +113,8 @@ in {
     plugins = (with pkgs.vimPlugins; [
       plenary-nvim
       nvim-web-devicons
+      lualine-nvim
+      bufferline-nvim
       nui-nvim
       neo-tree-nvim
       nvim-lspconfig
@@ -160,6 +163,8 @@ in {
     socat
 
     # software development
+    vim
+    git
     gnumake
     cmake
     pkg-config
@@ -172,7 +177,7 @@ in {
       #!/bin/sh
       # tmux + neovim "IDE" launcher:
       # - left: neo-tree file explorer inside neovim
-      # - right: two stacked tmux shell panes (30% column)
+      # - right: single tmux shell pane (30% column)
       set -euo pipefail
       target_path="''${1:-.}"
       resolved_path="$(realpath "$target_path")"
@@ -185,7 +190,30 @@ in {
       if ! tmux has-session -t "$session" 2>/dev/null; then
         tmux new-session -d -s "$session" -c "$resolved_path" "cd -- \"$resolved_path\" && nvim '+Neotree left reveal' ."
         tmux split-window -t "$session":1 -h -p 30 -c "$resolved_path" "$shell_cmd"
-        tmux split-window -t "$session":1.2 -v -c "$resolved_path" "$shell_cmd"
+        tmux select-pane -t "$session":1.1
+      fi
+
+      tmux attach -t "$session"
+    '')
+    (pkgs.writeShellScriptBin "idedb" ''
+      #!/bin/sh
+      # tmux + neovim "IDE" launcher with database UI:
+      # - left: neo-tree file explorer inside neovim
+      # - right top: tmux shell pane
+      # - right bottom: dadbod-ui in neovim
+      set -euo pipefail
+      target_path="''${1:-.}"
+      resolved_path="$(realpath "$target_path")"
+      session="idedb-$(basename "$resolved_path")"
+      shell_cmd="''${SHELL:-/bin/zsh}"
+      if ! command -v "$shell_cmd" >/dev/null 2>&1; then
+        shell_cmd="/bin/sh"
+      fi
+
+      if ! tmux has-session -t "$session" 2>/dev/null; then
+        tmux new-session -d -s "$session" -c "$resolved_path" "cd -- \"$resolved_path\" && nvim '+Neotree left reveal' ."
+        tmux split-window -t "$session":1 -h -p 30 -c "$resolved_path" "$shell_cmd"
+        tmux split-window -t "$session":1.2 -v -c "$resolved_path" "cd -- \"$resolved_path\" && nvim '+DBUI' ."
         tmux select-pane -t "$session":1.1
       fi
 

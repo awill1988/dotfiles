@@ -55,24 +55,24 @@ in {
     # Prefer nix-provided tools (e.g., gnupg) ahead of system binaries to avoid version skew.
     PATH =
       "$LOCAL_BIN:$PYENV_HOME/shims:$PYENV_HOME/bin:$ELIXIR_PATH:$CARGO_HOME/bin:$GOPATH/bin:$RBENV_ROOT/plugins/ruby-build/bin:$HOME/google-cloud-sdk/bin:$PATH";
-  } // lib.optionalAttrs (user-info.work.email != null) {
-    # gpg signing key for work
-    "git/work.gitconfig" = {
-      text = ''
-        [user]
-          email = "${user-info.work.email}"
-      '';
-    };
   };
 
-  xdg.configFile = {
-    "git/personal.gitconfig" = {
-      text = ''
-        [user]
-          email = "${user-info.email}"
-      '';
+  xdg.configFile =
+    {
+      "git/personal.gitconfig" = {
+        text = ''
+          [user]
+            email = "${user-info.email}"
+        '';
+      };
+    } // lib.optionalAttrs (user-info.work.email != null) {
+      "git/work.gitconfig" = {
+        text = ''
+          [user]
+            email = "${user-info.work.email}"
+        '';
+      };
     };
-  };
 
   home.shellAliases = {
     terraform = "tofu";

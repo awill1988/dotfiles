@@ -2,7 +2,8 @@
 let
   inherit (lib) mkIf elem;
   brewEnabled = config.homebrew.enable;
-in {
+in
+{
   programs.zsh.shellInit = mkIf brewEnabled ''
     # Set HOMEBREW_PREFIX and manually append paths to end of PATH
     export HOMEBREW_PREFIX="${config.homebrew.brewPrefix}"

@@ -16,5 +16,5 @@
   programs.zsh.enable = true;
   programs.zsh.promptInit = "";
 
-  fonts.packages = with pkgs; [ hack-font ];
+  fonts.packages = with pkgs; [ ];
 }

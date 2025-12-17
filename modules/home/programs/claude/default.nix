@@ -7,7 +7,8 @@ let
   claude_instructions_source = ./CLAUDE.md;
   claude_user_config_source = ./claude.json;
   settings_source = ./settings.json;
-in {
+in
+{
   options.programs.claude = {
     enable = lib.mkEnableOption "Claude Code CLI";
     package = lib.mkOption {

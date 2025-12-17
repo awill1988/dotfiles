@@ -4,7 +4,8 @@ let
   codex_config_dir = "${config.xdg.configHome}/codex";
   config_source = ./config.toml;
   agents_override_source = ./AGENTS.override.md;
-in {
+in
+{
   config = lib.mkIf cfg.enable {
     programs.codex.package = lib.mkDefault pkgs.codex;
     home.sessionVariables.CODEX_HOME = lib.mkDefault codex_config_dir;

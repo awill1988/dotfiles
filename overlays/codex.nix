@@ -11,7 +11,7 @@ let
   is_linux = final.stdenv.hostPlatform.isLinux;
   rust_toolchain =
     if final ? rust-bin && final.rust-bin ? stable
-       && builtins.hasAttr "1.90.0" final.rust-bin.stable then
+      && builtins.hasAttr "1.90.0" final.rust-bin.stable then
       final.rust-bin.stable."1.90.0".default
     else
       null;
@@ -27,7 +27,8 @@ let
     cargo = cargo_toolchain;
     rustc = rustc_toolchain;
   };
-in {
+in
+{
   codex = rust_platform.buildRustPackage {
     pname = "codex";
     inherit version src;

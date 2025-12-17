@@ -36,7 +36,8 @@ let
       mainProgram = "aicommits";
     };
   };
-in {
+in
+{
   options.modules.dev.node = {
     enable = mkOption {
       type = types.bool;

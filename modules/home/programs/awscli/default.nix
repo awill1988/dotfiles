@@ -3,7 +3,8 @@ with lib;
 let
   cfg = config.programs.awscli-custom;
   aws_config_source = ./config;
-in {
+in
+{
   options.programs.awscli-custom = {
     enable = mkEnableOption "awscli - manage your AWS services";
 

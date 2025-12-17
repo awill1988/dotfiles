@@ -1,10 +1,11 @@
 { config, pkgs, lib, ... }:
 let inherit (config.home) user-info;
 in {
-  programs.gpg = let
-    common = {
-      settings = { }
-        // lib.optionalAttrs (!builtins.isNull user-info.gpg.masterKey) {
+  programs.gpg =
+    let
+      common = {
+        settings = { }
+          // lib.optionalAttrs (!builtins.isNull user-info.gpg.masterKey) {
           default-key = user-info.gpg.masterKey;
           auto-key-locate = "keyserver";
           keyserver = "pgp.mit.edu";
@@ -52,14 +53,15 @@ in {
           # Disable recipient key ID in messages
           throw-keyids = true;
         };
-      scdaemonSettings = {
-        # pcscd removed; use built-in CCID directly.
-        disable-ccid = false;
-        reader-port = ''"Yubico YubiKey OTP+FIDO+CCID"'';
+        scdaemonSettings = {
+          # pcscd removed; use built-in CCID directly.
+          disable-ccid = false;
+          reader-port = ''"Yubico YubiKey OTP+FIDO+CCID"'';
+        };
       };
-    };
-    darwin = lib.optionalAttrs pkgs.stdenv.isDarwin { enable = false; };
-  in common // darwin;
+      darwin = lib.optionalAttrs pkgs.stdenv.isDarwin { enable = false; };
+    in
+    common // darwin;
 
   services.gpg-agent = {
     enable = true;

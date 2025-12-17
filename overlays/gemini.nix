@@ -7,7 +7,8 @@ let
     hash = "sha256-0fGchmQUxZ+DTtBQi3UaCZnP1q5dTOei6bWPx4lXV7o=";
   };
   nodejs = prev.nodejs_latest;
-in {
+in
+{
   gemini =
     let
       mkGemini = { nodejs ? prev.nodejs_latest }: prev.stdenv.mkDerivation {
@@ -40,7 +41,8 @@ in {
         };
       };
       pkg = mkGemini { };
-    in pkg // {
+    in
+    pkg // {
       override = args: mkGemini ({ } // args);
     };
 }

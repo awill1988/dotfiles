@@ -4,16 +4,18 @@ let
   gemini_home = "${config.xdg.configHome}/gemini";
   settings_source = ./settings.json;
   gemini_instructions_source = ./GEMINI.md;
-in {
+in
+{
   options.programs.gemini = {
     enable = lib.mkEnableOption "Gemini CLI";
     package = lib.mkOption {
       type = lib.types.package;
       default =
         if config.modules.dev.node.enable then
-          pkgs.gemini.override {
-            nodejs = config.modules.dev.node.package;
-          }
+          pkgs.gemini.override
+            {
+              nodejs = config.modules.dev.node.package;
+            }
         else
           pkgs.gemini;
       description = "Gemini CLI package to install.";

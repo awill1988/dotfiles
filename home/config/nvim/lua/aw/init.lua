@@ -1,4 +1,6 @@
 require("aw.options")
+require("aw.plugins.lualine")
+require("aw.plugins.bufferline")
 require("aw.plugins.which-key")
 require("aw.plugins.gitsigns")
 require("aw.plugins.mini")
