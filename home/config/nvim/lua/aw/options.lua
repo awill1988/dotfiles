@@ -12,6 +12,7 @@ o.relativenumber = true
 o.signcolumn = "yes"
 o.clipboard = "unnamedplus"
 o.mouse = "a"
+o.mousetime = 500 -- default double-click timing; keep double-click reliable while we tame drag separately
 o.splitright = true
 o.splitbelow = true
 vim.g.loaded_netrw = 1

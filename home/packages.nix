@@ -114,17 +114,13 @@ in
       plenary-nvim
       nvim-web-devicons
       lualine-nvim
-      bufferline-nvim
       nui-nvim
       neo-tree-nvim
-      nvim-lspconfig
-      nvim-cmp
-      cmp-nvim-lsp
-      cmp-buffer
-      cmp-path
+      coc-nvim
+      ale
+      vim-surround
       luasnip
       friendly-snippets
-      lspkind-nvim
       nvim-treesitter.withAllGrammars
       telescope-nvim
       telescope-fzf-native-nvim
@@ -293,9 +289,6 @@ in
     # java / kotlin
     jdk
     gradle
-
-    # rust
-    rustup
 
     # language servers
     gopls

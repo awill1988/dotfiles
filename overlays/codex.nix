@@ -39,8 +39,8 @@ in
 
     cargoBuildFlags = [ "-p" "codex-cli" ];
     doCheck = false;
-    # rustc needs a larger stack; 4294967296 bytes (4 GiB)
-    RUST_MIN_STACK = "4294967296";
+    # rustc needs a larger stack; (8 GiB)
+    RUST_MIN_STACK = "8589934592";
     # upstream enables thin LTO in Cargo profiles; disable to avoid linux build crashes
     CARGO_PROFILE_RELEASE_LTO = "off";
     auditable = false;

@@ -176,10 +176,7 @@
         };
       };
 
-      overlays = {
-        gemini = import ./overlays/gemini.nix;
-        claude = import ./overlays/claude.nix;
-        codex = import ./overlays/codex.nix;
+      overlays = (import ./overlays) // {
         pkgs-unstable = _: prev: {
           pkgs-unstable = import inputs.nixpkgs-unstable {
             inherit (prev.stdenv.hostPlatform) system;

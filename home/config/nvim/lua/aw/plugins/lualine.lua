@@ -36,9 +36,17 @@ lualine.setup({
     lualine_y = {},
     lualine_z = {},
   },
-  tabline = {},
+  tabline = {
+    lualine_a = {
+      {
+        "buffers",
+        show_filename_only = true,
+        mode = 2, -- show buffer numbers and relative path
+      },
+    },
+    lualine_z = { "tabs" },
+  },
   winbar = {},
   inactive_winbar = {},
   extensions = {},
 })
-

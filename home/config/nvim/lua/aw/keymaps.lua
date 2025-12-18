@@ -19,5 +19,7 @@ local function bufremove(force)
   focus_neo_tree()
 end
 
-map("n", "ZZ", function() bufremove(false) end, { silent = true, desc = "close buffer, keep layout" })
 map("n", "ZQ", function() bufremove(true) end, { silent = true, desc = "force close buffer, keep layout" })
+
+-- dampen accidental drags: ignore drag motion, keep clicks/double-click intact
+map({ "n", "v", "i" }, "<LeftDrag>", "<Nop>", { silent = true })
