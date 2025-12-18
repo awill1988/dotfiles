@@ -122,7 +122,7 @@ if ($usbipdEnabledBool) {
     # ensure wsl is running before proceeding
     $distro = $DistroName
     if (-not $distro) {
-      # use --list --running to get only running distros
+      # try running distros first
       $runningDistros = & wsl.exe --list --running 2>$null
       if ($runningDistros -and $runningDistros.Count -gt 1) {
         # skip first line (header) and get first running distro
@@ -137,6 +137,23 @@ if ($usbipdEnabledBool) {
           if ($cleaned) {
             $distro = $cleaned
             break
+          }
+        }
+      }
+      # if no running distros, fall back to all distros (e.g., after wsl --shutdown)
+      if (-not $distro) {
+        $allDistros = & wsl.exe --list 2>$null
+        if ($allDistros -and $allDistros.Count -gt 1) {
+          for ($i = 1; $i -lt $allDistros.Count; $i++) {
+            $line = $allDistros[$i]
+            $cleaned = ($line -replace '\*', '' -replace '[^\x20-\x7E]', '').Trim()
+            if ($cleaned -match '^(.+?)\s+\(Default\)$') {
+              $cleaned = $matches[1].Trim()
+            }
+            if ($cleaned) {
+              $distro = $cleaned
+              break
+            }
           }
         }
       }
