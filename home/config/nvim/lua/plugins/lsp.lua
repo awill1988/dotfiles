@@ -91,10 +91,17 @@ return {
 			local capabilities = vim.lsp.protocol.make_client_capabilities()
 			capabilities = require("cmp_nvim_lsp").default_capabilities(capabilities)
 
+			-- Helper to register and enable servers via the new vim.lsp.config API
+			local function configure(server, opts)
+				vim.lsp.config(server, vim.tbl_deep_extend("force", {
+					on_attach = on_attach,
+					capabilities = capabilities,
+				}, opts or {}))
+				vim.lsp.enable(server)
+			end
+
 			-- Lua
-			require("lspconfig")["lua_ls"].setup({
-				on_attach = on_attach,
-				capabilities = capabilities,
+			configure("lua_ls", {
 				settings = {
 					Lua = {
 						completion = {
@@ -114,9 +121,7 @@ return {
 			})
 
 			-- Python
-			require("lspconfig")["pylsp"].setup({
-				on_attach = on_attach,
-				capabilities = capabilities,
+			configure("pylsp", {
 				settings = {
 					pylsp = {
 						plugins = {
