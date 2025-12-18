@@ -110,31 +110,10 @@ in
     vimAlias = true;
     withNodeJs = true;
     withPython3 = true;
-    plugins = (with pkgs.vimPlugins; [
-      plenary-nvim
-      nvim-web-devicons
-      lualine-nvim
-      bufferline-nvim
-      nui-nvim
-      neo-tree-nvim
-      coc-nvim
-      ale
-      vim-surround
-      luasnip
-      friendly-snippets
-      nvim-treesitter.withAllGrammars
-      telescope-nvim
-      telescope-fzf-native-nvim
-      which-key-nvim
-      gitsigns-nvim
-      mini-nvim
-      vim-dadbod
-      vim-dadbod-ui
-      vim-dadbod-completion
-      persisted-nvim
-    ]);
+    # plugins managed by lazy.nvim, not nix
+    plugins = [ ];
     extraPackages = with pkgs; [ ripgrep fd tree-sitter ];
-    extraLuaConfig = ''require("ext")'';
+    # no extraLuaConfig - init.lua handles bootstrapping
   };
 
   home.packages = with pkgs; [
