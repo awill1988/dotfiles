@@ -1,7 +1,7 @@
 { config, pkgs, lib, ... }:
 let
   inherit (lib) mkEnableOption mkOption types;
-  cfg = config.aw.wsl;
+  cfg = config.ext.wsl;
 
   # read template files
   bashScriptTemplate = builtins.readFile ./wsl-scripts/nix-wsl-init.sh.tpl;
@@ -37,7 +37,7 @@ let
         "${psLogonScript}"
         "${psTaskSetupScript}"
         (if cfg.usbipd.enable then "true" else "false")
-        cfg.usbipd.busid
+        (if cfg.usbipd.busid == null then "" else cfg.usbipd.busid)
         (if cfg.usbipd.auto_attach then "true" else "false")
         (if cfg.usbipd.distro_name == null then "" else cfg.usbipd.distro_name)
         (toString cfg.usbipd.wait_seconds)
@@ -47,14 +47,15 @@ let
   };
 in
 {
-  options.aw.wsl = {
+  options.ext.wsl = {
     enable = mkEnableOption "wsl-specific configuration";
 
     usbipd = {
       enable = mkEnableOption "usbipd auto-attach at windows logon";
       busid = mkOption {
-        type = types.str;
-        default = "1-1";
+        type = types.nullOr types.str;
+        default = null;
+        description = "usb device busid to attach, or null to auto-detect smart card reader";
       };
       auto_attach = mkOption {
         type = types.bool;
@@ -63,6 +64,7 @@ in
       distro_name = mkOption {
         type = types.nullOr types.str;
         default = null;
+        description = "wsl distro name, or null to auto-detect running distro";
       };
       wait_seconds = mkOption {
         type = types.int;

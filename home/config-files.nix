@@ -9,6 +9,6 @@ in {
 
     configFile."starship.toml".source = ./config/starship.toml;
     configFile."nvim/init.lua".source = ./config/nvim/init.lua;
-    configFile."nvim/lua/aw".source = ./config/nvim/lua/aw;
+    configFile."nvim/lua/ext".source = ./config/nvim/lua/ext;
   };
 }

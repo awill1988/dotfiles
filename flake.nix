@@ -122,11 +122,12 @@
               home.homeDirectory = "/home/${config.home.username}";
               home.stateVersion = homeManagerStateVersion;
               home.user-info = primaryUserInfo;
-              aw.wsl.enable = true;
-              aw.wsl.usbipd.enable = true;
-              aw.wsl.usbipd.busid = "1-1";
-              aw.wsl.usbipd.auto_attach = true;
-              aw.wsl.usbipd.distro_name = "Debian";
+              ext.wsl.enable = true;
+              ext.wsl.usbipd.enable = true;
+              # auto-detect smart card reader and distro
+              # ext.wsl.usbipd.busid = "1-1";
+              # ext.wsl.usbipd.distro_name = "Debian";
+              ext.wsl.usbipd.auto_attach = true;
               home.sessionVariables.LD_LIBRARY_PATH =
                 "/usr/lib/wsl/lib:$LD_LIBRARY_PATH";
 

@@ -10,7 +10,7 @@ param(
   [string]$UsbipdEnabled,
 
   [Parameter(Mandatory=$false)]
-  [string]$UsbipdBusId = "1-1",
+  [string]$UsbipdBusId = "",
 
   [Parameter(Mandatory=$false)]
   [string]$UsbipdAutoAttach = "true",
@@ -48,9 +48,11 @@ if (Test-Path $taskSetupScript) {
     $params = @{
       WinProfilePath = $WinProfilePath
       UsbipdEnabled = $usbipdEnabledBool
-      BusId = $UsbipdBusId
       AutoAttach = $autoAttachBool
       WaitSeconds = $WslWaitSeconds
+    }
+    if ($UsbipdBusId) {
+      $params['BusId'] = $UsbipdBusId
     }
     if ($WslDistroName) {
       $params['DistroName'] = $WslDistroName

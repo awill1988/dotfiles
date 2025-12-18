@@ -3,7 +3,7 @@ let
   inherit (lib) mkOption types;
 in
 {
-  options.aw.fonts = {
+  options.ext.fonts = {
     monospace_family = mkOption {
       type = types.str;
       default = "SauceCodePro Nerd Font Mono";
@@ -21,8 +21,8 @@ in
     fonts.fontconfig.enable = true;
 
     home.sessionVariables = {
-      TERMINAL_FONT_FAMILY = config.aw.fonts.monospace_family;
-      TERMINAL_FONT_SIZE = toString config.aw.fonts.monospace_size;
+      TERMINAL_FONT_FAMILY = config.ext.fonts.monospace_family;
+      TERMINAL_FONT_SIZE = toString config.ext.fonts.monospace_size;
     };
 
     home.packages = with pkgs; [

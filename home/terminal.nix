@@ -1,7 +1,7 @@
 { config, pkgs, lib, ... }:
 let
-  font_family = config.aw.fonts.monospace_family;
-  font_size = config.aw.fonts.monospace_size;
+  font_family = config.ext.fonts.monospace_family;
+  font_size = config.ext.fonts.monospace_size;
 in
 {
   programs = {

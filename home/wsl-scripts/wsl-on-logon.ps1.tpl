@@ -3,13 +3,13 @@
 
 param(
   [Parameter(Mandatory=$true)]
-  [bool]$UsbipdEnabled,
+  [string]$UsbipdEnabled,
 
   [Parameter(Mandatory=$false)]
-  [string]$BusId = "1-1",
+  [string]$BusId = $null,
 
   [Parameter(Mandatory=$false)]
-  [bool]$AutoAttach = $true,
+  [string]$AutoAttach = "true",
 
   [Parameter(Mandatory=$false)]
   [string]$DistroName = $null,
@@ -17,6 +17,10 @@ param(
   [Parameter(Mandatory=$false)]
   [int]$WaitSeconds = 30
 )
+
+# convert string booleans to actual booleans
+$usbipdEnabledBool = $UsbipdEnabled -eq '$true' -or $UsbipdEnabled -eq 'true' -or $UsbipdEnabled -eq '1'
+$autoAttachBool = $AutoAttach -eq '$true' -or $AutoAttach -eq 'true' -or $AutoAttach -eq '1'
 
 $ErrorActionPreference = 'SilentlyContinue'
 
@@ -61,7 +65,7 @@ try {
 }
 
 # --- usbipd attachment ---
-if ($UsbipdEnabled) {
+if ($usbipdEnabledBool) {
   try {
     $usbipd = (Get-Command usbipd.exe -ErrorAction SilentlyContinue).Source
     if (-not $usbipd) { $usbipd = (Get-Command usbipd -ErrorAction SilentlyContinue).Source }
@@ -74,38 +78,104 @@ if ($UsbipdEnabled) {
       return
     }
 
+    # check current device state
+    $listOutput = & $usbipd list 2>$null
+    if (-not $listOutput) {
+      Write-Host 'usbipd list failed; skipping usb attach'
+      return
+    }
+
+    # auto-detect smart card reader or use explicit busid
+    $deviceLine = $null
+    $detectedBusId = $null
+
+    if ($BusId) {
+      # explicit busid provided - use it
+      $deviceLine = $listOutput | Where-Object { $_ -match "^\s*$BusId\s+" }
+      if ($deviceLine) {
+        $detectedBusId = $BusId
+      }
+    } else {
+      # scan for smart card reader
+      $deviceLine = $listOutput | Where-Object { $_ -match 'smart\s*card' } | Select-Object -First 1
+      if ($deviceLine) {
+        # extract busid from line (format: "BUSID  VID:PID  DEVICE...")
+        if ($deviceLine -match '^\s*(\S+)\s+') {
+          $detectedBusId = $matches[1]
+        }
+      }
+    }
+
+    if (-not $deviceLine -or -not $detectedBusId) {
+      Write-Host 'smart card reader not found; skipping usb attach'
+      return
+    }
+
+    $isAttached = $deviceLine -match '\s+Attached(\s|$)'
+    $isShared = $deviceLine -match '\s+(Shared|Attached)(\s|$)'
+
+    # already attached - nothing to do
+    if ($isAttached) {
+      return
+    }
+
+    # ensure wsl is running before proceeding
     $distro = $DistroName
     if (-not $distro) {
-      $distro = (& wsl.exe -l -q 2>$null | Select-Object -First 1).Trim()
+      # use --list --running to get only running distros
+      $runningDistros = & wsl.exe --list --running 2>$null
+      if ($runningDistros -and $runningDistros.Count -gt 1) {
+        # skip first line (header) and get first running distro
+        for ($i = 1; $i -lt $runningDistros.Count; $i++) {
+          $line = $runningDistros[$i]
+          # clean the distro name: remove asterisk, non-printable chars, and trim
+          $cleaned = ($line -replace '\*', '' -replace '[^\x20-\x7E]', '').Trim()
+          # remove (Default) suffix if present
+          if ($cleaned -match '^(.+?)\s+\(Default\)$') {
+            $cleaned = $matches[1].Trim()
+          }
+          if ($cleaned) {
+            $distro = $cleaned
+            break
+          }
+        }
+      }
     }
     if (-not $distro) {
       Write-Host 'wsl distro not found; skipping usb attach'
       return
     }
 
+    # wait for wsl to be ready
+    $wslReady = $false
     $deadline = (Get-Date).AddSeconds([Math]::Max(0, $WaitSeconds))
     while ((Get-Date) -lt $deadline) {
       & wsl.exe -d $distro -e /bin/sh -lc 'true' 1>$null 2>$null
-      if ($LASTEXITCODE -eq 0) { break }
+      if ($LASTEXITCODE -eq 0) {
+        $wslReady = $true
+        break
+      }
       Start-Sleep -Milliseconds 500
     }
 
-    $args = @('attach','--wsl','--busid',$BusId)
-    if ($AutoAttach) {
-      # run with auto-attach as background job to avoid hanging
-      $job = Start-Job -ScriptBlock {
-        param($usbipd, $args)
-        & $usbipd @args 1>$null 2>$null
-      } -ArgumentList $usbipd, $args
+    if (-not $wslReady) {
+      Write-Host "wsl distro $distro failed to start; skipping usb attach"
+      return
+    }
 
-      # give it a moment to establish connection
-      Start-Sleep -Seconds 2
+    # not shared - bind it first
+    if (-not $isShared) {
+      & $usbipd bind --busid $detectedBusId 2>$null
+      if ($LASTEXITCODE -ne 0) {
+        Write-Host "failed to bind device $detectedBusId; skipping usb attach"
+        return
+      }
+    }
 
-      # detach from job (it will continue running)
-      # the job will keep running in background to maintain auto-attach
-    } else {
-      # without auto-attach, command exits immediately after attach
-      & $usbipd @args 1>$null 2>$null
+    # attach the device
+    & $usbipd attach --wsl --busid $detectedBusId 2>$null
+    if ($LASTEXITCODE -ne 0) {
+      Write-Host "failed to attach device $detectedBusId"
     }
   } catch {
     Write-Host "usbipd attach failed: $_"

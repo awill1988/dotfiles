@@ -132,7 +132,7 @@ in
       vim-dadbod-completion
     ]);
     extraPackages = with pkgs; [ ripgrep fd tree-sitter ];
-    extraLuaConfig = ''require("aw")'';
+    extraLuaConfig = ''require("ext")'';
   };
 
   home.packages = with pkgs; [
