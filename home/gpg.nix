@@ -69,14 +69,16 @@ in {
     defaultCacheTtl = 8 * 60 * 60;
     maxCacheTtl = 12 * 60 * 60;
     extraConfig = "allow-loopback-pinentry";
-    # prefer GUI pinentry when DISPLAY/WAYLAND is available; fallback to curses otherwise
-    pinentry.package = pkgs.writeShellScriptBin "pinentry" ''
-      #!/bin/sh
-      set -e
-      if [ -n "''${DISPLAY:-}" ] || [ -n "''${WAYLAND_DISPLAY:-}" ]; then
-        exec ${pkgs.pinentry-gtk2}/bin/pinentry "$@"
-      fi
-      exec ${pkgs.pinentry-curses}/bin/pinentry-curses "$@"
-    '';
+    pinentry = {
+      # prefer GUI pinentry when DISPLAY/WAYLAND is available; fallback to curses otherwise
+      package = pkgs.writeShellScriptBin "pinentry" ''
+        #!/bin/sh
+        set -e
+        if [ -n "''${DISPLAY:-}" ] || [ -n "''${WAYLAND_DISPLAY:-}" ]; then
+          exec ${pkgs.pinentry-gtk2}/bin/pinentry "$@"
+        fi
+        exec ${pkgs.pinentry-curses}/bin/pinentry-curses "$@"
+      '';
+    };
   };
 }

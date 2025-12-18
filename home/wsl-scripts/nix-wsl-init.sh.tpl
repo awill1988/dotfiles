@@ -106,7 +106,8 @@ if [ -n "$font_sources" ]; then
       fi
       dest="$fonts_dest/$file_name"
       if [ ! -f "$dest" ]; then
-        if cp -L "$font_file" "$dest" 2>/dev/null; then
+        # avoid chmod errors on drvfs by not preserving source mode/metadata
+        if cp --no-preserve=mode,ownership,timestamps -L "$font_file" "$dest" 2>/dev/null; then
           installed=$((installed + 1))
           log_dbg "Copied font: $file_name to $dest"
         else
