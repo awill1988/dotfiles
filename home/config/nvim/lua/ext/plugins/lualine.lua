@@ -10,8 +10,8 @@ lualine.setup({
   options = {
     icons_enabled = true,
     theme = "auto",
-    component_separators = { left = "", right = "" },
-    section_separators = { left = "", right = "" },
+    component_separators = { left = "", right = "" },
+    section_separators = { left = "", right = "" },
     globalstatus = true,
     disabled_filetypes = {
       statusline = {},
@@ -36,16 +36,7 @@ lualine.setup({
     lualine_y = {},
     lualine_z = {},
   },
-  tabline = {
-    lualine_a = {
-      {
-        "buffers",
-        show_filename_only = true,
-        mode = 2, -- show buffer numbers and relative path
-      },
-    },
-    lualine_z = { "tabs" },
-  },
+  tabline = {},
   winbar = {},
   inactive_winbar = {},
   extensions = {},

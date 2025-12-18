@@ -114,6 +114,7 @@ in
       plenary-nvim
       nvim-web-devicons
       lualine-nvim
+      bufferline-nvim
       nui-nvim
       neo-tree-nvim
       coc-nvim
@@ -130,6 +131,7 @@ in
       vim-dadbod
       vim-dadbod-ui
       vim-dadbod-completion
+      persisted-nvim
     ]);
     extraPackages = with pkgs; [ ripgrep fd tree-sitter ];
     extraLuaConfig = ''require("ext")'';
@@ -300,6 +302,8 @@ in
     rubyPackages.solargraph
     jdt-language-server
     kotlin-language-server
+    nil # nix language server
+    marksman # markdown language server
 
     # cloud and infra
     opentofu

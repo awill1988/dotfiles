@@ -186,7 +186,7 @@
         };
       };
       formatter =
-        forAllSystems (system: nixpkgs.legacyPackages.${system}.nixpkgs-fmt);
+        forAllSystems (system: nixpkgs.legacyPackages.${system}.nixfmt-rfc-style);
 
       packages = forAllSystems (system:
         let

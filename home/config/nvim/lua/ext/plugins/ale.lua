@@ -1,4 +1,6 @@
 -- ale configuration
+-- keybindings are centralized in keymaps.lua
+
 -- fixers for various filetypes
 vim.g.ale_fixers = {
   ["*"] = { "remove_trailing_lines", "trim_whitespace" },
@@ -15,7 +17,7 @@ vim.g.ale_fixers = {
   rust = { "rustfmt" },
 }
 
--- linters for various filetypes (supplement LSP diagnostics)
+-- linters for various filetypes (supplement lsp diagnostics)
 vim.g.ale_linters = {
   python = { "flake8", "mypy" },
   sh = { "shellcheck" },
@@ -39,7 +41,3 @@ vim.g.ale_sign_warning = "⚠"
 
 -- error message format
 vim.g.ale_echo_msg_format = "[%linter%] %s [%severity%]"
-
--- navigate between errors
-vim.keymap.set("n", "[a", "<Plug>(ale_previous_wrap)", { silent = true })
-vim.keymap.set("n", "]a", "<Plug>(ale_next_wrap)", { silent = true })

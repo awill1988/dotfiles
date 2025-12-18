@@ -3,9 +3,12 @@
 ## Project Structure & Module Organization
 - `flake.nix` defines inputs, overlays, formatter, and the flake outputs for macOS, WSL, and NixOS builds; `flake.lock` pins versions.
 - `home/` contains home-manager modules (config files, shells, terminal, git, gpg, packages).
+  - `home/config/nvim/lua/ext/` holds neovim lua configuration
+  - `home/config/nvim/lua/ext/keymaps.lua` centralizes all keybindings (see KEYBINDINGS.md for philosophy)
 - `system/` holds host and platform modules (common system config plus `system/darwin/` for macOS hosts).
 - `modules/` exposes shared option sets such as `users.nix`; `overlays/` holds Nixpkgs overlays.
 - `.editorconfig` captures formatting defaults; `result/` is the build artifact symlink produced by `nix build`.
+- `KEYBINDINGS.md` documents neovim keybinding philosophy and the 5-group organizational structure.
 
 ## Build, Test, and Development Commands
 - WSL: `nix build --extra-experimental-features nix-command --extra-experimental-features flakes .#homeConfigurations.debianWsl.activationPackage && ./result/activate` builds and activates the WSL home profile.

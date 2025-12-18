@@ -1,0 +1,333 @@
+" ============================================================================
+" vim configuration (classic vim)
+" inspired by kennypete's .vimrc
+" ============================================================================
+
+" ensure vim-compatible defaults
+if !has('nvim')
+  set nocompatible
+endif
+
+" wsl fix: prevent replace mode in wsl terminals
+set t_u7=
+
+" ============================================================================
+" display & visual settings
+" ============================================================================
+
+set number
+set relativenumber
+set signcolumn=yes
+set cursorline
+set cursorlineopt=number
+
+" colorcolumn: show margin one column after textwidth
+set colorcolumn=+1
+
+" custom fillchars for splits and folds
+set fillchars=vert:│,fold:-,eob:~
+
+" visual whitespace indicators
+set list
+set listchars=nbsp:°,trail:·,tab:——►,eol:¶
+
+" wrapped line indicator
+set showbreak=↪
+
+" line wrapping
+set nowrap
+
+" scrolling
+set scrolloff=0
+set sidescrolloff=2
+
+" command line
+set cmdheight=2
+set showcmd
+
+" popup menu
+set pumheight=9
+
+" show truncated lines with @@@
+set display=truncate
+
+" ============================================================================
+" editing behavior
+" ============================================================================
+
+" backspace behavior
+set backspace=indent,eol,start
+
+" buffer management
+set hidden
+
+" disable bell for various events
+set belloff=backspace,cursor,error,esc,insertmode,showmatch
+
+" ============================================================================
+" tabs & indentation
+" ============================================================================
+
+set autoindent     " auto-indent new lines
+set expandtab      " use spaces instead of tabs
+set shiftwidth=2   " auto-indent width
+set smarttab       " smart tab at line start
+set tabstop=8      " visual tab width (standard)
+
+" ============================================================================
+" search & matching
+" ============================================================================
+
+set hlsearch      " highlight search matches
+set incsearch     " show matches while typing
+set ignorecase    " case-insensitive by default
+set smartcase     " case-sensitive if uppercase present
+set showmatch     " flash matching brackets
+
+" bracket pairs for % matching
+set matchpairs=(:),{:},[:],":",':'
+
+" ============================================================================
+" file handling
+" ============================================================================
+
+" file encoding detection order
+set fileencodings=ucs-bom,utf-8,default,latin1
+
+" end-of-line format preference
+set fileformats=unix,dos
+
+" internal encoding
+set encoding=utf-8
+
+" ============================================================================
+" completion
+" ============================================================================
+
+set completeopt=menu,menuone,preview,noinsert
+
+" command-line completion
+if has('wildmenu')
+  set wildmenu
+  set wildmode=longest:full,full
+endif
+
+" ============================================================================
+" history & persistence
+" ============================================================================
+
+set history=5000
+
+" viminfo settings
+set viminfo='100,<9999,s1000,h
+
+" ============================================================================
+" window behavior
+" ============================================================================
+
+set splitright
+set splitbelow
+set laststatus=2
+
+" browse from buffer's directory
+set browsedir=buffer
+
+" ============================================================================
+" timeout settings
+" ============================================================================
+
+set timeout
+set timeoutlen=1500
+set ttimeoutlen=150
+
+" ============================================================================
+" misc settings
+" ============================================================================
+
+" window title shows buffer name
+set title
+
+" shorten messages
+set shortmess+=I
+
+" report all line changes
+set report=0
+
+" syntax column limit (performance)
+set synmaxcol=9999
+
+" shift+arrows select text
+set keymodel=startsel
+
+" selection register behavior
+set clipboard+=autoselect
+
+" mouse support
+set mouse=a
+
+" enable syntax highlighting
+if has('syntax')
+  syntax enable
+endif
+
+" enable filetype detection
+filetype plugin indent on
+
+" ============================================================================
+" leader key
+" ============================================================================
+
+let mapleader = " "
+
+" ============================================================================
+" custom commands
+" ============================================================================
+
+" DiffOrig: compare buffer against original file
+command! DiffOrig vert new | set bt=nofile | r ++edit # | 0d_ | diffthis | wincmd p | diffthis
+
+" Bod: delete all buffers except current
+command! -nargs=? Bod call s:BufferOnly(<f-args>)
+function! s:BufferOnly(...)
+  let target = a:0 > 0 ? str2nr(a:1) : bufnr('%')
+  for buf in filter(range(1, bufnr('$')), 'buflisted(v:val) && v:val != target')
+    execute 'bdelete' buf
+  endfor
+endfunction
+
+" Bow: wipe all buffers except current
+command! -nargs=? Bow call s:BufferWipe(<f-args>)
+function! s:BufferWipe(...)
+  let target = a:0 > 0 ? str2nr(a:1) : bufnr('%')
+  for buf in filter(range(1, bufnr('$')), 'buflisted(v:val) && v:val != target')
+    execute 'bwipeout' buf
+  endfor
+endfunction
+
+" B: navigate to buffer by number
+command! -nargs=1 B execute 'buffer' <args>
+
+" SetTextWidth: set textwidth and matching colorcolumn
+command! -nargs=1 SetTextWidth call s:SetTextWidth(<f-args>)
+function! s:SetTextWidth(width)
+  let &textwidth = a:width
+  if a:width > 0
+    let &colorcolumn = '+2'
+  else
+    set colorcolumn=
+  endif
+endfunction
+
+" ClearTextWidth: clear textwidth and colorcolumn
+command! ClearTextWidth set textwidth=0 colorcolumn=
+
+" ============================================================================
+" utility functions
+" ============================================================================
+
+" jump to last editing position when opening a file
+function! s:LastCursorPos()
+  if line("'\"") > 1 && line("'\"") <= line("$")
+    execute "normal! g'\""
+  endif
+endfunction
+
+" toggle line number modes
+function! s:ToggleLineNumber()
+  if &number && !&relativenumber
+    set relativenumber
+    echo "line numbers: relative"
+  elseif &number && &relativenumber
+    set nonumber norelativenumber
+    echo "line numbers: disabled"
+  else
+    set number norelativenumber
+    echo "line numbers: absolute"
+  endif
+endfunction
+
+" toggle line wrapping
+function! s:ToggleWrap()
+  set wrap!
+  if &wrap
+    echo "line wrap: enabled"
+  else
+    echo "line wrap: disabled"
+  endif
+endfunction
+
+" ============================================================================
+" keymaps
+" ============================================================================
+
+" save file
+nnoremap <C-S> :w<CR>
+inoremap <C-S> <Esc>:w<CR>
+
+" clear search highlighting
+nnoremap <leader>h :nohlsearch<CR>
+
+" better substitute command template (very magic mode)
+nnoremap <C-S> :%s_\v__g<Left><Left><Left>
+vnoremap <C-S> :s_\v__g<Left><Left><Left>
+
+" tab navigation
+nnoremap <Tab> :tabnext<CR>
+nnoremap <S-Tab> :tabprevious<CR>
+
+" buffer navigation
+nnoremap [b :bprevious<CR>
+nnoremap ]b :bnext<CR>
+
+" quickfix navigation
+nnoremap [q :cprev<CR>
+nnoremap ]q :cnext<CR>
+
+" insert mode: undoable backspace
+inoremap <C-U> <C-G>u<C-U>
+
+" screen-wise navigation
+nnoremap <C-Up> gk
+nnoremap <C-Down> gj
+inoremap <C-Up> <C-O>gk
+inoremap <C-Down> <C-O>gj
+
+" toggle keymaps
+nnoremap <leader>tl :call <SID>ToggleLineNumber()<CR>
+nnoremap <leader>tn :set number!<CR>
+nnoremap <leader>tr :set relativenumber!<CR>
+nnoremap <leader>tw :call <SID>ToggleWrap()<CR>
+nnoremap <leader>ts :set spell!<CR>
+
+" window management
+nnoremap <leader>ws :split<CR>
+nnoremap <leader>wv :vsplit<CR>
+nnoremap <leader>wc :close<CR>
+nnoremap <leader>wo :only<CR>
+nnoremap <leader>w= <C-W>=
+
+" window navigation
+nnoremap <C-H> <C-W>h
+nnoremap <C-J> <C-W>j
+nnoremap <C-K> <C-W>k
+nnoremap <C-L> <C-W>l
+
+" ============================================================================
+" autocommands
+" ============================================================================
+
+if has('autocmd')
+  augroup vimrc_auto
+    autocmd!
+    " jump to last editing position
+    autocmd BufReadPost * call s:LastCursorPos()
+  augroup END
+endif
+
+" ============================================================================
+" digraphs (emoji support)
+" ============================================================================
+
+if has('digraphs')
+  digraph :) 😀
+endif

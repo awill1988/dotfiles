@@ -1,5 +1,11 @@
 vim.g.db_ui_use_nerd_fonts = 1
 vim.g.db_ui_show_database_icon = 1
+vim.g.db_ui_force_echo_notifications = 1
+vim.g.db_ui_win_position = "right"
+vim.g.db_ui_winwidth = 40
+
+-- open in new tab instead of splitting current view
+vim.g.db_ui_execute_on_save = 0
 
 local env = vim.env
 local function add_dsn(map, name, value)
