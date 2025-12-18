@@ -8,9 +8,7 @@ in {
     cacheHome = "${homeDirectory}/.cache";
 
     configFile."starship.toml".source = ./config/starship.toml;
-    configFile."nvim/init.lua".source = ./config/nvim/init.lua;
-    configFile."nvim/lua/ext".source = ./config/nvim/lua/ext;
-    configFile."nvim/coc-settings.json".source = ./config/coc-settings.json;
+    configFile."nvim".source = ./config/nvim;
   };
 
   # vim configuration (classic vim, xdg-compliant)
