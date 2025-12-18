@@ -2,7 +2,7 @@
 return {
 	{
 		"nvim-neo-tree/neo-tree.nvim",
-		branch = "v2.x",
+		branch = "v3.x",
 		dependencies = {
 			"nvim-lua/plenary.nvim",
 			"nvim-tree/nvim-web-devicons",
@@ -13,7 +13,7 @@ return {
 			require("helpers.keys").map(
 				{ "n", "v" },
 				"<leader>e",
-				"<cmd>NeoTreeRevealToggle<cr>",
+				"<cmd>Neotree toggle<cr>",
 				"Toggle file explorer"
 			)
 		end,
