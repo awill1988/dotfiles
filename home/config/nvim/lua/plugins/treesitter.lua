@@ -2,6 +2,7 @@
 return {
 	{
 		"nvim-treesitter/nvim-treesitter",
+		branch = "master", -- stick to legacy API so textobjects can require configs
 		build = function()
 			pcall(require("nvim-treesitter.install").update({ with_sync = true }))
 		end,
@@ -11,9 +12,12 @@ return {
 		config = function()
 			require("nvim-treesitter.configs").setup({
 				-- Add languages to be installed here that you want installed for treesitter
-				ensure_installed = { "c", "cpp", "go", "lua", "python", "rust", "vimdoc", "vim" },
+				ensure_installed = { "c", "cpp", "go", "lua", "markdown", "markdown_inline", "python", "rust", "vimdoc", "vim" },
 
-				highlight = { enable = true },
+				highlight = {
+					enable = true,
+					disable = { "vimdoc" }, -- keep health/help buffers on regex to avoid parser/query mismatch
+				},
 				indent = { enable = true, disable = { "python" } },
 				incremental_selection = {
 					enable = true,

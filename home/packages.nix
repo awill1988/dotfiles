@@ -86,6 +86,12 @@ in
       set -g set-titles on
       set -g mouse on
       set -g @continuum-restore 'on'
+      # status bar theme: muted neutral palette for less visual noise
+      set -g status-style "bg=colour236,fg=colour250"
+      set -g window-status-style "bg=default,fg=colour245"
+      set -g window-status-current-style "bg=colour239,fg=colour223,bold"
+      set -g window-status-format " #I:#W "
+      set -g window-status-current-format " #I:#W "
       # splits and navigation
       bind - split-window -v
       bind _ split-window -h
@@ -152,9 +158,9 @@ in
     gh # github cli tool
     (pkgs.writeShellScriptBin "ide" ''
       #!/bin/sh
-      # tmux + neovim "IDE" launcher:
-      # - left: neo-tree file explorer inside neovim
-      # - right: single tmux shell pane (30% column)
+      # tmux + neovim "IDE" launcher (vscode-like):
+      # - top: neovim with neo-tree file explorer
+      # - bottom: tmux shell pane (integrated terminal feel)
       set -euo pipefail
       target_path="''${1:-.}"
       resolved_path="$(realpath "$target_path")"
@@ -166,31 +172,7 @@ in
 
       if ! tmux has-session -t "$session" 2>/dev/null; then
         tmux new-session -d -s "$session" -c "$resolved_path" "cd -- \"$resolved_path\" && nvim '+Neotree left reveal' ."
-        tmux split-window -t "$session":1 -h -p 30 -c "$resolved_path" "$shell_cmd"
-        tmux select-pane -t "$session":1.1
-      fi
-
-      tmux attach -t "$session"
-    '')
-    (pkgs.writeShellScriptBin "idedb" ''
-      #!/bin/sh
-      # tmux + neovim "IDE" launcher with database UI:
-      # - left: neo-tree file explorer inside neovim
-      # - right top: tmux shell pane
-      # - right bottom: dadbod-ui in neovim
-      set -euo pipefail
-      target_path="''${1:-.}"
-      resolved_path="$(realpath "$target_path")"
-      session="idedb-$(basename "$resolved_path")"
-      shell_cmd="''${SHELL:-/bin/zsh}"
-      if ! command -v "$shell_cmd" >/dev/null 2>&1; then
-        shell_cmd="/bin/sh"
-      fi
-
-      if ! tmux has-session -t "$session" 2>/dev/null; then
-        tmux new-session -d -s "$session" -c "$resolved_path" "cd -- \"$resolved_path\" && nvim '+Neotree left reveal' ."
-        tmux split-window -t "$session":1 -h -p 30 -c "$resolved_path" "$shell_cmd"
-        tmux split-window -t "$session":1.2 -v -c "$resolved_path" "cd -- \"$resolved_path\" && nvim '+DBUI' ."
+        tmux split-window -t "$session":1 -v -p 30 -c "$resolved_path" "$shell_cmd"
         tmux select-pane -t "$session":1.1
       fi
 
