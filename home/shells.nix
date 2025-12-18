@@ -216,8 +216,10 @@ in {
       fi
     }
 
-    if test -f $HOME/.env; then
-      source $HOME/.env;
+    if test -f "$HOME/.env"; then
+      set -a
+      source "$HOME/.env"
+      set +a
     fi
 
     autoload -U promptinit; promptinit
