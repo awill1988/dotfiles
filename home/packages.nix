@@ -173,7 +173,11 @@ in
       if ! tmux has-session -t "$session" 2>/dev/null; then
         tmux new-session -d -s "$session" -c "$resolved_path" "cd -- \"$resolved_path\" && nvim '+Neotree left reveal' ."
         tmux split-window -t "$session":1 -v -p 30 -c "$resolved_path" "$shell_cmd"
-        tmux select-pane -t "$session":1.1
+      fi
+
+      terminal_pane="$session:1.2"
+      if tmux list-panes -t "$session":1 -F "#{pane_index}" | grep -q "^2$"; then
+        tmux select-pane -t "$terminal_pane"
       fi
 
       tmux attach -t "$session"

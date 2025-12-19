@@ -7,6 +7,7 @@ local opts = {
 	number = true,
 	relativenumber = true,
 	shell = vim.fn.getenv("SHELL") ~= vim.NIL and vim.fn.getenv("SHELL") or "/bin/zsh",
+	splitright = true,
 }
 
 -- Set options from table
