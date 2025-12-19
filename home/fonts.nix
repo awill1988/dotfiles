@@ -10,7 +10,7 @@ in
     };
     monospace_size = mkOption {
       type = types.float;
-      default = 15.0;
+      default = 13.0;
     };
   };
 
@@ -34,5 +34,25 @@ in
       source-code-pro
       dejavu_fonts
     ];
+
+    # macOS: symlink fonts to ~/Library/Fonts so applications can find them
+    home.activation.linkFonts = lib.mkIf pkgs.stdenv.isDarwin (
+      lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+        font_dir="$HOME/Library/Fonts/nix-fonts"
+        mkdir -p "$font_dir"
+
+        # clean up old symlinks
+        find "$font_dir" -type l -delete
+
+        # symlink all fonts from packages
+        for pkg in ${lib.concatStringsSep " " (map (p: "${p}") config.home.packages)}; do
+          if [[ -d "$pkg/share/fonts" ]]; then
+            find "$pkg/share/fonts" -type f \( -name "*.ttf" -o -name "*.otf" \) -exec ln -sf {} "$font_dir/" \;
+          fi
+        done
+
+        echo "fonts symlinked to $font_dir"
+      ''
+    );
   };
 }

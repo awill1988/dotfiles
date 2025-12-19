@@ -8,7 +8,6 @@
 - `system/` holds host and platform modules (common system config plus `system/darwin/` for macOS hosts).
 - `modules/` exposes shared option sets such as `users.nix`; `overlays/` holds Nixpkgs overlays.
 - `.editorconfig` captures formatting defaults; `result/` is the build artifact symlink produced by `nix build`.
-- `KEYBINDINGS.md` documents neovim keybinding philosophy and the 5-group organizational structure.
 
 ## Build, Test, and Development Commands
 - WSL: `nix build --extra-experimental-features nix-command --extra-experimental-features flakes .#homeConfigurations.debianWsl.activationPackage && ./result/activate` builds and activates the WSL home profile.

@@ -2,13 +2,18 @@
   description = "Adam's dotfiles";
 
   inputs = {
+    nixpkgs.url = "github:nixos/nixpkgs/nixos-25.11";
     nixpkgs-unstable.url = "github:nixos/nixpkgs/nixpkgs-unstable";
 
-    darwin.url = "github:LnL7/nix-darwin";
-    darwin.inputs.nixpkgs.follows = "nixpkgs-unstable";
+    darwin = {
+      url = "github:nix-darwin/nix-darwin/nix-darwin-25.11";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
 
-    home-manager.url = "github:nix-community/home-manager";
-    home-manager.inputs.nixpkgs.follows = "nixpkgs-unstable";
+    home-manager = {
+      url = "github:nix-community/home-manager/release-25.11";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
 
     flake-utils.url = "github:numtide/flake-utils";
     mac-app-util.url = "github:hraban/mac-app-util";
@@ -16,7 +21,6 @@
 
   outputs =
     { self
-    , nixpkgs
     , darwin
     , home-manager
     , flake-utils
@@ -25,11 +29,11 @@
     }@inputs:
     let
       inherit (darwin.lib) darwinSystem;
-      inherit (inputs.nixpkgs-unstable.lib)
+      inherit (inputs.nixpkgs.lib)
         attrValues makeOverridable mkForce optionalAttrs singleton;
 
       systems = [ "aarch64-darwin" "x86_64-linux" ];
-      forAllSystems = f: nixpkgs.lib.genAttrs systems (system: f system);
+      forAllSystems = f: inputs.nixpkgs.lib.genAttrs systems (system: f system);
 
       nixpkgsConfig = {
         config = { allowUnfree = true; };
@@ -59,7 +63,8 @@
               "/Users/${primaryUser.username}";
             home-manager.useGlobalPkgs = true;
             home-manager.users.${primaryUser.username} = {
-              imports = attrValues self.homeManagerModules;
+              imports = attrValues self.homeManagerModules
+                ++ [ mac-app-util.homeManagerModules.default ];
               home.stateVersion = homeManagerStateVersion;
               home.user-info = config.users.primaryUser;
             };
@@ -112,7 +117,7 @@
 
       homeConfigurations = {
         debianWsl = home-manager.lib.homeManagerConfiguration {
-          pkgs = import inputs.nixpkgs-unstable {
+          pkgs = import inputs.nixpkgs {
             system = "x86_64-linux";
             inherit (nixpkgsConfig) config overlays;
           };
@@ -185,12 +190,12 @@
           };
         };
       };
-      formatter =
-        forAllSystems (system: nixpkgs.legacyPackages.${system}.nixfmt-rfc-style);
+      formatter = forAllSystems (system:
+        (import inputs.nixpkgs { inherit system; }).nixfmt-rfc-style);
 
       packages = forAllSystems (system:
         let
-          pkgs = import inputs.nixpkgs-unstable {
+          pkgs = import inputs.nixpkgs {
             inherit system;
             inherit (nixpkgsConfig) config overlays;
           };
@@ -200,3 +205,4 @@
         });
     };
 }
+

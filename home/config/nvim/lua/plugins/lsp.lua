@@ -34,18 +34,16 @@ return {
 			-- Turn on LSP status information
 			require("fidget").setup()
 
-			-- Set up cool signs for diagnostics
-			local signs = { Error = " ", Warn = " ", Hint = " ", Info = " " }
-			for type, icon in pairs(signs) do
-				local hl = "DiagnosticSign" .. type
-				vim.fn.sign_define(hl, { text = icon, texthl = hl, numhl = "" })
-			end
-
 			-- Diagnostic config
 			local config = {
 				virtual_text = false,
 				signs = {
-					active = signs,
+					text = {
+						[vim.diagnostic.severity.ERROR] = " ",
+						[vim.diagnostic.severity.WARN] = " ",
+						[vim.diagnostic.severity.HINT] = " ",
+						[vim.diagnostic.severity.INFO] = " ",
+					},
 				},
 				update_in_insert = true,
 				underline = true,
