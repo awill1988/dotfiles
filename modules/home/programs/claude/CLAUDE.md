@@ -18,6 +18,7 @@ See @README.md and @AGENTS.md for full documentation.
 
 - Conventional commits: `feat:`, `fix:`, `refactor:`, `chore:`, `docs:`
 - PR format: State changes, list affected modules, document manual steps
+- Never attribute commits or PRs to AI agents; no co-authored-by tags or agent signatures
 
 ## Practices
 
@@ -32,3 +33,12 @@ See @README.md and @AGENTS.md for full documentation.
 
 - Reference files: path:line format (e.g., flake.nix:42)
 - File operations: Read → Edit pattern preferred
+
+## AI Assistant Ecosystem
+
+This system has multiple AI coding assistants available:
+- **Claude Code**: Anthropic's CLI-based coding assistant (this tool)
+- **Codex**: OpenAI-powered coding assistant via Cursor
+- **Gemini**: Google's AI assistant
+
+When users reference other AI assistants by name, understand they may be comparing capabilities or workflows between tools.

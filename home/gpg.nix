@@ -5,8 +5,8 @@ in {
     let
       common = {
         settings = { }
-          // lib.optionalAttrs (!builtins.isNull user-info.gpg.masterKey) {
-          default-key = user-info.gpg.masterKey;
+          // lib.optionalAttrs (!builtins.isNull user-info.git.signingKey) {
+          default-key = user-info.git.signingKey;
           auto-key-locate = "keyserver";
           keyserver = "pgp.mit.edu";
           keyserver-options =

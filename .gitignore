@@ -1,2 +1,5 @@
+.direnv
 result
-*.mp4
+result-*
+.idea/
+.vscode/
