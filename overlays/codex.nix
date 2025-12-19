@@ -1,11 +1,11 @@
 final: prev:
 let
-  version = "0.73.0";
+  version = "0.75.0";
   src = prev.fetchFromGitHub {
     owner = "openai";
     repo = "codex";
     rev = "rust-v${version}";
-    hash = "sha256-6oVSscGpMcJGOJ90JuwmYe6HbFteoTdTPr2AGU84JzQ=";
+    hash = "sha256-XsFJjXFBsj8jeOMLuP+sMW1ZiAQIuL+XBFjUhgCLJmU=";
   };
 
   is_linux = final.stdenv.hostPlatform.isLinux;
@@ -33,16 +33,18 @@ in
     pname = "codex";
     inherit version src;
     sourceRoot = "source/codex-rs";
-    cargoHash = "sha256-MN977yTfdESey0CK8vOXMKjY9HSXqRy1LgK7IYjNz1k=";
+    cargoHash = "sha256-9zf9xpnh9w3DWizLSHUR2CfN+E9fYxamKkyMLkYiIP8=";
     nativeBuildInputs = [ final.pkg-config ];
     buildInputs = [ final.openssl final.dbus ];
 
     cargoBuildFlags = [ "-p" "codex-cli" ];
     doCheck = false;
-    # rustc needs a larger stack; (8 GiB)
-    RUST_MIN_STACK = "8589934592";
+    # rustc needs a larger stack; 2 GiB
+    RUST_MIN_STACK = "2147483648";
     # upstream enables thin LTO in Cargo profiles; disable to avoid linux build crashes
     CARGO_PROFILE_RELEASE_LTO = "off";
+    # increase codegen units to reduce memory usage (default: 16)
+    CARGO_PROFILE_RELEASE_CODEGEN_UNITS = "16";
     auditable = false;
     preBuild = ''unset RUSTC_WRAPPER'';
     meta = with final.lib; {
