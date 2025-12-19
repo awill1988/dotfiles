@@ -7,22 +7,41 @@ in
   programs = {
     alacritty.enable = true;
     alacritty.settings.window = {
-      padding.x = 10;
-      padding.y = 10;
+      padding.x = 12;
+      padding.y = 12;
       dynamic_title = true;
+      opacity = 0.9;
     };
+    alacritty.settings.general.working_directory =
+      "${config.home.homeDirectory}/projects";
     alacritty.settings.scrolling.history = 10000;
-    alacritty.settings.key_bindings = [{
+    alacritty.settings.keyboard.bindings = [{
       key = "Q";
       mods = "Control";
-      chars = "\\x11";
+      chars = "\\u0011";
     }];
+    alacritty.settings.terminal.shell = {
+      program = "${pkgs.zsh}/bin/zsh";
+      args = [ "-l" ];
+    };
     alacritty.settings.font = {
-      normal.family = font_family;
-      bold.family = font_family;
-      italic.family = font_family;
-      bold_italic.family = font_family;
-      size = font_size; # adjust if you want a different default size
+      normal = {
+        family = font_family;
+        style = "Regular";
+      };
+      bold = {
+        family = font_family;
+        style = "Bold";
+      };
+      italic = {
+        family = font_family;
+        style = "Italic";
+      };
+      bold_italic = {
+        family = font_family;
+        style = "Bold Italic";
+      };
+      size = font_size;
     };
   };
 }

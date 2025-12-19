@@ -9,8 +9,14 @@ return {
 			"MunifTanjim/nui.nvim",
 		},
 		config = function()
-			-- neo-tree expects a table; passing an empty one avoids nil deref in setup
-			require("neo-tree").setup({})
+			require("neo-tree").setup({
+				filesystem = {
+					follow_current_file = {
+						enabled = true, -- track current file and reveal in tree
+					},
+					use_libuv_file_watcher = true, -- auto-refresh on file changes
+				},
+			})
 			require("helpers.keys").map(
 				{ "n", "v" },
 				"<leader>e",

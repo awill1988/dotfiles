@@ -8,9 +8,11 @@ in {
     cacheHome = "${homeDirectory}/.cache";
 
     configFile."starship.toml".source = ./config/starship.toml;
+    # force replace any existing nvim config so managed files install cleanly
     configFile."nvim" = {
       source = ./config/nvim;
       recursive = true;
+      force = true;
     };
   };
 

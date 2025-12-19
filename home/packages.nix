@@ -70,9 +70,12 @@ in
     aggressiveResize = true;
     clock24 = true;
     keyMode = "vi";
+    shell = "${pkgs.zsh}/bin/zsh";
     terminal = "screen-256color";
     plugins = with pkgs.tmuxPlugins; [ sensible yank resurrect continuum ];
     extraConfig = ''
+      # force zsh for new panes
+      set -g default-command "${pkgs.zsh}/bin/zsh"
       # gpakosz-inspired ergonomics
       set -g prefix2 C-a
       bind C-a send-prefix -2
@@ -156,7 +159,7 @@ in
     shfmt # shell parser and formatter
     vale
     gh # github cli tool
-    (pkgs.writeShellScriptBin "ide" ''
+    (pkgs.writeShellScriptBin "code" ''
       #!/bin/sh
       # tmux + neovim "IDE" launcher (vscode-like):
       # - top: neovim with neo-tree file explorer
@@ -164,11 +167,8 @@ in
       set -euo pipefail
       target_path="''${1:-.}"
       resolved_path="$(realpath "$target_path")"
-      session="ide-$(basename "$resolved_path")"
-      shell_cmd="''${SHELL:-/bin/zsh}"
-      if ! command -v "$shell_cmd" >/dev/null 2>&1; then
-        shell_cmd="/bin/sh"
-      fi
+      session="code-$(basename "$resolved_path")"
+      shell_cmd="${pkgs.zsh}/bin/zsh"
 
       if ! tmux has-session -t "$session" 2>/dev/null; then
         tmux new-session -d -s "$session" -c "$resolved_path" "cd -- \"$resolved_path\" && nvim '+Neotree left reveal' ."
@@ -187,10 +187,11 @@ in
       target_path="''${1:-.}"
       resolved_path="$(realpath "$target_path")"
       session="dbui-$(basename "$resolved_path")"
+      shell_cmd="${pkgs.zsh}/bin/zsh"
 
       if ! tmux has-session -t "$session" 2>/dev/null; then
         tmux new-session -d -s "$session" -c "$resolved_path" "cd -- \"$resolved_path\" && nvim '+DBUI' ."
-        tmux split-window -t "$session":1 -v -p 30 -c "$resolved_path"
+        tmux split-window -t "$session":1 -v -p 30 -c "$resolved_path" "$shell_cmd"
         tmux select-pane -t "$session":1.1
       fi
 

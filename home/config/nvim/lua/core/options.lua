@@ -6,6 +6,7 @@ local opts = {
 	termguicolors = true,
 	number = true,
 	relativenumber = true,
+	shell = vim.fn.getenv("SHELL") ~= vim.NIL and vim.fn.getenv("SHELL") or "/bin/zsh",
 }
 
 -- Set options from table
