@@ -53,9 +53,6 @@
     ".nfs*"
     "lost+found"
     ".directory"
-    "core"
-    "core.*"
-    "vgcore.*"
 
     # windows
     "Thumbs.db"
@@ -107,5 +104,8 @@
     ".aider*"
     ".cursor/"
     ".windsurf/"
+
+    # media
+    "*.mp4"
   ];
 }

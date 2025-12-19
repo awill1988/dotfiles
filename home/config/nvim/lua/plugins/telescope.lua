@@ -22,6 +22,7 @@ return {
 
 			-- Enable telescope fzf native, if installed
 			pcall(require("telescope").load_extension, "fzf")
+			pcall(require("telescope").load_extension, "media_files")
 
 			local map = require("helpers.keys").map
 			map("n", "<leader>fr", require("telescope.builtin").oldfiles, "Recently opened")
@@ -39,7 +40,6 @@ return {
 			map("n", "<leader>sw", require("telescope.builtin").grep_string, "Current word")
 			map("n", "<leader>sg", require("telescope.builtin").live_grep, "Grep")
 			map("n", "<leader>sd", require("telescope.builtin").diagnostics, "Diagnostics")
-
 			map("n", "<C-p>", require("telescope.builtin").keymaps, "Search keymaps")
 		end,
 	},
