@@ -6,7 +6,7 @@ end
 local ok, close_buffers = pcall(require, "close_buffers")
 if ok then
 	M.delete_this = function()
-		close_buffers.delete({ type = "this" })
+		close_buffers.delete({ type = "this", force = true })
 	end
 	M.delete_all = function()
 		close_buffers.delete({ type = "all", force = true })

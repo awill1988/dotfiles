@@ -42,14 +42,7 @@
 
       homeManagerStateVersion = "25.05";
 
-      primaryUserInfo = {
-        username = "adam";
-        fullName = "Adam Williams";
-        email = "adam@williams.engineer";
-        github = "awill1988";
-        gpg.enable = true;
-        gpg.masterKey = "4A0DB07DEDB705FBA45F557B7A0F7A351FABE619";
-      };
+      primaryUserInfo = import ./userinfo.nix { inherit (inputs.nixpkgs) lib; };
 
       nixDarwinCommonModules = attrValues self.darwinModules ++ [
         mac-app-util.darwinModules.default

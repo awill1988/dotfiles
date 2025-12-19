@@ -10,26 +10,24 @@ in {
       type = with types; nullOr str;
       default = null;
     };
-    email = mkOption {
-      type = with types; nullOr str;
-      default = null;
-    };
-    work = {
+    git = {
+      github = mkOption {
+        type = with types; nullOr str;
+        default = null;
+      };
+      signingKey = mkOption {
+        type = with types; nullOr str;
+        default = null;
+      };
+      signingFormat = mkOption {
+        type = with types; nullOr (enum [ "openpgp" "ssh" ]);
+        default = null;
+      };
       email = mkOption {
         type = with types; nullOr str;
         default = null;
       };
-    };
-    github = mkOption {
-      type = with types; nullOr str;
-      default = null;
-    };
-    gpg = {
-      enable = mkOption {
-        type = with types; bool;
-        default = false;
-      };
-      masterKey = mkOption {
+      emailSecondary = mkOption {
         type = with types; nullOr str;
         default = null;
       };

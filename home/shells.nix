@@ -1,5 +1,6 @@
 { config, pkgs, lib, ... }:
-let inherit (config.home) user-info;
+let
+  inherit (config.home) user-info;
 in {
 
   home.sessionVariables = {
@@ -11,7 +12,7 @@ in {
     # Secrets / crypto
     PASSWORD_STORE_DIR = "${config.xdg.dataHome}/password-store";
     KEY_ID =
-      if user-info.gpg.masterKey == null then "" else user-info.gpg.masterKey;
+      if user-info.git.signingKey == null then "" else user-info.git.signingKey;
 
     LC_CTYPE = "en_US.UTF-8";
     LEDGER_COLOR = "true";
@@ -62,14 +63,14 @@ in {
       "git/personal.gitconfig" = {
         text = ''
           [user]
-            email = "${user-info.email}"
+            email = "${user-info.git.email}"
         '';
       };
-    } // lib.optionalAttrs (user-info.work.email != null) {
-      "git/work.gitconfig" = {
+    } // lib.optionalAttrs (!builtins.isNull user-info.git.emailSecondary) {
+      "git/secondary.gitconfig" = {
         text = ''
           [user]
-            email = "${user-info.work.email}"
+            email = "${user-info.git.emailSecondary}"
         '';
       };
     };
