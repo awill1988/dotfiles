@@ -274,6 +274,7 @@ in
     # cloud and infra
     opentofu
     k9s
+    lazydocker # terminal ui for docker
     steampipe # select * from cloud
 
     # ai tooling
