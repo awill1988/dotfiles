@@ -64,9 +64,14 @@ map("n", "<leader>ur", "<cmd>nohl<cr>", "Clear highlights")
 
 -- Task runner
 map("n", "<leader>t", function()
-	if vim.fn.exists(":OverseerRun") ~= 2 then
+	local ok, overseer = pcall(require, "overseer")
+	if not ok then
 		vim.notify("overseer not available", vim.log.levels.WARN)
 		return
 	end
-	vim.cmd("OverseerRun")
+	overseer.run_task({}, function(task)
+		if task then
+			overseer.open({ enter = false })
+		end
+	end)
 end, "Run task (dap-aware)")
