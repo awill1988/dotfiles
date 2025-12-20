@@ -61,3 +61,12 @@ end, "Toggle between light and dark themes")
 
 -- Clear after search
 map("n", "<leader>ur", "<cmd>nohl<cr>", "Clear highlights")
+
+-- Task runner
+map("n", "<leader>t", function()
+	if vim.fn.exists(":OverseerRun") ~= 2 then
+		vim.notify("overseer not available", vim.log.levels.WARN)
+		return
+	end
+	vim.cmd("OverseerRun")
+end, "Run task (dap-aware)")

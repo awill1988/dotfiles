@@ -24,6 +24,8 @@ See @README.md and @AGENTS.md for full documentation.
 
 - Code defensively, validate inputs early, never hardcode secrets—pull from environment variables
 - Keep scripts and playbooks idempotent
+- When creating tasks or commands, include release and debug modes and cover run, test, and memory profiling flows
+- Use the `.vscode/tasks.json` schema when crafting task definitions
 - Comments should capture intent and rationale; documentation stays in standard Markdown
 - Read files before editing them
 - Use Edit tool for existing files, Write only for new files
