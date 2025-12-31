@@ -147,6 +147,8 @@ in
     wget
     curl
     socat
+    hexchat
+    toilet
 
     # software development
     vim
