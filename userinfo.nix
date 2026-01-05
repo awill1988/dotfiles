@@ -25,6 +25,6 @@
     signingKey = "4A0DB07DEDB705FBA45F557B7A0F7A351FABE619";
     signingFormat = "openpgp";  # "openpgp" or "ssh"
     email = "adam@williams.engineer";
-    emailSecondary = null;
+    emailSecondary = "adam@arrofinance.com";
   };
 }

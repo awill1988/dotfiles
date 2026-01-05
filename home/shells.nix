@@ -73,6 +73,12 @@ in {
             email = "${user-info.git.emailSecondary}"
         '';
       };
+      "git/arro.gitconfig" = {
+        text = ''
+          [user]
+            email = "${user-info.git.emailSecondary}"
+        '';
+      };
     };
 
   home.shellAliases = {
