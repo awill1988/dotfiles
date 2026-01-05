@@ -49,6 +49,9 @@ in {
       "includeIf \"gitdir:~/projects/\"" = {
         path = "${config.xdg.configHome}/git/personal.gitconfig";
       };
+      "includeIf \"gitdir:~/projects/arro/\"" = {
+        path = "${config.xdg.configHome}/git/arro.gitconfig";
+      };
     };
   };
 }
