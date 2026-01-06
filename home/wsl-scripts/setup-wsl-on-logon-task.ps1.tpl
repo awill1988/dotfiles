@@ -18,7 +18,13 @@ param(
   [string]$DistroName = $null,
 
   [Parameter(Mandatory=$false)]
-  [int]$WaitSeconds = 30
+  [int]$WaitSeconds = 30,
+
+  [Parameter(Mandatory=$false)]
+  [bool]$PcscdEnabled = $false,
+
+  [Parameter(Mandatory=$false)]
+  [string]$PcscdAutoStartBin = ""
 )
 
 $ErrorActionPreference = "Stop"
@@ -41,13 +47,17 @@ if (-not $psExe) { throw "setup-wsl-on-logon-task: no powershell executable foun
 # build argument string manually with proper boolean formatting
 $usbipdArg = if ($UsbipdEnabled) { '$true' } else { '$false' }
 $autoAttachArg = if ($AutoAttach) { '$true' } else { '$false' }
+$pcscdArg = if ($PcscdEnabled) { '$true' } else { '$false' }
 
-$argString = "-NoProfile -ExecutionPolicy Bypass -File `"$scriptPath`" -UsbipdEnabled $usbipdArg -AutoAttach $autoAttachArg -WaitSeconds $WaitSeconds"
+$argString = "-NoProfile -ExecutionPolicy Bypass -File `"$scriptPath`" -UsbipdEnabled $usbipdArg -AutoAttach $autoAttachArg -WaitSeconds $WaitSeconds -PcscdEnabled $pcscdArg"
 if ($BusId) {
   $argString += " -BusId `"$BusId`""
 }
 if ($DistroName) {
   $argString += " -DistroName `"$DistroName`""
+}
+if ($PcscdAutoStartBin) {
+  $argString += " -PcscdAutoStartBin `"$PcscdAutoStartBin`""
 }
 
 # create task using powershell cmdlets (no 261 char limit)

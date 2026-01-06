@@ -126,6 +126,7 @@
               # ext.wsl.usbipd.busid = "1-1";
               # ext.wsl.usbipd.distro_name = "Debian";
               ext.wsl.usbipd.auto_attach = true;
+              ext.wsl.pcscd.enable = true;
               home.sessionVariables.LD_LIBRARY_PATH =
                 "/usr/lib/wsl/lib:$LD_LIBRARY_PATH";
 

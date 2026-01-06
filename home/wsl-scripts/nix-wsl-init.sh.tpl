@@ -167,7 +167,9 @@ ps_init_rc=0
   -UsbipdBusId "@USBIPD_BUSID@" \
   -UsbipdAutoAttach "@USBIPD_AUTO_ATTACH@" \
   -WslDistroName "@WSL_DISTRO_NAME@" \
-  -WslWaitSeconds "@WSL_WAIT_SECONDS@" || ps_init_rc=$?
+  -WslWaitSeconds "@WSL_WAIT_SECONDS@" \
+  -PcscdEnabled "@PCSCD_ENABLED@" \
+  -PcscdAutoStartBin "@PCSCD_AUTO_START_BIN@" || ps_init_rc=$?
 
 if [ $ps_init_rc -ne 0 ]; then
   log_dbg "powershell init script failed with exit code: $ps_init_rc"

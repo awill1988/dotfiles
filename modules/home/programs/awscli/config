@@ -1,5 +1,3 @@
-[default]
-
 [profile awill]
 sso_start_url=https://awill.awsapps.com/start
 sso_region=us-east-1
@@ -17,3 +15,12 @@ source_profile=awill
 source_profile=awill
 role_arn=arn:aws:iam::463509296941:role/Master-Role
 credential_process=aws-vault exec --no-session --json default
+
+[profile arro-staging]
+region = us-west-2
+credential_process=aws-vault exec --no-session --json arro
+
+[profile arro-prod]
+role_arn=arn:aws:iam::920511256258:role/OrganizationAccountAccessRole
+source_profile = arro-staging
+region = us-west-2

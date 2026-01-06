@@ -4,6 +4,7 @@ in {
   programs.gpg =
     let
       common = {
+        enable = true;
         settings = { }
           // lib.optionalAttrs (!builtins.isNull user-info.git.signingKey) {
           default-key = user-info.git.signingKey;
@@ -54,9 +55,10 @@ in {
           throw-keyids = true;
         };
         scdaemonSettings = {
-          # pcscd removed; use built-in CCID directly.
-          disable-ccid = false;
-          reader-port = ''"Yubico YubiKey OTP+FIDO+CCID"'';
+          # use pcscd for shared access (allows ykman + gpg concurrently)
+          disable-ccid = true;
+          pcsc-driver = "${pkgs.pcsclite.lib}/lib/libpcsclite.so.1";
+          card-timeout = "1";
         };
       };
       darwin = lib.optionalAttrs pkgs.stdenv.isDarwin { enable = false; };
@@ -75,7 +77,7 @@ in {
         #!/bin/sh
         set -e
         if [ -n "''${DISPLAY:-}" ] || [ -n "''${WAYLAND_DISPLAY:-}" ]; then
-          exec ${pkgs.pinentry-gtk2}/bin/pinentry "$@"
+          exec ${pkgs.pinentry-gtk2}/bin/pinentry-gtk-2 "$@"
         fi
         exec ${pkgs.pinentry-curses}/bin/pinentry-curses "$@"
       '';
