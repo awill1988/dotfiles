@@ -16,11 +16,20 @@ source_profile=awill
 role_arn=arn:aws:iam::463509296941:role/Master-Role
 credential_process=aws-vault exec --no-session --json default
 
-[profile arro-staging]
+[profile arro]
 region = us-west-2
-credential_process=aws-vault exec --no-session --json arro
 
-[profile arro-prod]
+[profile arro-staging]
+credential_process=aws-vault exec --json arro
+
+[profile arro-production]
 role_arn=arn:aws:iam::920511256258:role/OrganizationAccountAccessRole
 source_profile = arro-staging
-region = us-west-2
+
+[profile arro-learning-staging]
+role_arn=arn:aws:iam::440971295147:role/OrganizationAccountAccessRole
+source_profile = arro-staging
+
+[profile arro-learning-production]
+role_arn=arn:aws:iam::339712880231:role/OrganizationAccountAccessRole
+source_profile = arro-staging
