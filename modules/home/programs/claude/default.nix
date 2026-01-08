@@ -57,6 +57,10 @@ in
       source = claude_instructions_source;
       force = true;
     };
+    xdg.configFile."claude/claude.json" = {
+      source = claude_user_config_source;
+      force = true;
+    };
 
     # work config (separate identity for ~/projects/arro)
     xdg.configFile."claude-work/settings.json" = {
@@ -65,6 +69,10 @@ in
     };
     xdg.configFile."claude-work/CLAUDE.md" = {
       source = claude_instructions_source;
+      force = true;
+    };
+    xdg.configFile."claude-work/claude.json" = {
+      source = claude_user_config_source;
       force = true;
     };
 

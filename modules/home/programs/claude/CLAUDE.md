@@ -17,6 +17,8 @@ See @README.md and @AGENTS.md for full documentation.
 ## Git Workflow
 
 - Conventional commits: `feat:`, `fix:`, `refactor:`, `chore:`, `docs:`
+- Follow the 50/72 rule: subject line ≤50 chars, body wrapped at 72 chars
+- Prefix subject with `[TICKET-#]` extracted from branch name if present (e.g., branch `awill/proj-1-feat-foo` → `[PROJ-1] feat: foo`)
 - PR format: State changes, list affected modules, document manual steps
 - Never attribute commits or PRs to AI agents; no co-authored-by tags or agent signatures
 
