@@ -1,9 +1,9 @@
 final: prev:
 let
-  version = "2.0.70";
+  version = "2.1.5";
   src = prev.fetchurl {
     url = "https://registry.npmjs.org/@anthropic-ai/claude-code/-/claude-code-${version}.tgz";
-    hash = "sha256-cN1ytilb6o6IUFA3H7llyonuhgslLHx+39lx7VTJ8VE=";
+    hash = "sha256-pJWGkKtGn8DIMuHc+LxhS0ta4nxrZyKJOd0qXfAM7VI=";
   };
 
   mkClaude = { nodejs ? prev.nodejs_latest }: prev.stdenv.mkDerivation {

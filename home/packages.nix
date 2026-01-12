@@ -10,7 +10,24 @@ in
   modules.dev.node.enable = true;
 
   programs.codex.enable = true;
-  programs.claude.enable = true;
+  programs.claude = {
+    enable = true;
+    primary = { };
+    secondary = {
+      pathPrefix = "$HOME/projects/arro";
+      awsProfile = "arro-staging";
+      mcpServers = {
+        atlassian = {
+          command = "npx";
+          args = [ "-y" "mcp-remote" "https://mcp.atlassian.com/v1/mcp" ];
+        };
+        linear = {
+          command = "npx";
+          args = [ "-y" "mcp-remote" "https://mcp.linear.app/mcp" ];
+        };
+      };
+    };
+  };
   programs.gemini.enable = true;
 
   programs.awscli-custom.enable = true;
@@ -280,6 +297,7 @@ in
     steampipe # select * from cloud
 
     # ai tooling
+    github-mcp-server
     llama-cpp
 
     # nix tools

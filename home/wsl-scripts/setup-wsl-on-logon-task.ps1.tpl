@@ -47,7 +47,7 @@ if (-not (Test-IsAdmin)) {
   $autoAttachArg = if ($AutoAttach) { '$true' } else { '$false' }
   $pcscdArg = if ($PcscdEnabled) { '$true' } else { '$false' }
 
-  $argList = "-NoProfile -ExecutionPolicy Bypass -File `"$scriptPath`" -WinProfilePath `"$WinProfilePath`" -UsbipdEnabled $usbipdArg -AutoAttach $autoAttachArg -WaitSeconds $WaitSeconds -PcscdEnabled $pcscdArg -Elevated"
+  $argList = "-NoProfile -ExecutionPolicy Bypass -File `"$scriptPath`" -WinProfilePath `"$WinProfilePath`" -UsbipdEnabled:$usbipdArg -AutoAttach:$autoAttachArg -WaitSeconds $WaitSeconds -PcscdEnabled:$pcscdArg -Elevated"
   if ($BusId) { $argList += " -BusId `"$BusId`"" }
   if ($DistroName) { $argList += " -DistroName `"$DistroName`"" }
   if ($PcscdAutoStartBin) { $argList += " -PcscdAutoStartBin `"$PcscdAutoStartBin`"" }
@@ -85,7 +85,7 @@ $usbipdArg = if ($UsbipdEnabled) { '$true' } else { '$false' }
 $autoAttachArg = if ($AutoAttach) { '$true' } else { '$false' }
 $pcscdArg = if ($PcscdEnabled) { '$true' } else { '$false' }
 
-$argString = "-NoProfile -ExecutionPolicy Bypass -File `"$scriptPath`" -UsbipdEnabled $usbipdArg -AutoAttach $autoAttachArg -WaitSeconds $WaitSeconds -PcscdEnabled $pcscdArg"
+$argString = "-NoProfile -ExecutionPolicy Bypass -File `"$scriptPath`" -UsbipdEnabled:$usbipdArg -AutoAttach:$autoAttachArg -WaitSeconds $WaitSeconds -PcscdEnabled:$pcscdArg"
 if ($BusId) {
   $argString += " -BusId `"$BusId`""
 }
@@ -100,7 +100,8 @@ if ($PcscdAutoStartBin) {
 $action = New-ScheduledTaskAction -Execute $psExe -Argument $argString
 $trigger = New-ScheduledTaskTrigger -AtLogOn -User $env:USERNAME
 $principal = New-ScheduledTaskPrincipal -UserId $env:USERNAME -LogonType Interactive -RunLevel Highest
-$settings = New-ScheduledTaskSettingsSet -ExecutionTimeLimit (New-TimeSpan -Seconds 30) -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries
+# disable execution time limit - script has internal timeout for wsl readiness
+$settings = New-ScheduledTaskSettingsSet -ExecutionTimeLimit ([TimeSpan]::Zero) -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries
 
 try {
   Register-ScheduledTask -TaskName $taskName -Action $action -Trigger $trigger -Principal $principal -Settings $settings -Force | Out-Null
