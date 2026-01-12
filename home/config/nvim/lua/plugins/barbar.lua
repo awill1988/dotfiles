@@ -68,5 +68,15 @@ return {
 		-- close buffer
 		map("n", "<A-c>", "<cmd>BufferClose<cr>", opts)
 		map("n", "<A-C>", "<cmd>BufferCloseAllButCurrentOrPinned<cr>", opts)
+
+		-- patch barbar's move_buffer to handle nil buffer_number (fixes middle-click error)
+		local api = require("barbar.api")
+		local original_move_buffer = api.move_buffer
+		api.move_buffer = function(buffer_number, direction)
+			if buffer_number == nil then
+				return
+			end
+			return original_move_buffer(buffer_number, direction)
+		end
 	end,
 }
