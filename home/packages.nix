@@ -25,6 +25,10 @@ in
           command = "npx";
           args = [ "-y" "mcp-remote" "https://mcp.linear.app/mcp" ];
         };
+        vercel = {
+          command = "npx";
+          args = [ "-y" "vercel-mcp" ];
+        };
       };
     };
   };
