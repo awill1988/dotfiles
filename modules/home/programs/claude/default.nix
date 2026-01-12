@@ -11,6 +11,28 @@ let
   # base user config from file (contains shared MCP servers like github)
   base_user_config = builtins.fromJSON (builtins.readFile ./claude.json);
 
+  # non-destructive exploratory commands to auto-approve
+  allowed_bash_commands = [
+    "Bash(curl *)"
+    "Bash(aws *)"
+    "Bash(gh *)"
+    "Bash(docker *)"
+    "Bash(ls *)"
+    "Bash(cat *)"
+    "Bash(head *)"
+    "Bash(tail *)"
+    "Bash(grep *)"
+    "Bash(find *)"
+    "Bash(which *)"
+    "Bash(file *)"
+    "Bash(wc *)"
+    "Bash(echo *)"
+    "Bash(ps *)"
+    "Bash(env)"
+    "Bash(whoami)"
+    "Bash(pwd)"
+  ];
+
   # settings.json - non-MCP settings only
   settings_json = pkgs.writeText "settings.json" (builtins.toJSON {
     telemetry = {
@@ -21,6 +43,9 @@ let
     feedback = {
       prompt = false;
       surveys.enabled = false;
+    };
+    permissions = {
+      allow = allowed_bash_commands;
     };
   });
 
