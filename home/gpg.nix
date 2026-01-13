@@ -68,19 +68,25 @@ in {
   services.gpg-agent = {
     enable = true;
     enableSshSupport = true;
-    defaultCacheTtl = 8 * 60 * 60;
-    maxCacheTtl = 12 * 60 * 60;
+    defaultCacheTtl = 8 * 60 * 60; # 8 hours
+    maxCacheTtl = 12 * 60 * 60; # 12 hours
     extraConfig = "allow-loopback-pinentry";
     pinentry = {
-      # prefer GUI pinentry when DISPLAY/WAYLAND is available; fallback to curses otherwise
-      package = pkgs.writeShellScriptBin "pinentry" ''
-        #!/bin/sh
-        set -e
-        if [ -n "''${DISPLAY:-}" ] || [ -n "''${WAYLAND_DISPLAY:-}" ]; then
-          exec ${pkgs.pinentry-gtk2}/bin/pinentry-gtk-2 "$@"
-        fi
-        exec ${pkgs.pinentry-curses}/bin/pinentry-curses "$@"
-      '';
+      package =
+        if pkgs.stdenv.isDarwin then
+          # use pinentry-mac (installed via homebrew cask)
+          pkgs.writeShellScriptBin "pinentry" ''
+            exec /opt/homebrew/bin/pinentry-mac "$@"
+          ''
+        else
+          # prefer GUI pinentry when DISPLAY/WAYLAND is available; fallback to curses otherwise
+          pkgs.writeShellScriptBin "pinentry" ''
+            set -e
+            if [ -n "''${DISPLAY:-}" ] || [ -n "''${WAYLAND_DISPLAY:-}" ]; then
+              exec ${pkgs.pinentry-gtk2}/bin/pinentry-gtk-2 "$@"
+            fi
+            exec ${pkgs.pinentry-curses}/bin/pinentry-curses "$@"
+          '';
     };
   };
 }

@@ -27,7 +27,7 @@ in
         };
         vercel = {
           command = "npx";
-          args = [ "-y" "vercel-mcp" ];
+          args = [ "-y" "mcp-remote" "https://mcp.vercel.com" ];
         };
       };
     };
@@ -168,7 +168,6 @@ in
     wget
     curl
     socat
-    hexchat
     toilet
 
     # software development
@@ -292,7 +291,7 @@ in
     jdt-language-server
     kotlin-language-server
     nil # nix language server
-    marksman # markdown language server
+    # marksman # markdown language server
 
     # cloud and infra
     opentofu

@@ -34,7 +34,7 @@ in
   homebrew.taps = [ "emqx/mqttx" ];
 
   homebrew.brews =
-    [ "emqx/mqttx/mqttx-cli" "picotool" "pinentry" "ldns" "imessage-exporter" ];
+    [ "emqx/mqttx/mqttx-cli" "picotool" "ldns" "imessage-exporter" "pinentry-mac" ];
 
-  homebrew.casks = [ 'librewolf' ];
+  homebrew.casks = [];
 }
