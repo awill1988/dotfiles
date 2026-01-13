@@ -11,6 +11,7 @@ in
       padding.y = 12;
       dynamic_title = true;
       opacity = 0.9;
+      option_as_alt = "Both";
     };
     alacritty.settings.general.working_directory =
       "${config.home.homeDirectory}/projects";
