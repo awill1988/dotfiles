@@ -225,6 +225,7 @@ in
     '')
     grpcurl
     sqlite
+    postgresql
     jsonnet
     qemu
     protobuf
