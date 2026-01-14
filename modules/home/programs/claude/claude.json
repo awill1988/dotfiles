@@ -16,6 +16,11 @@
       "command": "uvx",
       "args": ["awslabs.aws-documentation-mcp-server@latest"],
       "env": {}
+    },
+    "postgres": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-postgres", "${POSTGRES_URL:-postgresql://postgres:postgres@localhost:5432/postgres}"],
+      "env": {}
     }
   }
 }
