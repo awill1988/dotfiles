@@ -14,6 +14,16 @@ See @README.md and @AGENTS.md for full documentation.
 
 - Treat `LOG_LEVEL` as the canonical variable name for controlling log verbosity in any language or stack
 
+## AWS Operations
+
+When performing AWS operations (CLI commands, SDK calls, infrastructure changes):
+
+- **Always check** for `AWS_PROFILE` and `AWS_REGION` environment variables before executing
+- **If not set**, ask the user to specify which AWS profile and region to target
+- **Never assume** a default profile or region; explicit is better than implicit
+- Common profiles: `default`, `arro-staging`, `arro-production`
+- Common regions: `us-east-1`, `us-west-2`, `eu-west-1`
+
 ## Git Workflow
 
 - Conventional commits: `feat:`, `fix:`, `refactor:`, `chore:`, `docs:`

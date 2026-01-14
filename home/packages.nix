@@ -16,6 +16,7 @@ in
     secondary = {
       pathPrefix = "$HOME/projects/arro";
       awsProfile = "arro-staging";
+      awsRegion = "us-west-2";
       mcpServers = {
         atlassian = {
           command = "npx";

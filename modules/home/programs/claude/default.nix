@@ -79,9 +79,11 @@ let
     if [[ -n "$secondary_prefix" && "$PWD" == "$secondary_prefix"* ]]; then
       export CLAUDE_CONFIG_DIR="${claude_secondary_home}"
       ${lib.optionalString (cfg.secondary.awsProfile != null) ''export AWS_PROFILE="${cfg.secondary.awsProfile}"''}
+      ${lib.optionalString (cfg.secondary.awsRegion != null) ''export AWS_REGION="${cfg.secondary.awsRegion}"''}
     else
       export CLAUDE_CONFIG_DIR="${claude_home}"
       ${lib.optionalString (cfg.primary.awsProfile != null) ''export AWS_PROFILE="${cfg.primary.awsProfile}"''}
+      ${lib.optionalString (cfg.primary.awsRegion != null) ''export AWS_REGION="${cfg.primary.awsRegion}"''}
     fi
 
     exec "${base_package}/bin/claude" "$@"
@@ -118,6 +120,11 @@ let
       type = lib.types.nullOr lib.types.str;
       default = null;
       description = "AWS profile to use for this identity";
+    };
+    awsRegion = lib.mkOption {
+      type = lib.types.nullOr lib.types.str;
+      default = null;
+      description = "AWS region to use for this identity";
     };
   };
 in
