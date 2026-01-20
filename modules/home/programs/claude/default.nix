@@ -74,6 +74,9 @@ let
   claude_wrapper = pkgs.writeShellScriptBin "claude" ''
     set -euo pipefail
 
+    # bypass socks proxy for claude and mcp servers
+    unset ALL_PROXY all_proxy SOCKS_PROXY socks_proxy
+
     secondary_prefix="${cfg.secondary.pathPrefix}"
 
     if [[ -n "$secondary_prefix" && "$PWD" == "$secondary_prefix"* ]]; then
