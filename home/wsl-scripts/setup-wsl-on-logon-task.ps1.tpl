@@ -21,12 +21,6 @@ param(
   [int]$WaitSeconds = 30,
 
   [Parameter(Mandatory=$false)]
-  [bool]$PcscdEnabled = $false,
-
-  [Parameter(Mandatory=$false)]
-  [string]$PcscdAutoStartBin = "",
-
-  [Parameter(Mandatory=$false)]
   [switch]$Elevated = $false
 )
 
@@ -45,12 +39,10 @@ if (-not (Test-IsAdmin)) {
   $scriptPath = $MyInvocation.MyCommand.Path
   $usbipdArg = if ($UsbipdEnabled) { '$true' } else { '$false' }
   $autoAttachArg = if ($AutoAttach) { '$true' } else { '$false' }
-  $pcscdArg = if ($PcscdEnabled) { '$true' } else { '$false' }
 
-  $argList = "-NoProfile -ExecutionPolicy Bypass -File `"$scriptPath`" -WinProfilePath `"$WinProfilePath`" -UsbipdEnabled:$usbipdArg -AutoAttach:$autoAttachArg -WaitSeconds $WaitSeconds -PcscdEnabled:$pcscdArg -Elevated"
+  $argList = "-NoProfile -ExecutionPolicy Bypass -File `"$scriptPath`" -WinProfilePath `"$WinProfilePath`" -UsbipdEnabled:$usbipdArg -AutoAttach:$autoAttachArg -WaitSeconds $WaitSeconds -Elevated"
   if ($BusId) { $argList += " -BusId `"$BusId`"" }
   if ($DistroName) { $argList += " -DistroName `"$DistroName`"" }
-  if ($PcscdAutoStartBin) { $argList += " -PcscdAutoStartBin `"$PcscdAutoStartBin`"" }
 
   # find powershell executable
   $psExe = (Get-Command pwsh.exe -ErrorAction SilentlyContinue).Source
@@ -83,17 +75,13 @@ if (-not $psExe) { throw "setup-wsl-on-logon-task: no powershell executable foun
 # build argument string manually with proper boolean formatting
 $usbipdArg = if ($UsbipdEnabled) { '$true' } else { '$false' }
 $autoAttachArg = if ($AutoAttach) { '$true' } else { '$false' }
-$pcscdArg = if ($PcscdEnabled) { '$true' } else { '$false' }
 
-$argString = "-NoProfile -ExecutionPolicy Bypass -File `"$scriptPath`" -UsbipdEnabled:$usbipdArg -AutoAttach:$autoAttachArg -WaitSeconds $WaitSeconds -PcscdEnabled:$pcscdArg"
+$argString = "-NoProfile -ExecutionPolicy Bypass -File `"$scriptPath`" -UsbipdEnabled:$usbipdArg -AutoAttach:$autoAttachArg -WaitSeconds $WaitSeconds"
 if ($BusId) {
   $argString += " -BusId `"$BusId`""
 }
 if ($DistroName) {
   $argString += " -DistroName `"$DistroName`""
-}
-if ($PcscdAutoStartBin) {
-  $argString += " -PcscdAutoStartBin `"$PcscdAutoStartBin`""
 }
 
 # create task using powershell cmdlets (no 261 char limit)

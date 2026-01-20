@@ -16,6 +16,30 @@ fi
 
 log_dbg "Starting nix-wsl-init script"
 
+# --- check pcscd-wsl systemd unit ---
+if [ "@PCSCD_ENABLED@" = "true" ]; then
+  if [ -d /run/systemd/system ]; then
+    if ! systemctl is-enabled pcscd-wsl.service > /dev/null 2>&1; then
+      # check if unit file needs updating
+      unit_src="@PCSCD_SYSTEMD_UNIT@"
+      unit_dest="/etc/systemd/system/pcscd-wsl.service"
+      if [ -f "$unit_dest" ]; then
+        if ! cmp -s "$unit_src" "$unit_dest"; then
+          echo ""
+          echo "wsl: pcscd-wsl.service needs updating"
+          echo "     run: pcscd-systemd-install"
+          echo ""
+        fi
+      else
+        echo ""
+        echo "wsl: pcscd-wsl.service not installed (required for yubikey smart card support)"
+        echo "     run: pcscd-systemd-install"
+        echo ""
+      fi
+    fi
+  fi
+fi
+
 # --- find powershell executable ---
 ps_cmd=""
 for cand in pwsh.exe powershell.exe \
@@ -167,9 +191,7 @@ ps_init_rc=0
   -UsbipdBusId "@USBIPD_BUSID@" \
   -UsbipdAutoAttach "@USBIPD_AUTO_ATTACH@" \
   -WslDistroName "@WSL_DISTRO_NAME@" \
-  -WslWaitSeconds "@WSL_WAIT_SECONDS@" \
-  -PcscdEnabled "@PCSCD_ENABLED@" \
-  -PcscdAutoStartBin "@PCSCD_AUTO_START_BIN@" || ps_init_rc=$?
+  -WslWaitSeconds "@WSL_WAIT_SECONDS@" || ps_init_rc=$?
 
 if [ $ps_init_rc -ne 0 ]; then
   log_dbg "powershell init script failed with exit code: $ps_init_rc"

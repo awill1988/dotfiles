@@ -14,18 +14,41 @@ let
   psLogonScript = pkgs.writeText "wsl-on-logon.ps1" psLogonScriptTemplate;
   psTaskSetupScript = pkgs.writeText "setup-wsl-on-logon-task.ps1" psTaskSetupScriptTemplate;
 
-  # pcscd auto-start script with baked-in nix store paths
-  pcscdAutoStart = pkgs.writeShellScriptBin "pcscd-auto-start" ''
-    #!/usr/bin/env bash
-    # auto-start pcscd with correct ccid drivers path
-    # intended to be called from windows logon hook after usbipd attach
+  # pcscd systemd unit (Type=simple, runs in foreground)
+  pcscd_systemd_unit = pkgs.writeText "pcscd-wsl.service" ''
+    [Unit]
+    Description=pcscd smart card daemon (wsl/nix)
+    After=multi-user.target
 
-    if pgrep -x pcscd > /dev/null; then
+    [Service]
+    Type=simple
+    Environment=PCSCLITE_HP_DROPDIR=${pkgs.ccid}/pcsc/drivers
+    ExecStart=${pkgs.pcsclite}/bin/pcscd --foreground
+    Restart=on-failure
+    RestartSec=5
+
+    [Install]
+    WantedBy=multi-user.target
+  '';
+
+  # script to install/update systemd unit (requires sudo, run once)
+  pcscd_systemd_install = pkgs.writeShellScriptBin "pcscd-systemd-install" ''
+    set -euo pipefail
+
+    unit_src="${pcscd_systemd_unit}"
+    unit_dest="/etc/systemd/system/pcscd-wsl.service"
+
+    if [ -f "$unit_dest" ] && ${pkgs.coreutils}/bin/cmp -s "$unit_src" "$unit_dest"; then
+      echo "pcscd-wsl.service: already up to date"
       exit 0
     fi
 
-    export PCSCLITE_HP_DROPDIR="${pkgs.ccid}/pcsc/drivers"
-    exec ${pkgs.pcsclite}/bin/pcscd
+    echo "installing pcscd-wsl.service..."
+    sudo cp "$unit_src" "$unit_dest"
+    sudo chmod 0644 "$unit_dest"
+    sudo systemctl daemon-reload
+    sudo systemctl enable --now pcscd-wsl.service
+    echo "pcscd-wsl.service: installed and started"
   '';
 
   # substitute placeholders in bash script
@@ -44,7 +67,7 @@ let
         "@WSL_DISTRO_NAME@"
         "@WSL_WAIT_SECONDS@"
         "@PCSCD_ENABLED@"
-        "@PCSCD_AUTO_START_BIN@"
+        "@PCSCD_SYSTEMD_UNIT@"
       ]
       [
         "${pkgs.nerd-fonts.sauce-code-pro}/share/fonts"
@@ -58,7 +81,7 @@ let
         (if cfg.usbipd.distro_name == null then "" else cfg.usbipd.distro_name)
         (toString cfg.usbipd.wait_seconds)
         (if cfg.pcscd.enable then "true" else "false")
-        "${pcscdAutoStart}/bin/pcscd-auto-start"
+        "${pcscd_systemd_unit}"
       ]
       bashScriptTemplate;
     executable = true;
@@ -100,94 +123,46 @@ in
       ${bashScript}
     '';
 
-    # pcscd support for yubikey smart card operations (oath, piv)
+    # pcscd packages for yubikey smart card operations
     home.packages = lib.mkIf cfg.pcscd.enable [
       pkgs.pcsclite
       pkgs.pcsc-tools
       pkgs.ccid
-      pcscdAutoStart
+      pcscd_systemd_install
     ];
 
-    # shell function to start pcscd (requires sudo)
-    # ccid drivers path passed via PCSCLITE_HP_DROPDIR env var
     programs.zsh.initContent = lib.mkIf cfg.pcscd.enable ''
-      # start pcscd if not running (needed for yubikey oath/piv)
-      pcscd-start() {
-        if ! pgrep -x pcscd > /dev/null; then
-          echo "starting pcscd..."
-          sudo PCSCLITE_HP_DROPDIR=${pkgs.ccid}/pcsc/drivers ${pkgs.pcsclite}/bin/pcscd
-          sleep 1
-          if pgrep -x pcscd > /dev/null; then
-            echo "pcscd started"
-          else
-            echo "error: failed to start pcscd" >&2
-            return 1
-          fi
-        else
-          echo "pcscd already running"
-        fi
-      }
-
-      # stop pcscd
-      pcscd-stop() {
-        if pgrep -x pcscd > /dev/null; then
-          echo "stopping pcscd..."
-          sudo pkill pcscd
-        else
-          echo "pcscd not running"
-        fi
-      }
-
-      # check pcscd and yubikey status
       pcscd-status() {
+        if ! systemctl is-enabled pcscd-wsl.service > /dev/null 2>&1; then
+          echo "pcscd-wsl.service: not installed"
+          echo "run: pcscd-systemd-install"
+          return 1
+        fi
         if pgrep -x pcscd > /dev/null; then
           echo "pcscd: running (pid $(pgrep -x pcscd))"
           echo ""
           ${pkgs.pcsc-tools}/bin/pcsc_scan -r 2>/dev/null || true
         else
           echo "pcscd: not running"
-          echo "run 'pcscd-start' to start the daemon"
+          echo "run: sudo systemctl start pcscd-wsl"
         fi
       }
     '';
 
     programs.bash.initExtra = lib.mkIf cfg.pcscd.enable ''
-      # start pcscd if not running (needed for yubikey oath/piv)
-      pcscd-start() {
-        if ! pgrep -x pcscd > /dev/null; then
-          echo "starting pcscd..."
-          sudo PCSCLITE_HP_DROPDIR=${pkgs.ccid}/pcsc/drivers ${pkgs.pcsclite}/bin/pcscd
-          sleep 1
-          if pgrep -x pcscd > /dev/null; then
-            echo "pcscd started"
-          else
-            echo "error: failed to start pcscd" >&2
-            return 1
-          fi
-        else
-          echo "pcscd already running"
-        fi
-      }
-
-      # stop pcscd
-      pcscd-stop() {
-        if pgrep -x pcscd > /dev/null; then
-          echo "stopping pcscd..."
-          sudo pkill pcscd
-        else
-          echo "pcscd not running"
-        fi
-      }
-
-      # check pcscd and yubikey status
       pcscd-status() {
+        if ! systemctl is-enabled pcscd-wsl.service > /dev/null 2>&1; then
+          echo "pcscd-wsl.service: not installed"
+          echo "run: pcscd-systemd-install"
+          return 1
+        fi
         if pgrep -x pcscd > /dev/null; then
           echo "pcscd: running (pid $(pgrep -x pcscd))"
           echo ""
           ${pkgs.pcsc-tools}/bin/pcsc_scan -r 2>/dev/null || true
         else
           echo "pcscd: not running"
-          echo "run 'pcscd-start' to start the daemon"
+          echo "run: sudo systemctl start pcscd-wsl"
         fi
       }
     '';

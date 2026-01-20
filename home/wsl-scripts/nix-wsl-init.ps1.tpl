@@ -19,13 +19,7 @@ param(
   [string]$WslDistroName = "",
 
   [Parameter(Mandatory=$false)]
-  [int]$WslWaitSeconds = 30,
-
-  [Parameter(Mandatory=$false)]
-  [string]$PcscdEnabled = "false",
-
-  [Parameter(Mandatory=$false)]
-  [string]$PcscdAutoStartBin = ""
+  [int]$WslWaitSeconds = 30
 )
 
 $ErrorActionPreference = 'Stop'
@@ -51,22 +45,17 @@ if (Test-Path $taskSetupScript) {
   try {
     $usbipdEnabledBool = $UsbipdEnabled -eq "true"
     $autoAttachBool = $UsbipdAutoAttach -eq "true"
-    $pcscdEnabledBool = $PcscdEnabled -eq "true"
     $params = @{
       WinProfilePath = $WinProfilePath
       UsbipdEnabled = $usbipdEnabledBool
       AutoAttach = $autoAttachBool
       WaitSeconds = $WslWaitSeconds
-      PcscdEnabled = $pcscdEnabledBool
     }
     if ($UsbipdBusId) {
       $params['BusId'] = $UsbipdBusId
     }
     if ($WslDistroName) {
       $params['DistroName'] = $WslDistroName
-    }
-    if ($PcscdAutoStartBin) {
-      $params['PcscdAutoStartBin'] = $PcscdAutoStartBin
     }
     $scriptOutput = & $taskSetupScript @params 2>&1
   } catch {

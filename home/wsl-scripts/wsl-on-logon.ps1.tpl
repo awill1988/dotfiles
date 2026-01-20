@@ -15,19 +15,12 @@ param(
   [string]$DistroName = $null,
 
   [Parameter(Mandatory=$false)]
-  [int]$WaitSeconds = 30,
-
-  [Parameter(Mandatory=$false)]
-  [string]$PcscdEnabled = "false",
-
-  [Parameter(Mandatory=$false)]
-  [string]$PcscdAutoStartBin = ""
+  [int]$WaitSeconds = 30
 )
 
 # convert string booleans to actual booleans
 $usbipdEnabledBool = $UsbipdEnabled -eq '$true' -or $UsbipdEnabled -eq 'true' -or $UsbipdEnabled -eq '1'
 $autoAttachBool = $AutoAttach -eq '$true' -or $AutoAttach -eq 'true' -or $AutoAttach -eq '1'
-$pcscdEnabledBool = $PcscdEnabled -eq '$true' -or $PcscdEnabled -eq 'true' -or $PcscdEnabled -eq '1'
 
 $ErrorActionPreference = 'SilentlyContinue'
 
@@ -200,12 +193,6 @@ if ($usbipdEnabledBool) {
     & $usbipd attach --wsl --busid $detectedBusId 2>$null
     if ($LASTEXITCODE -ne 0) {
       Write-Host "failed to attach device $detectedBusId"
-    } else {
-      # start pcscd in wsl after successful attach
-      if ($pcscdEnabledBool -and $PcscdAutoStartBin) {
-        Start-Sleep -Seconds 1  # give usbipd time to complete
-        & wsl.exe -d $distro -u root -e $PcscdAutoStartBin 2>$null
-      }
     }
   } catch {
     Write-Host "usbipd attach failed: $_"
