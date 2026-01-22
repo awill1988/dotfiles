@@ -36,5 +36,5 @@ in
   homebrew.brews =
     [ "emqx/mqttx/mqttx-cli" "picotool" "ldns" "imessage-exporter" "pinentry-mac" ];
 
-  homebrew.casks = [];
+  homebrew.casks = ["dbeaver-community"];
 }

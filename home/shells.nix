@@ -83,7 +83,6 @@ in {
 
   home.shellAliases = {
     terraform = "tofu";
-    tf = "tofu";
     switch-yubikey = ''gpg-connect-agent "scd serialno" "learn --force" /bye'';
 
     # Get public ip directly from a DNS server instead of from some hip
@@ -228,6 +227,16 @@ in {
       source "$HOME/.env"
       set +a
     fi
+
+    # terraform wrapper with aws-vault integration
+    # uses aws-vault when AWS_PROFILE is set, otherwise runs tofu directly
+    function tf() {
+      if [[ -n "''${AWS_PROFILE:-}" ]]; then
+        aws-vault exec "''${AWS_PROFILE}" -- tofu "$@"
+      else
+        tofu "$@"
+      fi
+    }
 
     autoload -U promptinit; promptinit
   '';

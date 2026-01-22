@@ -33,6 +33,17 @@ let
     "Bash(pwd)"
   ];
 
+  # fivetran mcp tools that mutate state - deny these for read-only access
+  denied_mcp_tools = [
+    "mcp__fivetran__pause_connector"
+    "mcp__fivetran__resume_connector"
+    "mcp__fivetran__create_dynamic_connector"
+    "mcp__fivetran__migrate_connector"
+    "mcp__fivetran__reload_connector_schema"
+    "mcp__fivetran__update_connector_schema"
+    "mcp__fivetran__modify_sync_frequency"
+  ];
+
   # settings.json - non-MCP settings only
   settings_json = pkgs.writeText "settings.json" (builtins.toJSON {
     telemetry = {
@@ -46,6 +57,7 @@ let
     };
     permissions = {
       allow = allowed_bash_commands;
+      deny = denied_mcp_tools;
     };
   });
 
@@ -108,6 +120,11 @@ let
         type = lib.types.attrsOf lib.types.str;
         default = { };
         description = "Environment variables for the MCP server";
+      };
+      disabledTools = lib.mkOption {
+        type = lib.types.listOf lib.types.str;
+        default = [ ];
+        description = "List of tool names to disable for this MCP server";
       };
     };
   };

@@ -21,6 +21,19 @@ in
         atlassian = {
           command = "npx";
           args = [ "-y" "mcp-remote" "https://mcp.atlassian.com/v1/mcp" ];
+          disabledTools = [
+            "getJiraIssue"
+            "editJiraIssue"
+            "createJiraIssue"
+            "getTransitionsForJiraIssue"
+            "transitionJiraIssue"
+            "lookupJiraAccountId"
+            "searchJiraIssuesUsingJql"
+            "addCommentToJiraIssue"
+            "getJiraIssueRemoteIssueLinks"
+            "getVisibleJiraProjects"
+            "getJiraProjectIssueTypesMetadata"
+          ];
         };
         linear = {
           command = "npx";
@@ -29,6 +42,14 @@ in
         vercel = {
           command = "npx";
           args = [ "-y" "mcp-remote" "https://mcp.vercel.com" ];
+        };
+        fivetran = {
+          command = "fivetran-mcp-server";
+          args = [ ];
+          env = {
+            FIVETRAN_API_KEY = "\${FIVETRAN_API_KEY}";
+            FIVETRAN_API_SECRET = "\${FIVETRAN_API_SECRET}";
+          };
         };
       };
     };
@@ -302,6 +323,7 @@ in
     steampipe # select * from cloud
 
     # ai tooling
+    fivetran-mcp-server
     github-mcp-server
     llama-cpp
 
