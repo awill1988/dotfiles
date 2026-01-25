@@ -23,6 +23,11 @@ args = ["-y", "@manusa/kubernetes-mcp-server"]
 url = "https://mcp.context7.com/mcp"
 env_http_headers = { CONTEXT7_API_KEY = "CONTEXT7_API_KEY" }
 
+[mcp_servers.opnsense]
+command = "npx"
+args = ["--yes", "opnsense-mcp-server@latest"]
+env = { OPNSENSE_SSH_HOST = "OPNSENSE_SSH_HOST", OPNSENSE_SSH_PORT = "OPNSENSE_SSH_PORT", OPNSENSE_SSH_USERNAME = "OPNSENSE_SSH_USERNAME", OPNSENSE_SSH_KEY_PATH = "OPNSENSE_SSH_KEY_PATH" }
+
 [shell_environment_policy]
 inherit = "all"
 ignore_default_excludes = true

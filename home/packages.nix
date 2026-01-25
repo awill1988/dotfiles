@@ -204,46 +204,29 @@ in
     vale
     gh # github cli tool
     (pkgs.writeShellScriptBin "code" ''
-      #!/bin/sh
       # tmux + neovim "IDE" launcher (vscode-like):
-      # - top: neovim with neo-tree file explorer
-      # - bottom: tmux shell pane (integrated terminal feel)
+      # - top-left: neovim with neo-tree file explorer
+      # - top-right: claude code assistant
+      # - bottom: zsh shell pane
       set -euo pipefail
+
       target_path="''${1:-.}"
       resolved_path="$(realpath "$target_path")"
       session="code-$(basename "$resolved_path")"
       shell_cmd="${pkgs.zsh}/bin/zsh"
 
-      if ! tmux has-session -t "$session" 2>/dev/null; then
-        tmux new-session -d -s "$session" -c "$resolved_path" "cd -- \"$resolved_path\" && nvim '+Neotree left reveal' ."
-        tmux split-window -t "$session":1 -v -p 30 -c "$resolved_path" "$shell_cmd"
+      if tmux has-session -t "$session" 2>/dev/null; then
+        exec tmux attach -t "$session"
       fi
 
-      terminal_pane="$session:1.2"
-      if tmux list-panes -t "$session":1 -F "#{pane_index}" | grep -q "^2$"; then
-        tmux select-pane -t "$terminal_pane"
-      fi
-
-      tmux attach -t "$session"
-    '')
-    (pkgs.writeShellScriptBin "dbui" ''
-      #!/bin/sh
-      # tmux + neovim dadbod UI launcher:
-      # - starts Neovim directly in dadbod-ui
-      # - keeps a bottom tmux shell pane
-      set -euo pipefail
-      target_path="''${1:-.}"
-      resolved_path="$(realpath "$target_path")"
-      session="dbui-$(basename "$resolved_path")"
-      shell_cmd="${pkgs.zsh}/bin/zsh"
-
-      if ! tmux has-session -t "$session" 2>/dev/null; then
-        tmux new-session -d -s "$session" -c "$resolved_path" "cd -- \"$resolved_path\" && nvim '+DBUI' ."
-        tmux split-window -t "$session":1 -v -p 30 -c "$resolved_path" "$shell_cmd"
-        tmux select-pane -t "$session":1.1
-      fi
-
-      tmux attach -t "$session"
+      # create session with layout in a single command chain
+      # split vertically first for full-width bottom pane, then horizontally on top
+      exec tmux new-session -s "$session" -c "$resolved_path" \
+        "nvim '+Neotree left reveal' ." \; \
+        split-window -v -p 30 -c "$resolved_path" "$shell_cmd" \; \
+        select-pane -t 0 \; \
+        split-window -h -p 50 -c "$resolved_path" "claude" \; \
+        select-pane -t 0
     '')
     grpcurl
     sqlite

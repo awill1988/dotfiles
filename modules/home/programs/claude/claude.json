@@ -33,6 +33,16 @@
       "env": {
         "CONTEXT7_API_KEY": "${CONTEXT7_API_KEY}"
       }
+    },
+    "opnsense": {
+      "command": "npx",
+      "args": ["--yes", "opnsense-mcp-server@latest"],
+      "env": {
+        "OPNSENSE_SSH_HOST": "${OPNSENSE_SSH_HOST}",
+        "OPNSENSE_SSH_PORT": "${OPNSENSE_SSH_PORT}",
+        "OPNSENSE_SSH_USERNAME": "${OPNSENSE_SSH_USERNAME}",
+        "OPNSENSE_SSH_KEY_PATH": "${OPNSENSE_SSH_KEY_PATH}"
+      }
     }
   }
 }
