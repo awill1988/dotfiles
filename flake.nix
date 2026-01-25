@@ -17,6 +17,10 @@
 
     flake-utils.url = "github:numtide/flake-utils";
     mac-app-util.url = "github:hraban/mac-app-util";
+    rust-overlay = {
+      url = "github:oxalica/rust-overlay";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs =
@@ -177,6 +181,7 @@
       };
 
       overlays = (import ./overlays) // {
+        rust-overlay = inputs.rust-overlay.overlays.default;
         pkgs-unstable = _: prev: {
           pkgs-unstable = import inputs.nixpkgs-unstable {
             inherit (prev.stdenv.hostPlatform) system;
@@ -199,4 +204,3 @@
         });
     };
 }
-

@@ -76,11 +76,8 @@ let
   primary_user_config = make_user_config cfg.primary;
   secondary_user_config = make_user_config cfg.secondary;
 
-  base_package =
-    if config.modules.dev.node.enable then
-      pkgs.claude.override { nodejs = config.modules.dev.node.package; }
-    else
-      pkgs.claude;
+  # native binary, no nodejs dependency
+  base_package = pkgs.claude;
 
   # wrapper that routes config based on current working directory
   claude_wrapper = pkgs.writeShellScriptBin "claude" ''
@@ -170,6 +167,10 @@ in
 
   config = lib.mkIf cfg.enable {
     home.packages = [ claude_wrapper ];
+
+    # symlink for native install method check (expects ~/.local/bin/claude)
+    home.file.".local/bin/claude".source = "${claude_wrapper}/bin/claude";
+
     home.sessionVariables = {
       CLAUDE_CONFIG_DIR = lib.mkDefault claude_home;
       CLAUDE_CACHE_DIR = lib.mkDefault claude_cache;

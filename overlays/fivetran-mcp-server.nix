@@ -13,6 +13,16 @@ let
   ]);
 in
 {
+  # mcp → aiohttp → gunicorn → setproctitle; tests segfault on darwin/arm64 + python 3.13
+  pythonPackagesExtensions = prev.pythonPackagesExtensions ++ [
+    (python-final: python-prev: {
+      setproctitle = python-prev.setproctitle.overrideAttrs (old: {
+        doCheck = false;
+        doInstallCheck = false;
+      });
+    })
+  ];
+
   fivetran-mcp-server = final.writeShellScriptBin "fivetran-mcp-server" ''
     exec ${python}/bin/python ${src} "$@"
   '';

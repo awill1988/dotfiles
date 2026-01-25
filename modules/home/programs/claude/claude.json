@@ -21,6 +21,18 @@
       "command": "npx",
       "args": ["-y", "@modelcontextprotocol/server-postgres", "${POSTGRES_URL:-postgresql://postgres:postgres@localhost:5432/postgres}"],
       "env": {}
+    },
+    "kubernetes": {
+      "command": "npx",
+      "args": ["-y", "kubernetes-mcp-server"],
+      "env": {}
+    },
+    "context7": {
+      "command": "npx",
+      "args": ["-y", "mcp-remote", "https://mcp.context7.com/mcp"],
+      "env": {
+        "CONTEXT7_API_KEY": "${CONTEXT7_API_KEY}"
+      }
     }
   }
 }

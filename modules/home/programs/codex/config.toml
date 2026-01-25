@@ -15,6 +15,14 @@ tools.view_image = true
 url = "https://api.githubcopilot.com/mcp/"
 bearer_token_env_var = "GITHUB_PAT_TOKEN"
 
+[mcp_servers.kubernetes]
+command = "npx"
+args = ["-y", "@manusa/kubernetes-mcp-server"]
+
+[mcp_servers.context7]
+url = "https://mcp.context7.com/mcp"
+env_http_headers = { CONTEXT7_API_KEY = "CONTEXT7_API_KEY" }
+
 [shell_environment_policy]
 inherit = "all"
 ignore_default_excludes = true

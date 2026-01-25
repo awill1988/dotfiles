@@ -1,58 +1,56 @@
 final: prev:
 let
-  version = "0.75.0";
-  src = prev.fetchFromGitHub {
-    owner = "openai";
-    repo = "codex";
-    rev = "rust-v${version}";
-    hash = "sha256-XsFJjXFBsj8jeOMLuP+sMW1ZiAQIuL+XBFjUhgCLJmU=";
+  version = "0.89.0";
+
+  # platform-specific binary info
+  platform_info = {
+    aarch64-darwin = {
+      suffix = "aarch64-apple-darwin";
+      hash = "sha256-hoRaw3UWpS0npu2gWlWpL6+EZ5qP9uSalChDw0PC2eM=";
+    };
+    x86_64-darwin = {
+      suffix = "x86_64-apple-darwin";
+      hash = "sha256-Nsu4F1CW2OaR9mFu0Kq8YWsnvSBNWK/iAIDN1v/834g=";
+    };
+    x86_64-linux = {
+      suffix = "x86_64-unknown-linux-gnu";
+      hash = "sha256-AlfFJBp2qULdcv/IbloGd8JBQCZtOzCQLM1nQfugccc=";
+    };
+    aarch64-linux = {
+      suffix = "aarch64-unknown-linux-gnu";
+      hash = "sha256-rB0oHx5I/nO4nK3nprNQ1RuSfsB4V0q5FGpFFeRmVE4=";
+    };
   };
 
-  is_linux = final.stdenv.hostPlatform.isLinux;
-  rust_toolchain =
-    if final ? rust-bin && final.rust-bin ? stable
-      && builtins.hasAttr "1.90.0" final.rust-bin.stable then
-      final.rust-bin.stable."1.90.0".default
-    else
-      null;
+  system = final.stdenv.hostPlatform.system;
+  info = platform_info.${system} or (throw "unsupported system: ${system}");
 
-  cargo_toolchain =
-    if rust_toolchain != null then rust_toolchain else final.cargo;
-  rustc_toolchain =
-    if rust_toolchain != null then rust_toolchain else final.rustc;
-
-  rust_platform = final.makeRustPlatform {
-    # prefer glibc on linux; keep the platform default elsewhere
-    stdenv = if is_linux then final.gccStdenv else final.stdenv;
-    cargo = cargo_toolchain;
-    rustc = rustc_toolchain;
+  src = final.fetchurl {
+    url = "https://github.com/openai/codex/releases/download/rust-v${version}/codex-${info.suffix}.tar.gz";
+    hash = info.hash;
   };
 in
 {
-  codex = rust_platform.buildRustPackage {
+  codex = final.stdenv.mkDerivation {
     pname = "codex";
     inherit version src;
-    sourceRoot = "source/codex-rs";
-    cargoHash = "sha256-9zf9xpnh9w3DWizLSHUR2CfN+E9fYxamKkyMLkYiIP8=";
-    nativeBuildInputs = [ final.pkg-config ];
-    buildInputs = [ final.openssl final.dbus ];
 
-    cargoBuildFlags = [ "-p" "codex-cli" ];
-    doCheck = false;
-    # rustc needs a larger stack; 2 GiB
-    RUST_MIN_STACK = "2147483648";
-    # upstream enables thin LTO in Cargo profiles; disable to avoid linux build crashes
-    CARGO_PROFILE_RELEASE_LTO = "off";
-    # increase codegen units to reduce memory usage (default: 16)
-    CARGO_PROFILE_RELEASE_CODEGEN_UNITS = "16";
-    auditable = false;
-    preBuild = ''unset RUSTC_WRAPPER'';
+    sourceRoot = ".";
+    dontConfigure = true;
+    dontBuild = true;
+
+    installPhase = ''
+      runHook preInstall
+      install -Dm755 codex-${info.suffix} $out/bin/codex
+      runHook postInstall
+    '';
+
     meta = with final.lib; {
-      description = "OpenAI Codex CLI built from source";
+      description = "OpenAI Codex CLI (prebuilt binary)";
       homepage = "https://github.com/openai/codex";
       license = licenses.asl20;
       mainProgram = "codex";
-      platforms = platforms.unix;
+      platforms = [ "aarch64-darwin" "x86_64-darwin" "x86_64-linux" "aarch64-linux" ];
       maintainers = [ ];
     };
   };
