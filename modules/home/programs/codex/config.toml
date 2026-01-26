@@ -28,6 +28,11 @@ command = "npx"
 args = ["--yes", "opnsense-mcp-server@latest"]
 env = { OPNSENSE_SSH_HOST = "OPNSENSE_SSH_HOST", OPNSENSE_SSH_PORT = "OPNSENSE_SSH_PORT", OPNSENSE_SSH_USERNAME = "OPNSENSE_SSH_USERNAME", OPNSENSE_SSH_KEY_PATH = "OPNSENSE_SSH_KEY_PATH" }
 
+[mcp_servers.slack]
+command = "npx"
+args = ["-y", "@modelcontextprotocol/server-slack"]
+env = { "SLACK_BOT_TOKEN" = "$SLACK_BOT_TOKEN", "SLACK_TEAM_ID" = "$SLACK_TEAM_ID", "SLACK_CHANNEL_IDS" = "$SLACK_CHANNEL_IDS" }
+
 [shell_environment_policy]
 inherit = "all"
 ignore_default_excludes = true

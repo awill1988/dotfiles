@@ -24,6 +24,29 @@ in
   ];
 
   fivetran-mcp-server = final.writeShellScriptBin "fivetran-mcp-server" ''
-    exec ${python}/bin/python ${src} "$@"
+    set -euo pipefail
+
+    if [[ -z "''${FIVETRAN_API_KEY:-}" || -z "''${FIVETRAN_API_SECRET:-}" ]]; then
+      echo "error: FIVETRAN_API_KEY and FIVETRAN_API_SECRET must be set" >&2
+      exit 1
+    fi
+
+    # create runtime config in user-writable location
+    config_dir="''${XDG_RUNTIME_DIR:-/tmp}/fivetran-mcp"
+    config_file="$config_dir/configuration.json"
+    mkdir -p "$config_dir"
+    cat > "$config_file" <<EOF
+    {
+      "fivetran_api_key": "$FIVETRAN_API_KEY",
+      "fivetran_api_secret": "$FIVETRAN_API_SECRET"
+    }
+    EOF
+    chmod 600 "$config_file"
+
+    # patch script to use our config path instead of /mcp/configuration.json
+    patched_script="$config_dir/mcp_server.py"
+    ${final.gnused}/bin/sed "s|/mcp/configuration.json|$config_file|g" ${src} > "$patched_script"
+
+    exec ${python}/bin/python "$patched_script" "$@"
   '';
 }

@@ -15,7 +15,7 @@ let
     };
     x86_64-linux = {
       platform = "linux-x64";
-      hash = "sha256-TiochzhHE8MTNnV07Qkzkjmj+fSSojpiced5uQH3qZQ=";
+      hash = "sha256-Tiocc4cezzsTM3a1fe0DMzp6Y4fy0qOmJ5u5Cgf3qUQ=";
     };
     aarch64-linux = {
       platform = "linux-arm64";
