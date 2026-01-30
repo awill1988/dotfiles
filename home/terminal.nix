@@ -1,4 +1,9 @@
-{ config, pkgs, lib, ... }:
+{
+  config,
+  pkgs,
+  lib,
+  ...
+}:
 let
   font_family = config.ext.fonts.monospace_family;
   font_size = config.ext.fonts.monospace_size;
@@ -13,14 +18,15 @@ in
       opacity = 0.9;
       option_as_alt = "Both";
     };
-    alacritty.settings.general.working_directory =
-      "${config.home.homeDirectory}/projects";
+    alacritty.settings.general.working_directory = "${config.home.homeDirectory}/projects";
     alacritty.settings.scrolling.history = 10000;
-    alacritty.settings.keyboard.bindings = [{
-      key = "Q";
-      mods = "Control";
-      chars = "\\u0011";
-    }];
+    alacritty.settings.keyboard.bindings = [
+      {
+        key = "Q";
+        mods = "Control";
+        chars = "\\u0011";
+      }
+    ];
     alacritty.settings.terminal.shell = {
       program = "${pkgs.zsh}/bin/zsh";
       args = [ "-l" ];

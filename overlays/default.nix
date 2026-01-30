@@ -12,11 +12,13 @@
     };
   };
   # disable wxwidgets support in erlang to avoid webkitgtk build
-  erlang-no-wx = final: prev:
+  erlang-no-wx =
+    final: prev:
     let
       erlang_28_no_wx = prev.beam.interpreters.erlang_28.override { wxGTK32 = null; };
       beamPackages_28_no_wx = prev.beam.packagesWith erlang_28_no_wx;
-    in {
+    in
+    {
       erlang_28 = erlang_28_no_wx;
       beam = prev.beam // {
         packages = prev.beam.packages // {

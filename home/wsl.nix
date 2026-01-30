@@ -1,4 +1,9 @@
-{ config, pkgs, lib, ... }:
+{
+  config,
+  pkgs,
+  lib,
+  ...
+}:
 let
   inherit (lib) mkEnableOption mkOption types;
   cfg = config.ext.wsl;
@@ -54,36 +59,37 @@ let
   # substitute placeholders in bash script
   bashScript = pkgs.writeTextFile {
     name = "nix-wsl-init.sh";
-    text = builtins.replaceStrings
-      [
-        "@FONT_PACKAGE_PATH@"
-        "@FIND_BIN@"
-        "@PS_ENTRYPOINT@"
-        "@PS_LOGON_SCRIPT@"
-        "@PS_TASK_SETUP_SCRIPT@"
-        "@USBIPD_ENABLED@"
-        "@USBIPD_BUSID@"
-        "@USBIPD_AUTO_ATTACH@"
-        "@WSL_DISTRO_NAME@"
-        "@WSL_WAIT_SECONDS@"
-        "@PCSCD_ENABLED@"
-        "@PCSCD_SYSTEMD_UNIT@"
-      ]
-      [
-        "${pkgs.nerd-fonts.sauce-code-pro}/share/fonts"
-        "${pkgs.findutils}/bin/find"
-        "${psEntrypoint}"
-        "${psLogonScript}"
-        "${psTaskSetupScript}"
-        (if cfg.usbipd.enable then "true" else "false")
-        (if cfg.usbipd.busid == null then "" else cfg.usbipd.busid)
-        (if cfg.usbipd.auto_attach then "true" else "false")
-        (if cfg.usbipd.distro_name == null then "" else cfg.usbipd.distro_name)
-        (toString cfg.usbipd.wait_seconds)
-        (if cfg.pcscd.enable then "true" else "false")
-        "${pcscd_systemd_unit}"
-      ]
-      bashScriptTemplate;
+    text =
+      builtins.replaceStrings
+        [
+          "@FONT_PACKAGE_PATH@"
+          "@FIND_BIN@"
+          "@PS_ENTRYPOINT@"
+          "@PS_LOGON_SCRIPT@"
+          "@PS_TASK_SETUP_SCRIPT@"
+          "@USBIPD_ENABLED@"
+          "@USBIPD_BUSID@"
+          "@USBIPD_AUTO_ATTACH@"
+          "@WSL_DISTRO_NAME@"
+          "@WSL_WAIT_SECONDS@"
+          "@PCSCD_ENABLED@"
+          "@PCSCD_SYSTEMD_UNIT@"
+        ]
+        [
+          "${pkgs.nerd-fonts.sauce-code-pro}/share/fonts"
+          "${pkgs.findutils}/bin/find"
+          "${psEntrypoint}"
+          "${psLogonScript}"
+          "${psTaskSetupScript}"
+          (if cfg.usbipd.enable then "true" else "false")
+          (if cfg.usbipd.busid == null then "" else cfg.usbipd.busid)
+          (if cfg.usbipd.auto_attach then "true" else "false")
+          (if cfg.usbipd.distro_name == null then "" else cfg.usbipd.distro_name)
+          (toString cfg.usbipd.wait_seconds)
+          (if cfg.pcscd.enable then "true" else "false")
+          "${pcscd_systemd_unit}"
+        ]
+        bashScriptTemplate;
     executable = true;
   };
 in

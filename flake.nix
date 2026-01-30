@@ -24,23 +24,34 @@
   };
 
   outputs =
-    { self
-    , darwin
-    , home-manager
-    , flake-utils
-    , mac-app-util
-    , ...
+    {
+      self,
+      darwin,
+      home-manager,
+      flake-utils,
+      mac-app-util,
+      ...
     }@inputs:
     let
       inherit (darwin.lib) darwinSystem;
       inherit (inputs.nixpkgs.lib)
-        attrValues makeOverridable mkForce optionalAttrs singleton;
+        attrValues
+        makeOverridable
+        mkForce
+        optionalAttrs
+        singleton
+        ;
 
-      systems = [ "aarch64-darwin" "x86_64-linux" ];
+      systems = [
+        "aarch64-darwin"
+        "x86_64-linux"
+      ];
       forAllSystems = f: inputs.nixpkgs.lib.genAttrs systems (system: f system);
 
       nixpkgsConfig = {
-        config = { allowUnfree = true; };
+        config = {
+          allowUnfree = true;
+        };
         overlays = attrValues self.overlays;
       };
 
@@ -52,27 +63,42 @@
         mac-app-util.darwinModules.default
 
         home-manager.darwinModules.home-manager
-        ({ config, lib, pkgs, ... }:
-          let inherit (config.users) primaryUser;
-          in {
+        (
+          {
+            config,
+            lib,
+            pkgs,
+            ...
+          }:
+          let
+            inherit (config.users) primaryUser;
+          in
+          {
             nixpkgs = nixpkgsConfig;
-            users.users.${primaryUser.username}.home =
-              "/Users/${primaryUser.username}";
+            users.users.${primaryUser.username}.home = "/Users/${primaryUser.username}";
             home-manager.useGlobalPkgs = true;
             home-manager.users.${primaryUser.username} = {
-              imports = attrValues self.homeManagerModules
-                ++ [ mac-app-util.homeManagerModules.default ];
+              imports = attrValues self.homeManagerModules ++ [ mac-app-util.homeManagerModules.default ];
               home.stateVersion = homeManagerStateVersion;
               home.user-info = config.users.primaryUser;
             };
-          })
+          }
+        )
       ];
 
       nixosCommonModules = attrValues self.nixosModules ++ [
         home-manager.nixosModules.home-manager
-        ({ config, lib, pkgs, ... }:
-          let inherit (config.users) primaryUser;
-          in {
+        (
+          {
+            config,
+            lib,
+            pkgs,
+            ...
+          }:
+          let
+            inherit (config.users) primaryUser;
+          in
+          {
             nixpkgs = nixpkgsConfig;
             users.users.${primaryUser.username} = {
               home = "/home/${primaryUser.username}";
@@ -84,12 +110,12 @@
             };
             home-manager.useGlobalPkgs = true;
             home-manager.users.${primaryUser.username} = {
-              imports = attrValues self.homeManagerModules
-                ++ [ mac-app-util.homeManagerModules.default ];
+              imports = attrValues self.homeManagerModules ++ [ mac-app-util.homeManagerModules.default ];
               home.stateVersion = homeManagerStateVersion;
               home.user-info = config.users.primaryUser;
             };
-          })
+          }
+        )
       ];
     in
     {
@@ -118,32 +144,34 @@
             system = "x86_64-linux";
             inherit (nixpkgsConfig) config overlays;
           };
-          modules = attrValues self.homeManagerModules ++ singleton
-            ({ config, pkgs, ... }: {
-              home.username = config.home.user-info.username;
-              home.homeDirectory = "/home/${config.home.username}";
-              home.stateVersion = homeManagerStateVersion;
-              home.user-info = primaryUserInfo;
-              ext.wsl.enable = true;
-              ext.wsl.usbipd.enable = true;
-              # auto-detect smart card reader and distro
-              # ext.wsl.usbipd.busid = "1-1";
-              # ext.wsl.usbipd.distro_name = "Debian";
-              ext.wsl.usbipd.auto_attach = true;
-              ext.wsl.pcscd.enable = true;
-              home.sessionVariables.LD_LIBRARY_PATH =
-                "/usr/lib/wsl/lib:$LD_LIBRARY_PATH";
+          modules =
+            attrValues self.homeManagerModules
+            ++ singleton (
+              { config, pkgs, ... }:
+              {
+                home.username = config.home.user-info.username;
+                home.homeDirectory = "/home/${config.home.username}";
+                home.stateVersion = homeManagerStateVersion;
+                home.user-info = primaryUserInfo;
+                ext.wsl.enable = true;
+                ext.wsl.usbipd.enable = true;
+                # auto-detect smart card reader and distro
+                # ext.wsl.usbipd.busid = "1-1";
+                # ext.wsl.usbipd.distro_name = "Debian";
+                ext.wsl.usbipd.auto_attach = true;
+                ext.wsl.pcscd.enable = true;
+                home.sessionVariables.LD_LIBRARY_PATH = "/usr/lib/wsl/lib:$LD_LIBRARY_PATH";
 
-              # codex: skip tests on WSL to avoid flaky upstream suite
-              programs.codex.package = pkgs.codex.overrideAttrs (old: {
-                doCheck = false;
-              });
-            });
+                # codex: skip tests on WSL to avoid flaky upstream suite
+                programs.codex.package = pkgs.codex.overrideAttrs (old: {
+                  doCheck = false;
+                });
+              }
+            );
         };
       };
 
-      defaultPackage.x86_64-linux =
-        self.homeConfigurations.debianWsl.activationPackage;
+      defaultPackage.x86_64-linux = self.homeConfigurations.debianWsl.activationPackage;
 
       darwinModules = {
         common = import ./system/common.nix;
@@ -173,11 +201,14 @@
         home-codex = import ./modules/home/programs/codex;
         home-node = import ./modules/home/programs/node;
         home-nvim = import ./home/nvim.nix;
-        home-user-info = { lib, ... }: {
-          options.home.user-info = (self.darwinModules.users-primaryUser {
-            inherit lib;
-          }).options.users.primaryUser;
-        };
+        home-user-info =
+          { lib, ... }:
+          {
+            options.home.user-info =
+              (self.darwinModules.users-primaryUser {
+                inherit lib;
+              }).options.users.primaryUser;
+          };
       };
 
       overlays = (import ./overlays) // {
@@ -189,10 +220,10 @@
           };
         };
       };
-      formatter = forAllSystems (system:
-        (import inputs.nixpkgs { inherit system; }).nixfmt-rfc-style);
+      formatter = forAllSystems (system: (import inputs.nixpkgs { inherit system; }).nixfmt-rfc-style);
 
-      packages = forAllSystems (system:
+      packages = forAllSystems (
+        system:
         let
           pkgs = import inputs.nixpkgs {
             inherit system;
@@ -201,6 +232,7 @@
         in
         {
           inherit (pkgs) gemini codex;
-        });
+        }
+      );
     };
 }

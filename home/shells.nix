@@ -1,7 +1,13 @@
-{ config, pkgs, lib, ... }:
+{
+  config,
+  pkgs,
+  lib,
+  ...
+}:
 let
   inherit (config.home) user-info;
-in {
+in
+{
 
   home.sessionVariables = {
     # XDG locations
@@ -11,8 +17,7 @@ in {
 
     # Secrets / crypto
     PASSWORD_STORE_DIR = "${config.xdg.dataHome}/password-store";
-    KEY_ID =
-      if user-info.git.signingKey == null then "" else user-info.git.signingKey;
+    KEY_ID = if user-info.git.signingKey == null then "" else user-info.git.signingKey;
 
     LC_CTYPE = "en_US.UTF-8";
     LEDGER_COLOR = "true";
@@ -54,32 +59,31 @@ in {
     AWS_VAULT_PASS_CMD = "${pkgs.pass}/bin/pass";
 
     # Prefer nix-provided tools (e.g., gnupg) ahead of system binaries to avoid version skew.
-    PATH =
-      "$LOCAL_BIN:$PYENV_HOME/shims:$PYENV_HOME/bin:$ELIXIR_PATH:$CARGO_HOME/bin:$GOPATH/bin:$RBENV_ROOT/plugins/ruby-build/bin:$HOME/google-cloud-sdk/bin:$PATH";
+    PATH = "$LOCAL_BIN:$PYENV_HOME/shims:$PYENV_HOME/bin:$ELIXIR_PATH:$CARGO_HOME/bin:$GOPATH/bin:$RBENV_ROOT/plugins/ruby-build/bin:$HOME/google-cloud-sdk/bin:$PATH";
   };
 
-  xdg.configFile =
-    {
-      "git/personal.gitconfig" = {
-        text = ''
-          [user]
-            email = "${user-info.git.email}"
-        '';
-      };
-    } // lib.optionalAttrs (!builtins.isNull user-info.git.emailSecondary) {
-      "git/secondary.gitconfig" = {
-        text = ''
-          [user]
-            email = "${user-info.git.emailSecondary}"
-        '';
-      };
-      "git/arro.gitconfig" = {
-        text = ''
-          [user]
-            email = "${user-info.git.emailSecondary}"
-        '';
-      };
+  xdg.configFile = {
+    "git/personal.gitconfig" = {
+      text = ''
+        [user]
+          email = "${user-info.git.email}"
+      '';
     };
+  }
+  // lib.optionalAttrs (!builtins.isNull user-info.git.emailSecondary) {
+    "git/secondary.gitconfig" = {
+      text = ''
+        [user]
+          email = "${user-info.git.emailSecondary}"
+      '';
+    };
+    "git/arro.gitconfig" = {
+      text = ''
+        [user]
+          email = "${user-info.git.emailSecondary}"
+      '';
+    };
+  };
 
   home.shellAliases = {
     terraform = "tofu";
@@ -89,14 +93,12 @@ in {
     # whatsmyip HTTP service. https://unix.stackexchange.com/a/81699
     wanip = "dig @resolver4.opendns.com myip.opendns.com +short";
     wanip4 = "dig @resolver4.opendns.com myip.opendns.com +short -4";
-    wanip6 =
-      "dig @resolver1.ipv6-sandbox.opendns.com AAAA myip.opendns.com +short -6";
+    wanip6 = "dig @resolver1.ipv6-sandbox.opendns.com AAAA myip.opendns.com +short -6";
 
-    git-prune-local =
-      "git fetch -p && git branch -vv | awk '/: gone]/{print $1}' | xargs git branch -D";
-  } // lib.optionalAttrs pkgs.stdenv.isDarwin {
-    lightswitch =
-      "osascript -e  'tell application \"System Events\" to tell appearance preferences to set dark mode to not dark mode'";
+    git-prune-local = "git fetch -p && git branch -vv | awk '/: gone]/{print $1}' | xargs git branch -D";
+  }
+  // lib.optionalAttrs pkgs.stdenv.isDarwin {
+    lightswitch = "osascript -e  'tell application \"System Events\" to tell appearance preferences to set dark mode to not dark mode'";
     restartaudio = "sudo killall coreaudiod";
   };
 
@@ -125,18 +127,23 @@ in {
     autoload -Uz compinit && compinit
     compinit
   '';
-  programs.zsh.cdpath = [ "." "~" ];
+  programs.zsh.cdpath = [
+    "."
+    "~"
+  ];
   # Use absolute XDG path to avoid deprecation warning about relative dotDir
   programs.zsh.dotDir = "${config.xdg.configHome}/zsh";
-  programs.zsh.plugins = [{
-    name = "git-extra-commands";
-    src = pkgs.fetchFromGitHub {
-      owner = "unixorn";
-      repo = "git-extra-commands";
-      rev = "4d39286f349a7f50171829f06da77c5097b41f9d";
-      sha256 = "sha256-Dr9fOhVKrd3+t7dMBHX5PCRCwkeblAc9t2F/vvWiHc0=";
-    };
-  }];
+  programs.zsh.plugins = [
+    {
+      name = "git-extra-commands";
+      src = pkgs.fetchFromGitHub {
+        owner = "unixorn";
+        repo = "git-extra-commands";
+        rev = "4d39286f349a7f50171829f06da77c5097b41f9d";
+        sha256 = "sha256-Dr9fOhVKrd3+t7dMBHX5PCRCwkeblAc9t2F/vvWiHc0=";
+      };
+    }
+  ];
   programs.zsh.history = {
     size = 50000;
     save = 500000;
@@ -242,10 +249,9 @@ in {
   '';
 
   # Ensure crypto directories exist with proper permissions before shells run.
-  home.activation.ensureCryptoDirs =
-    lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-      set -euo pipefail
-      mkdir -p "${config.xdg.dataHome}/gnupg" "${config.xdg.dataHome}/password-store" "${config.xdg.configHome}/gpg"
-      chmod 700 "${config.xdg.dataHome}/gnupg" "${config.xdg.dataHome}/password-store" "${config.xdg.configHome}/gpg"
-    '';
+  home.activation.ensureCryptoDirs = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+    set -euo pipefail
+    mkdir -p "${config.xdg.dataHome}/gnupg" "${config.xdg.dataHome}/password-store" "${config.xdg.configHome}/gpg"
+    chmod 700 "${config.xdg.dataHome}/gnupg" "${config.xdg.dataHome}/password-store" "${config.xdg.configHome}/gpg"
+  '';
 }

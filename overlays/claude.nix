@@ -39,7 +39,8 @@ in
 
     nativeBuildInputs = [
       prev.makeWrapper
-    ] ++ prev.lib.optionals is_linux [
+    ]
+    ++ prev.lib.optionals is_linux [
       prev.autoPatchelfHook
     ];
 
@@ -52,7 +53,7 @@ in
     dontUnpack = true;
     dontConfigure = true;
     dontBuild = true;
-    dontStrip = is_linux;  # linux strip destroys embedded javascript
+    dontStrip = is_linux; # linux strip destroys embedded javascript
 
     installPhase = ''
       runHook preInstall
@@ -73,7 +74,12 @@ in
       homepage = "https://github.com/anthropics/claude-code";
       license = licenses.unfree;
       mainProgram = "claude";
-      platforms = [ "aarch64-darwin" "x86_64-darwin" "x86_64-linux" "aarch64-linux" ];
+      platforms = [
+        "aarch64-darwin"
+        "x86_64-darwin"
+        "x86_64-linux"
+        "aarch64-linux"
+      ];
       maintainers = [ ];
     };
   };

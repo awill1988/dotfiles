@@ -1,4 +1,9 @@
-{ config, lib, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 let
   cfg = config.programs.gemini;
   gemini_home = "${config.xdg.configHome}/gemini";
@@ -12,10 +17,9 @@ in
       type = lib.types.package;
       default =
         if config.modules.dev.node.enable then
-          pkgs.gemini.override
-            {
-              nodejs = config.modules.dev.node.package;
-            }
+          pkgs.gemini.override {
+            nodejs = config.modules.dev.node.package;
+          }
         else
           pkgs.gemini;
       description = "Gemini CLI package to install.";
@@ -24,8 +28,7 @@ in
 
   config = lib.mkIf cfg.enable {
     home.packages = [ cfg.package ];
-    home.sessionVariables.GEMINI_CLI_SYSTEM_SETTINGS_PATH =
-      lib.mkDefault "${gemini_home}/settings.json";
+    home.sessionVariables.GEMINI_CLI_SYSTEM_SETTINGS_PATH = lib.mkDefault "${gemini_home}/settings.json";
 
     xdg.configFile."gemini/settings.json" = {
       source = settings_source;

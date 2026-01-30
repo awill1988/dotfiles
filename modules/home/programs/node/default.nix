@@ -1,4 +1,9 @@
-{ lib, config, pkgs, ... }:
+{
+  lib,
+  config,
+  pkgs,
+  ...
+}:
 
 with lib;
 let
@@ -70,7 +75,8 @@ in
       pkgs.nodePackages.typescript
       pkgs.nodePackages.eslint
       pkgs.nodePackages.prettier
-    ] ++ optional cfg.installBun pkgs.bun;
+    ]
+    ++ optional cfg.installBun pkgs.bun;
     home.sessionVariables = {
       NPM_CONFIG_USERCONFIG = "${config.xdg.configHome}/npm/config";
       NPM_CONFIG_CACHE = "${config.xdg.cacheHome}/npm";
@@ -82,9 +88,8 @@ in
     home.sessionPath = [ "${config.xdg.dataHome}/npm/bin" ];
 
     # Ensure tmp dir exists (lightweight) via activation script
-    home.activation.ensureNpmTmpDir =
-      lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-        mkdir -p ${config.xdg.cacheHome}/npm-tmp
-      '';
+    home.activation.ensureNpmTmpDir = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+      mkdir -p ${config.xdg.cacheHome}/npm-tmp
+    '';
   };
 }

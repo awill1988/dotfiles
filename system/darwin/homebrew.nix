@@ -1,4 +1,9 @@
-{ config, lib, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 let
   inherit (lib) mkIf elem;
   brewEnabled = config.homebrew.enable;
@@ -43,5 +48,5 @@ in
     "xcsift"
   ];
 
-  homebrew.casks = ["dbeaver-community"];
+  homebrew.casks = [ "dbeaver-community" ];
 }

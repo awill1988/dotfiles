@@ -37,3 +37,7 @@ source_profile = arro-staging
 [profile arro-ci]
 role_arn = arn:aws:iam::339495469909:role/OrganizationAccountAccessRole
 source_profile = arro-staging
+
+[profile arro-data-platform]
+role_arn = arn:aws:iam::257027486306:role/OrganizationAccountAccessRole
+source_profile = arro-staging

@@ -23,7 +23,7 @@
   git = {
     github = "awill1988";
     signingKey = "4A0DB07DEDB705FBA45F557B7A0F7A351FABE619";
-    signingFormat = "openpgp";  # "openpgp" or "ssh"
+    signingFormat = "openpgp"; # "openpgp" or "ssh"
     email = "adam@williams.engineer";
     emailSecondary = "adam@arrofinance.com";
   };

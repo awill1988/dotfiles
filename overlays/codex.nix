@@ -39,6 +39,12 @@ in
     dontConfigure = true;
     dontBuild = true;
 
+    nativeBuildInputs = [ prev.autoPatchelfHook ];
+    buildInputs = [
+      prev.openssl
+      prev.stdenv.cc.cc.lib
+    ];
+
     installPhase = ''
       runHook preInstall
       install -Dm755 codex-${info.suffix} $out/bin/codex
@@ -50,7 +56,12 @@ in
       homepage = "https://github.com/openai/codex";
       license = licenses.asl20;
       mainProgram = "codex";
-      platforms = [ "aarch64-darwin" "x86_64-darwin" "x86_64-linux" "aarch64-linux" ];
+      platforms = [
+        "aarch64-darwin"
+        "x86_64-darwin"
+        "x86_64-linux"
+        "aarch64-linux"
+      ];
       maintainers = [ ];
     };
   };

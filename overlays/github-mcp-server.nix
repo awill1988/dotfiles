@@ -22,8 +22,9 @@ let
     };
   };
 
-  platform = platform_map.${final.stdenv.hostPlatform.system}
-    or (throw "unsupported platform: ${final.stdenv.hostPlatform.system}");
+  platform =
+    platform_map.${final.stdenv.hostPlatform.system}
+      or (throw "unsupported platform: ${final.stdenv.hostPlatform.system}");
 
   src = final.fetchzip {
     url = "https://github.com/github/github-mcp-server/releases/download/v${version}/github-mcp-server_${platform.suffix}.tar.gz";

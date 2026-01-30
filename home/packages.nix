@@ -1,4 +1,9 @@
-{ config, lib, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 let
   nodePackages = pkgs.nodePackages_latest.override {
     nodejs = config.modules.dev.node.package;
@@ -20,7 +25,11 @@ in
       mcpServers = {
         atlassian = {
           command = "npx";
-          args = [ "-y" "mcp-remote" "https://mcp.atlassian.com/v1/mcp" ];
+          args = [
+            "-y"
+            "mcp-remote"
+            "https://mcp.atlassian.com/v1/mcp"
+          ];
           disabledTools = [
             "getJiraIssue"
             "editJiraIssue"
@@ -37,11 +46,19 @@ in
         };
         linear = {
           command = "npx";
-          args = [ "-y" "mcp-remote" "https://mcp.linear.app/mcp" ];
+          args = [
+            "-y"
+            "mcp-remote"
+            "https://mcp.linear.app/mcp"
+          ];
         };
         vercel = {
           command = "npx";
-          args = [ "-y" "mcp-remote" "https://mcp.vercel.com" ];
+          args = [
+            "-y"
+            "mcp-remote"
+            "https://mcp.vercel.com"
+          ];
         };
         fivetran = {
           command = "fivetran-mcp-server";
@@ -115,7 +132,12 @@ in
     keyMode = "vi";
     shell = "${pkgs.zsh}/bin/zsh";
     terminal = "screen-256color";
-    plugins = with pkgs.tmuxPlugins; [ sensible yank resurrect continuum ];
+    plugins = with pkgs.tmuxPlugins; [
+      sensible
+      yank
+      resurrect
+      continuum
+    ];
     extraConfig = ''
       # force zsh for new panes
       set -g default-command "${pkgs.zsh}/bin/zsh"
@@ -164,7 +186,11 @@ in
     withPython3 = true;
     # plugins managed by lazy.nvim, not nix
     plugins = [ ];
-    extraPackages = with pkgs; [ ripgrep fd tree-sitter ];
+    extraPackages = with pkgs; [
+      ripgrep
+      fd
+      tree-sitter
+    ];
     # no extraLuaConfig - init.lua handles bootstrapping
   };
 
@@ -190,7 +216,6 @@ in
     wget
     curl
     socat
-    toilet
 
     # software development
     vim
@@ -203,6 +228,7 @@ in
     shfmt # shell parser and formatter
     vale
     gh # github cli tool
+    act # github action test
     (pkgs.writeShellScriptBin "code" ''
       # tmux + neovim "IDE" launcher (vscode-like):
       # - top-left: neovim with neo-tree file explorer
@@ -250,8 +276,8 @@ in
     go_1_25
 
     # python
-    (python3.withPackages (ps:
-      with ps; [
+    (python3.withPackages (
+      ps: with ps; [
         tkinter
         ansible-core
         pip
@@ -268,10 +294,14 @@ in
             inherit pname version;
             sha256 = "10rp4jjqldwm4d31fnwliddzg4c8wiyi2qznvkk8yfbwsvhsjqwq";
           };
-          nativeBuildInputs = with ps; [ setuptools wheel ];
+          nativeBuildInputs = with ps; [
+            setuptools
+            wheel
+          ];
           propagatedBuildInputs = with ps; [ ansible-core ];
         })
-      ]))
+      ]
+    ))
 
     # python package management
     uv

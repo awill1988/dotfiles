@@ -1,4 +1,9 @@
-{ config, lib, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 with lib;
 let
   cfg = config.programs.awscli-custom;
@@ -32,8 +37,7 @@ in
     };
 
     awsVault = {
-      enable = mkEnableOption
-        "aws-vault - store and access AWS credentials in dev environments";
+      enable = mkEnableOption "aws-vault - store and access AWS credentials in dev environments";
 
       backend = mkOption {
         type = types.nullOr types.str;
@@ -83,21 +87,20 @@ in
   };
 
   config = mkIf cfg.enable {
-    home.packages = [ cfg.package ]
-      ++ optionals cfg.awsVault.enable [ pkgs.aws-vault ];
+    home.packages = [ cfg.package ] ++ optionals cfg.awsVault.enable [ pkgs.aws-vault ];
 
-    home.sessionVariables = mapAttrs (n: v: toString v)
-      (filterAttrs (n: v: v != [ ] && v != null) {
+    home.sessionVariables = mapAttrs (n: v: toString v) (
+      filterAttrs (n: v: v != [ ] && v != null) {
         AWS_VAULT_PROMPT = cfg.awsVault.prompt;
         AWS_VAULT_BACKEND = cfg.awsVault.backend;
         AWS_VAULT_PASS_CMD = cfg.awsVault.passCmd;
         AWS_VAULT_PASS_PREFIX = cfg.awsVault.passPrefix;
         AWS_VAULT_FILE_DIR = cfg.awsVault.fileDir;
         AWS_CONFIG_FILE = "${config.xdg.configHome}/aws/config";
-        AWS_SHARED_CREDENTIALS_FILE =
-          "${config.xdg.configHome}/aws/credentials";
+        AWS_SHARED_CREDENTIALS_FILE = "${config.xdg.configHome}/aws/credentials";
         AWS_SSO_SESSION_CACHE_DIR = "${config.xdg.cacheHome}/aws/sso/cache";
-      });
+      }
+    );
 
     programs.bash.initExtra = mkIf cfg.enableBashIntegration ''
       complete -C '${pkgs.awscli}/bin/aws_completer' aws
