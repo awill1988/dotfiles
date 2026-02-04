@@ -29,6 +29,8 @@ let
     url = "https://github.com/openai/codex/releases/download/rust-v${version}/codex-${info.suffix}.tar.gz";
     hash = info.hash;
   };
+
+  is_linux = final.stdenv.hostPlatform.isLinux;
 in
 {
   codex = final.stdenv.mkDerivation {
@@ -39,8 +41,9 @@ in
     dontConfigure = true;
     dontBuild = true;
 
-    nativeBuildInputs = [ prev.autoPatchelfHook ];
-    buildInputs = [
+    # autoPatchelfHook is linux-only (elf binaries); macos uses mach-o
+    nativeBuildInputs = final.lib.optionals is_linux [ prev.autoPatchelfHook ];
+    buildInputs = final.lib.optionals is_linux [
       prev.openssl
       prev.stdenv.cc.cc.lib
     ];
