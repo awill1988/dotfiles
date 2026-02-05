@@ -24,13 +24,30 @@ When performing AWS operations (CLI commands, SDK calls, infrastructure changes)
 - Common profiles: `default`, `arro-staging`, `arro-production`
 - Common regions: `us-east-1`, `us-west-2`, `eu-west-1`
 
+## SQL Operations
+
+Before executing any SQL query against a database:
+
+- **Always run `EXPLAIN`** (or `EXPLAIN ANALYZE` where safe) first to review the query plan
+- **Check for index usage**—avoid queries that result in full table scans on large tables
+- **Avoid computationally intensive queries** such as unbound aggregations, cross joins, or queries lacking `WHERE` clauses
+- **Use `LIMIT`** during exploration to prevent accidentally fetching millions of rows
+- **Never execute destructive statements** (`DROP`, `TRUNCATE`, `DELETE`, `UPDATE` without `WHERE`) without explicit user confirmation
+- For Snowflake: be mindful of warehouse compute costs; prefer `LIMIT` and filtered queries
+
 ## Git Workflow
 
 - Conventional commits: `feat:`, `fix:`, `refactor:`, `chore:`, `docs:`
 - Follow the 50/72 rule: subject line ≤50 chars, body wrapped at 72 chars
 - Prefix subject with `[TICKET-#]` extracted from branch name if present (e.g., branch `awill/proj-1-feat-foo` → `[PROJ-1] feat: foo`)
 - PR format: State changes, list affected modules, document manual steps
-- Never attribute commits or PRs to AI agents; no co-authored-by tags or agent signatures
+
+### No AI Attribution (Strictly Enforced)
+
+- **Never** add `Co-Authored-By` tags referencing Claude, Anthropic, OpenAI, Codex, Gemini, or any AI agent
+- **Never** include signatures, footers, or metadata indicating AI contribution
+- **Never** mention AI assistance in commit messages, PR descriptions, or code comments
+- All commits must appear as solely human-authored; AI tooling is an implementation detail, not a contributor
 
 ## Practices
 
