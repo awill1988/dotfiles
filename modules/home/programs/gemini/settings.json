@@ -36,13 +36,6 @@
         "SLACK_TEAM_ID": "$SLACK_TEAM_ID",
         "SLACK_CHANNEL_IDS": "$SLACK_CHANNEL_IDS"
       }
-    },
-    "dbeaver": {
-      "command": "npx",
-      "args": ["-y", "dbeaver-mcp-server"],
-      "env": {
-        "DBEAVER_READ_ONLY": "true"
-      }
     }
   },
   "context": {

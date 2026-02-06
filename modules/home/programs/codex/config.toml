@@ -33,11 +33,6 @@ command = "npx"
 args = ["-y", "@modelcontextprotocol/server-slack"]
 env = { "SLACK_BOT_TOKEN" = "$SLACK_BOT_TOKEN", "SLACK_TEAM_ID" = "$SLACK_TEAM_ID", "SLACK_CHANNEL_IDS" = "$SLACK_CHANNEL_IDS" }
 
-[mcp_servers.dbeaver]
-command = "npx"
-args = ["-y", "dbeaver-mcp-server"]
-env = { "DBEAVER_READ_ONLY" = "true" }
-
 [shell_environment_policy]
 inherit = "all"
 ignore_default_excludes = true
