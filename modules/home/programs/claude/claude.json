@@ -34,16 +34,6 @@
         "CONTEXT7_API_KEY": "${CONTEXT7_API_KEY}"
       }
     },
-    "opnsense": {
-      "command": "npx",
-      "args": ["--yes", "opnsense-mcp-server@latest"],
-      "env": {
-        "OPNSENSE_SSH_HOST": "${OPNSENSE_SSH_HOST}",
-        "OPNSENSE_SSH_PORT": "${OPNSENSE_SSH_PORT}",
-        "OPNSENSE_SSH_USERNAME": "${OPNSENSE_SSH_USERNAME}",
-        "OPNSENSE_SSH_KEY_PATH": "${OPNSENSE_SSH_KEY_PATH}"
-      }
-    },
     "slack": {
       "command": "npx",
       "args": ["-y", "@modelcontextprotocol/server-slack"],
@@ -53,14 +43,11 @@
         "SLACK_CHANNEL_IDS": "${SLACK_CHANNEL_IDS}"
       }
     },
-    "snowflake": {
-      "command": "uvx",
-      "args": ["snowflake-labs-mcp"],
+    "dbeaver": {
+      "command": "npx",
+      "args": ["-y", "dbeaver-mcp-server"],
       "env": {
-        "SNOWFLAKE_ACCOUNT": "${SNOWFLAKE_ACCOUNT}",
-        "SNOWFLAKE_USER": "${SNOWFLAKE_USER}",
-        "SNOWFLAKE_WAREHOUSE": "${SNOWFLAKE_WAREHOUSE}",
-        "SNOWFLAKE_PRIVATE_KEY_FILE": "${SNOWFLAKE_PRIVATE_KEY_FILE}"
+        "DBEAVER_READ_ONLY": "true"
       }
     }
   }

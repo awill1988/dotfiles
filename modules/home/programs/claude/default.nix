@@ -13,6 +13,14 @@ let
   claude_root_config = "${config.home.homeDirectory}/.claude.json";
   claude_instructions_source = ./CLAUDE.md;
 
+  # snowflake mcp service config (enables query_manager for sql execution)
+  snowflake_mcp_config = pkgs.writeText "snowflake-mcp-config.yaml" ''
+    sql_statement_permissions:
+      - select: true
+    other_services:
+      query_manager: true
+  '';
+
   # base user config from file (contains shared MCP servers like github)
   base_user_config = builtins.fromJSON (builtins.readFile ./claude.json);
 
@@ -98,6 +106,7 @@ let
 
     if [[ -n "$secondary_prefix" && "$PWD" == "$secondary_prefix"* ]]; then
       export CLAUDE_CONFIG_DIR="${claude_secondary_home}"
+      export SNOWFLAKE_MCP_CONFIG_FILE="${claude_secondary_home}/snowflake-mcp-config.yaml"
       ${lib.optionalString (
         cfg.secondary.awsProfile != null
       ) ''export AWS_PROFILE="${cfg.secondary.awsProfile}"''}
@@ -212,6 +221,10 @@ in
     };
     xdg.configFile."claude-secondary/CLAUDE.md" = {
       source = claude_instructions_source;
+      force = true;
+    };
+    xdg.configFile."claude-secondary/snowflake-mcp-config.yaml" = {
+      source = snowflake_mcp_config;
       force = true;
     };
     # .claude.json (with dot) is where Claude reads MCP servers from

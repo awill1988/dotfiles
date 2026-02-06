@@ -15,6 +15,14 @@ return {
 						enabled = true, -- track current file and reveal in tree
 					},
 					use_libuv_file_watcher = true, -- auto-refresh on file changes
+					filtered_items = {
+						visible = false,
+						hide_dotfiles = true,
+						hide_gitignored = true,
+						always_show = {
+							".github",
+						},
+					},
 				},
 			})
 			require("helpers.keys").map(

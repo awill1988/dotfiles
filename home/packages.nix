@@ -17,7 +17,23 @@ in
   programs.codex.enable = true;
   programs.claude = {
     enable = true;
-    primary = { };
+    primary = {
+      mcpServers = {
+        opnsense = {
+          command = "npx";
+          args = [
+            "--yes"
+            "opnsense-mcp-server@latest"
+          ];
+          env = {
+            OPNSENSE_SSH_HOST = "\${OPNSENSE_SSH_HOST}";
+            OPNSENSE_SSH_PORT = "\${OPNSENSE_SSH_PORT}";
+            OPNSENSE_SSH_USERNAME = "\${OPNSENSE_SSH_USERNAME}";
+            OPNSENSE_SSH_KEY_PATH = "\${OPNSENSE_SSH_KEY_PATH}";
+          };
+        };
+      };
+    };
     secondary = {
       pathPrefix = "$HOME/projects/arro";
       awsProfile = "arro-staging";
@@ -52,14 +68,6 @@ in
             "https://mcp.linear.app/mcp"
           ];
         };
-        vercel = {
-          command = "npx";
-          args = [
-            "-y"
-            "mcp-remote"
-            "https://mcp.vercel.com"
-          ];
-        };
         fivetran = {
           command = "fivetran-mcp-server";
           args = [ ];
@@ -67,6 +75,24 @@ in
             FIVETRAN_API_KEY = "\${FIVETRAN_API_KEY}";
             FIVETRAN_API_SECRET = "\${FIVETRAN_API_SECRET}";
           };
+        };
+        snowflake = {
+          command = "uvx";
+          args = [
+            "snowflake-labs-mcp"
+            "--service-config-file"
+            "\${SNOWFLAKE_MCP_CONFIG_FILE}"
+            "--account"
+            "\${SNOWFLAKE_ACCOUNT}"
+            "--user"
+            "\${SNOWFLAKE_USER}"
+            "--warehouse"
+            "\${SNOWFLAKE_WAREHOUSE}"
+            "--private-key-file"
+            "\${SNOWFLAKE_PRIVATE_KEY_FILE}"
+            "--role"
+            "\${SNOWFLAKE_ROLE}"
+          ];
         };
       };
     };
