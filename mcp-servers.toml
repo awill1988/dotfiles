@@ -1,3 +1,12 @@
+# tool policy — glob patterns for tools to exclude from the virtual server.
+# tools matching any pattern here are discovered but not exposed to clients.
+exclude_tools = [
+  "*-delete-*",
+  "*-create-repository",
+  "*-fork-repository",
+  "*-merge-pull-request",
+]
+
 [[servers]]
 name = "github"
 transport = "http"
