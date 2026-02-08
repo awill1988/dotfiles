@@ -19,84 +19,11 @@ in
   programs.podman.enable = true;
   programs.claude = {
     enable = true;
-    primary = {
-      mcpServers = {
-        opnsense = {
-          command = "npx";
-          args = [
-            "--yes"
-            "opnsense-mcp-server@latest"
-          ];
-          env = {
-            OPNSENSE_SSH_HOST = "\${OPNSENSE_SSH_HOST}";
-            OPNSENSE_SSH_PORT = "\${OPNSENSE_SSH_PORT}";
-            OPNSENSE_SSH_USERNAME = "\${OPNSENSE_SSH_USERNAME}";
-            OPNSENSE_SSH_KEY_PATH = "\${OPNSENSE_SSH_KEY_PATH}";
-          };
-        };
-      };
-    };
+    primary = {};
     secondary = {
       pathPrefix = "$HOME/projects/arro";
       awsProfile = "arro-staging";
       awsRegion = "us-west-2";
-      mcpServers = {
-        atlassian = {
-          command = "npx";
-          args = [
-            "-y"
-            "mcp-remote"
-            "https://mcp.atlassian.com/v1/mcp"
-          ];
-          disabledTools = [
-            "getJiraIssue"
-            "editJiraIssue"
-            "createJiraIssue"
-            "getTransitionsForJiraIssue"
-            "transitionJiraIssue"
-            "lookupJiraAccountId"
-            "searchJiraIssuesUsingJql"
-            "addCommentToJiraIssue"
-            "getJiraIssueRemoteIssueLinks"
-            "getVisibleJiraProjects"
-            "getJiraProjectIssueTypesMetadata"
-          ];
-        };
-        linear = {
-          command = "npx";
-          args = [
-            "-y"
-            "mcp-remote"
-            "https://mcp.linear.app/mcp"
-          ];
-        };
-        fivetran = {
-          command = "fivetran-mcp-server";
-          args = [ ];
-          env = {
-            FIVETRAN_API_KEY = "\${FIVETRAN_API_KEY}";
-            FIVETRAN_API_SECRET = "\${FIVETRAN_API_SECRET}";
-          };
-        };
-        snowflake = {
-          command = "uvx";
-          args = [
-            "snowflake-labs-mcp"
-            "--service-config-file"
-            "\${SNOWFLAKE_MCP_CONFIG_FILE}"
-            "--account"
-            "\${SNOWFLAKE_ACCOUNT}"
-            "--user"
-            "\${SNOWFLAKE_USER}"
-            "--warehouse"
-            "\${SNOWFLAKE_WAREHOUSE}"
-            "--private-key-file"
-            "\${SNOWFLAKE_PRIVATE_KEY_FILE}"
-            "--role"
-            "\${SNOWFLAKE_ROLE}"
-          ];
-        };
-      };
     };
   };
   programs.gemini.enable = true;

@@ -1,41 +1,9 @@
 {
   "$schema": "https://raw.githubusercontent.com/google-gemini/gemini-cli/main/schemas/settings.schema.json",
   "mcpServers": {
-    "github": {
-      "httpUrl": "https://api.githubcopilot.com/mcp/",
-      "headers": {
-        "Authorization": "Bearer $GITHUB_MCP_PAT"
-      }
-    },
-    "kubernetes": {
-      "command": "npx",
-      "args": ["-y", "@manusa/kubernetes-mcp-server"]
-    },
-    "context7": {
-      "httpUrl": "https://mcp.context7.com/mcp",
-      "headers": {
-        "CONTEXT7_API_KEY": "$CONTEXT7_API_KEY"
-      }
-    },
-    "opnsense": {
-      "command": "npx",
-      "args": ["--yes", "opnsense-mcp-server@latest"],
-      "env": {
-        "OPNSENSE_SSH_HOST": "$OPNSENSE_SSH_HOST",
-        "OPNSENSE_SSH_PORT": "$OPNSENSE_SSH_PORT",
-        "OPNSENSE_SSH_USERNAME": "$OPNSENSE_SSH_USERNAME",
-        "OPNSENSE_SSH_KEY_PATH": "$OPNSENSE_SSH_KEY_PATH"
-      }
-    },
-    "slack": {
-      "type": "stdio",
-      "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-slack"],
-      "env": {
-        "SLACK_BOT_TOKEN": "$SLACK_BOT_TOKEN",
-        "SLACK_TEAM_ID": "$SLACK_TEAM_ID",
-        "SLACK_CHANNEL_IDS": "$SLACK_CHANNEL_IDS"
-      }
+    "contextforge": {
+      "command": "mcpgw-wrapper",
+      "args": []
     }
   },
   "context": {

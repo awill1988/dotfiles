@@ -1,0 +1,101 @@
+[[servers]]
+name = "github"
+transport = "http"
+url = "https://api.githubcopilot.com/mcp/"
+headers = { Authorization = "Bearer $GITHUB_MCP_PAT" }
+command = "github-mcp-server"
+env = { GITHUB_MCP_PAT = "$GITHUB_MCP_PAT" }
+
+[[servers]]
+name = "context7"
+transport = "http"
+url = "https://mcp.context7.com/mcp"
+headers = { CONTEXT7_API_KEY = "$CONTEXT7_API_KEY" }
+
+# bridge ports: 4450+ alpha-sorted (gateway on 4444, 4445-4449 reserved)
+
+[[servers]]
+name = "aws"
+transport = "stdio"
+command = "uvx"
+args = ["awslabs.core-mcp-server@latest"]
+bridge = { port = 4450 }
+gateway_register = true
+
+[[servers]]
+name = "aws-docs"
+transport = "stdio"
+command = "uvx"
+args = ["awslabs.aws-documentation-mcp-server@latest"]
+bridge = { port = 4451 }
+gateway_register = true
+
+[[servers]]
+name = "opnsense"
+transport = "stdio"
+command = "npx"
+args = ["--yes", "opnsense-mcp-server@latest"]
+env = { OPNSENSE_SSH_HOST = "$OPNSENSE_SSH_HOST", OPNSENSE_SSH_PORT = "$OPNSENSE_SSH_PORT", OPNSENSE_SSH_USERNAME = "$OPNSENSE_SSH_USERNAME", OPNSENSE_SSH_KEY_PATH = "$OPNSENSE_SSH_KEY_PATH" }
+bridge = { port = 4452 }
+gateway_register = true
+
+[[servers]]
+name = "postgres"
+transport = "stdio"
+command = "npx"
+args = ["-y", "@modelcontextprotocol/server-postgres", "${POSTGRES_URL:-postgresql://postgres:postgres@localhost:5432/postgres}"]
+bridge = { port = 4453 }
+gateway_register = true
+
+[[servers]]
+name = "slack"
+transport = "stdio"
+command = "npx"
+args = ["-y", "@modelcontextprotocol/server-slack"]
+env = { SLACK_BOT_TOKEN = "$SLACK_BOT_TOKEN", SLACK_TEAM_ID = "$SLACK_TEAM_ID", SLACK_CHANNEL_IDS = "$SLACK_CHANNEL_IDS" }
+bridge = { port = 4454 }
+gateway_register = true
+
+# TODO: oauth servers — need contextforge oauth_config or mcp-remote bridge
+# these require interactive browser auth on first use; register via gateway
+# oauth_config once atlassian/linear developer apps are configured.
+#
+# [[servers]]
+# name = "atlassian"
+# transport = "http"
+# url = "https://mcp.atlassian.com/v1/mcp"
+# # oauth_config = { grant_type = "authorization_code", client_id = "...", client_secret = "...", authorization_url = "https://auth.atlassian.com/authorize", token_url = "https://auth.atlassian.com/oauth/token", redirect_uri = "http://127.0.0.1:4444/oauth/callback", scopes = ["read:confluence-content.all", "read:jira-work"] }
+# gateway_register = true
+#
+# [[servers]]
+# name = "linear"
+# transport = "http"
+# url = "https://mcp.linear.app/mcp"
+# # oauth_config = { grant_type = "authorization_code", client_id = "...", client_secret = "...", authorization_url = "https://linear.app/oauth/authorize", token_url = "https://api.linear.app/oauth/token", redirect_uri = "http://127.0.0.1:4444/oauth/callback", scopes = ["read"] }
+# gateway_register = true
+
+# TODO: stdio servers pending bridge setup (ports 4455+, alpha-sorted)
+#
+# [[servers]]
+# name = "fivetran"
+# transport = "stdio"
+# command = "fivetran-mcp-server"
+# env = { FIVETRAN_API_KEY = "$FIVETRAN_API_KEY", FIVETRAN_API_SECRET = "$FIVETRAN_API_SECRET" }
+# bridge = { port = 4455 }
+# gateway_register = true
+#
+# [[servers]]
+# name = "snowflake"
+# transport = "stdio"
+# command = "uvx"
+# args = ["snowflake-labs-mcp", "--service-config-file", "$SNOWFLAKE_MCP_CONFIG_FILE", "--account", "$SNOWFLAKE_ACCOUNT", "--user", "$SNOWFLAKE_USER", "--warehouse", "$SNOWFLAKE_WAREHOUSE", "--private-key-file", "$SNOWFLAKE_PRIVATE_KEY_FILE", "--role", "$SNOWFLAKE_ROLE"]
+# bridge = { port = 4456 }
+# gateway_register = true
+#
+# [[servers]]
+# name = "kubernetes"
+# transport = "stdio"
+# command = "npx"
+# args = ["-y", "@manusa/kubernetes-mcp-server"]
+# bridge = { port = 4457 }
+# gateway_register = true

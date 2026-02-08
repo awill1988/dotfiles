@@ -25,9 +25,18 @@ let
       "LOG_FORMAT=json"
       "CACHE_TYPE=memory"
       "ENVIRONMENT=${cfg.environment}"
+      "AUTH_REQUIRED=false"
+      "SECURE_COOKIES=false"
+      "PLATFORM_ADMIN_PASSWORD=Local!Dev#2026"
+      "DEFAULT_USER_PASSWORD=Local!Dev#2026"
+      "PASSWORD_CHANGE_ENFORCEMENT_ENABLED=false"
+      "ADMIN_REQUIRE_PASSWORD_CHANGE_ON_BOOTSTRAP=false"
+      "DETECT_DEFAULT_PASSWORD_ON_LOGIN=false"
       ""
     ]
   );
+
+  mcp_servers_source = ./mcp-servers.toml;
 
   # gateway daemon wrapper — sources env files, execs uvx
   gateway_script = pkgs.writeShellScript "contextforge-gateway" ''
@@ -40,19 +49,144 @@ let
     . "${config_dir}/gateway.env"
     set +a
 
-    # load user-managed secrets (jwt, basic auth)
-    if [[ -f "${config_dir}/secrets.env" ]]; then
-      set -a
-      # shellcheck disable=SC1091
-      . "${config_dir}/secrets.env"
-      set +a
-    fi
-
     # ensure sqlite data dir exists
     mkdir -p "${data_dir}"
 
     exec uvx --from mcp-contextforge-gateway mcpgateway \
       --host "$HOST" --port "$PORT"
+  '';
+
+  # bridge supervisor — spawns mcpgateway.translate per stdio server with bridge.port
+  bridge_supervisor_script = pkgs.writeShellScript "contextforge-bridge-supervisor" ''
+    set -eo pipefail
+    export PATH="${lib.makeBinPath [ pkgs.uv pkgs.python3 pkgs.nodejs pkgs.coreutils ]}:$PATH"
+
+    # writable cache dirs for npx/uv package downloads
+    export HOME="${config.home.homeDirectory}"
+    export NPM_CONFIG_CACHE="${cache_dir}/npm"
+    export UV_CACHE_DIR="${cache_dir}/uv"
+    mkdir -p "$NPM_CONFIG_CACHE" "$UV_CACHE_DIR"
+
+    # source secrets for bridge children (slack tokens, opnsense keys, etc.)
+    env_file="${config_dir}/mcpgw-bridge.env"
+    if [[ -f "$env_file" ]]; then
+      set -a
+      # shellcheck disable=SC1090
+      . "$env_file"
+      set +a
+      echo "bridge supervisor: loaded $env_file"
+    else
+      echo "bridge supervisor: no $env_file found, bridges relying on env vars may fail"
+    fi
+
+    config_file="${config_dir}/mcp-servers.toml"
+
+    # extract bridge configs: "name command arg1 arg2 ... |port|key1=val1 key2=val2"
+    readarray -t bridges < <(python3 - "$config_file" <<'PY'
+import sys
+
+try:
+    import tomllib
+except ModuleNotFoundError:
+    print("error: python3 lacks tomllib", file=sys.stderr)
+    sys.exit(1)
+
+config_path = sys.argv[1]
+with open(config_path, "rb") as f:
+    data = tomllib.load(f)
+
+for server in data.get("servers", []):
+    if not isinstance(server, dict):
+        continue
+    transport = (server.get("transport") or "").lower()
+    if transport != "stdio":
+        continue
+    bridge = server.get("bridge") or {}
+    port = bridge.get("port")
+    if not port:
+        continue
+    name = server.get("name", "unknown")
+    command = server.get("command", "")
+    args = server.get("args") or []
+    env = server.get("env") or {}
+    cmd_parts = [command] + args
+    env_pairs = " ".join(f"{k}={v}" for k, v in env.items())
+    print(f"{name}\t{' '.join(cmd_parts)}\t{port}\t{env_pairs}")
+PY
+    )
+
+    if [[ ''${#bridges[@]} -eq 0 ]]; then
+      echo "bridge supervisor: no stdio bridges configured, idling"
+      exec sleep infinity
+    fi
+
+    declare -A pids
+    declare -A bridge_names
+    declare -A bridge_cmds
+    declare -A bridge_ports
+    declare -A bridge_envs
+
+    cleanup() {
+      echo "bridge supervisor: shutting down"
+      for pid in "''${pids[@]}"; do
+        kill "$pid" 2>/dev/null || true
+      done
+      sleep 2
+      for pid in "''${pids[@]}"; do
+        kill -9 "$pid" 2>/dev/null || true
+      done
+      exit 0
+    }
+    trap cleanup SIGTERM SIGINT
+
+    start_bridge() {
+      local name="$1"
+      local cmd="$2"
+      local port="$3"
+      local env_vars="$4"
+
+      # kill stale process on port
+      local stale_pid
+      stale_pid="$(lsof -ti :"$port" 2>/dev/null || true)"
+      if [[ -n "$stale_pid" ]]; then
+        echo "bridge supervisor: killing stale process on port $port (pid $stale_pid)"
+        kill "$stale_pid" 2>/dev/null || true
+        sleep 1
+      fi
+
+      echo "bridge supervisor: starting $name on port $port"
+      local bridge_cmd="uv run --with mcp-contextforge-gateway python -m mcpgateway.translate --stdio \"$cmd\" --expose-streamable-http --port $port --host 127.0.0.1 --stateless --jsonResponse"
+      if [[ -n "$env_vars" ]]; then
+        bridge_cmd="env $env_vars $bridge_cmd"
+      fi
+      eval "$bridge_cmd" &
+      pids[$name]=$!
+      echo "bridge supervisor: $name started (pid ''${pids[$name]})"
+    }
+
+    # parse and start all bridges
+    for entry in "''${bridges[@]}"; do
+      IFS=$'\t' read -r name cmd port env_vars <<< "$entry"
+      bridge_names[$name]="$name"
+      bridge_cmds[$name]="$cmd"
+      bridge_ports[$name]="$port"
+      bridge_envs[$name]="$env_vars"
+      start_bridge "$name" "$cmd" "$port" "$env_vars"
+    done
+
+    echo "bridge supervisor: monitoring ''${#pids[@]} bridge(s)"
+
+    # monitor loop — check children, restart dead ones with backoff
+    while true; do
+      sleep 5
+      for name in "''${!pids[@]}"; do
+        if ! kill -0 "''${pids[$name]}" 2>/dev/null; then
+          echo "bridge supervisor: $name (pid ''${pids[$name]}) died, restarting after backoff"
+          sleep 3
+          start_bridge "$name" "''${bridge_cmds[$name]}" "''${bridge_ports[$name]}" "''${bridge_envs[$name]}"
+        fi
+      done
+    done
   '';
 
   # one-shot setup script — waits for gateway, creates virtual server
@@ -61,7 +195,6 @@ let
     export PATH="${lib.makeBinPath [ pkgs.uv pkgs.curl pkgs.jq pkgs.coreutils ]}:$PATH"
 
     url="http://${cfg.host}:${toString cfg.port}"
-    secrets="${config_dir}/secrets.env"
     uuid_file="${data_dir}/virtual-server-id"
 
     # wait for gateway health (60s max, 2s intervals)
@@ -77,21 +210,6 @@ let
     done
     echo "gateway healthy"
 
-    # load secrets for jwt token
-    if [[ ! -f "$secrets" ]]; then
-      echo "error: secrets.env not found at $secrets" >&2
-      exit 1
-    fi
-    set -a
-    # shellcheck disable=SC1090
-    . "$secrets"
-    set +a
-
-    if [[ -z "''${JWT_TOKEN:-}" ]]; then
-      echo "error: JWT_TOKEN not set in $secrets" >&2
-      exit 1
-    fi
-
     # create virtual server if not already done
     if [[ -f "$uuid_file" ]]; then
       echo "virtual server already configured: $(cat "$uuid_file")"
@@ -99,19 +217,26 @@ let
     fi
 
     response="$(curl -sf -X POST \
-      -H "Authorization: Bearer $JWT_TOKEN" \
       -H "Content-Type: application/json" \
-      -d '{"name": "contextforge-all", "tools": "all"}' \
+      -d '{"server": {"name": "contextforge-all", "tools": "all"}}' \
       "$url/servers" 2>/dev/null)" || {
-      echo "error: failed to create virtual server" >&2
-      exit 1
+      # 409 means it already exists — fetch the existing uuid
+      uuid="$(curl -sf "$url/servers" 2>/dev/null \
+        | jq -r '.[] | select(.name == "contextforge-all") | .id // empty')"
+      if [[ -z "$uuid" ]]; then
+        echo "error: failed to create or find virtual server" >&2
+        exit 1
+      fi
+      echo "virtual server already exists: $uuid"
     }
 
-    uuid="$(echo "$response" | jq -r '.id // .uuid // empty')"
-    if [[ -z "$uuid" ]]; then
-      echo "error: no uuid returned from server creation" >&2
-      echo "response: $response" >&2
-      exit 1
+    if [[ -z "''${uuid:-}" ]]; then
+      uuid="$(echo "$response" | jq -r '.id // .uuid // empty')"
+      if [[ -z "$uuid" ]]; then
+        echo "error: no uuid returned from server creation" >&2
+        echo "response: $response" >&2
+        exit 1
+      fi
     fi
 
     # atomic write
@@ -126,9 +251,8 @@ let
     umask 077
     export PATH="${lib.makeBinPath [ pkgs.coreutils pkgs.curl pkgs.jq pkgs.python3 ]}:$PATH"
 
-    config_home="${config.xdg.configHome}"
-    contextforge_dir="${config_dir}"
-    output_file="${config_dir}/mcp-sync.json"
+    config_file="${config_dir}/mcp-servers.toml"
+    output_file="${config_dir}/mcp-servers.json"
     dry_run=0
     print_only=0
 
@@ -157,10 +281,15 @@ let
       shift
     done
 
-    mkdir -p "$contextforge_dir"
+    if [[ ! -f "$config_file" ]]; then
+      echo "sync: config file missing at $config_file" >&2
+      exit 1
+    fi
+
+    mkdir -p "${config_dir}"
 
     temp_file="$(mktemp)"
-    python3 - "$config_home" "${config.home.homeDirectory}" "$temp_file" <<'PY'
+    python3 - "$config_file" "$temp_file" <<'PY'
 import json
 import os
 import re
@@ -168,21 +297,12 @@ import sys
 
 try:
     import tomllib
-except ModuleNotFoundError:  # pragma: no cover
-    import tomli as tomllib
+except ModuleNotFoundError:
+    print("error: python3 lacks tomllib", file=sys.stderr)
+    sys.exit(1)
 
-config_home = sys.argv[1]
-home_dir = sys.argv[2]
-output_path = sys.argv[3]
-
-def read_json(path):
-    try:
-        with open(path, "r", encoding="utf-8") as handle:
-            return json.load(handle)
-    except FileNotFoundError:
-        return {}
-    except json.JSONDecodeError:
-        return {}
+config_path = sys.argv[1]
+output_path = sys.argv[2]
 
 def read_toml(path):
     try:
@@ -190,133 +310,133 @@ def read_toml(path):
             return tomllib.load(handle)
     except FileNotFoundError:
         return {}
-    except tomllib.TOMLDecodeError:
-        return {}
+    except tomllib.TOMLDecodeError as exc:
+        print(f"error: invalid toml: {exc}", file=sys.stderr)
+        sys.exit(1)
 
-def expand_headers(headers, env_header_map, bearer_token_env_var):
-    resolved = {}
-    missing = []
-    pattern = re.compile(r"\$(\w+)|\''${([^}]+)}")
+pattern = re.compile(r"\$(\w+)|\''${([^}]+)}")
 
-    for key, value in headers.items():
-        text = str(value)
-        for match in pattern.findall(text):
+def expand_value(value, missing):
+    if isinstance(value, str):
+        for match in pattern.findall(value):
             env_name = match[0] or match[1]
             if os.environ.get(env_name) is None:
-                missing.append(env_name)
-        resolved[key] = os.path.expandvars(text)
+                missing.add(env_name)
+        return os.path.expandvars(value)
+    if isinstance(value, dict):
+        return {key: expand_value(val, missing) for key, val in value.items()}
+    if isinstance(value, list):
+        return [expand_value(val, missing) for val in value]
+    return value
 
-    for header, env_name in env_header_map.items():
-        env_value = os.environ.get(env_name)
-        if env_value is None:
-            missing.append(env_name)
+def expand_headers(headers, missing):
+    if not isinstance(headers, dict):
+        return {}, missing
+    resolved = {}
+    for key, value in headers.items():
+        resolved[key] = expand_value(value, missing)
+    return resolved, missing
+
+data = read_toml(config_path)
+servers = data.get("servers", [])
+if not isinstance(servers, list):
+    servers = []
+
+inventory = []
+for item in servers:
+    if not isinstance(item, dict):
+        continue
+    name = item.get("name")
+    if not name:
+        continue
+    transport = (item.get("transport") or "http").lower()
+    url = item.get("url")
+    missing = set()
+    headers, _ = expand_headers(item.get("headers", {}), missing)
+    auth_headers = []
+    auth_headers_raw = item.get("auth_headers")
+    if isinstance(auth_headers_raw, list):
+        for entry in auth_headers_raw:
+            if not isinstance(entry, dict):
+                continue
+            key = entry.get("key")
+            if key is None:
+                continue
+            value = expand_value(entry.get("value", ""), missing)
+            auth_headers.append(
+                {
+                    "key": str(key),
+                    "value": "" if value is None else str(value),
+                }
+            )
+    elif headers:
+        for key in sorted(headers.keys()):
+            value = headers[key]
+            auth_headers.append(
+                {
+                    "key": str(key),
+                    "value": "" if value is None else str(value),
+                }
+            )
+
+    oauth_config = item.get("oauth_config") or {}
+    if isinstance(oauth_config, dict):
+        oauth_config = expand_value(oauth_config, missing)
+    else:
+        oauth_config = {}
+
+    auth_type = item.get("auth_type")
+    if not auth_type:
+        if oauth_config:
+            auth_type = "oauth"
+        elif auth_headers:
+            auth_type = "authheaders"
+    command = item.get("command")
+    args = item.get("args") or []
+    env = item.get("env") or {}
+    bridge = item.get("bridge") or {}
+    bridge_port = bridge.get("port")
+    bridge_url = bridge.get("url")
+    if bridge_port and not bridge_url:
+        bridge_url = f"http://127.0.0.1:{bridge_port}/mcp"
+    gateway_register = item.get("gateway_register")
+    if gateway_register is None:
+        if transport == "http":
+            gateway_register = True
         else:
-            resolved[header] = env_value
+            gateway_register = bool(bridge_url)
 
-    if bearer_token_env_var:
-        token = os.environ.get(bearer_token_env_var)
-        if token is None:
-            missing.append(bearer_token_env_var)
-        elif "Authorization" not in resolved:
-            resolved["Authorization"] = f"Bearer {token}"
+    gateway_transport = None
+    if transport in ("http", "streamablehttp", "streamable_http"):
+        gateway_transport = "STREAMABLEHTTP"
+    elif transport == "sse":
+        gateway_transport = "SSE"
+    elif transport == "stdio" and bridge_url:
+        # stdio servers can register via their http bridge
+        gateway_transport = "STREAMABLEHTTP"
 
-    return resolved, sorted(set(missing))
-
-def add_server(servers, name, record):
-    existing = servers.get(name)
-    if existing is None:
-        servers[name] = record
-        return
-
-    if existing["kind"] != "http" and record["kind"] == "http":
-        record["sources"] = sorted(set(existing["sources"] + record["sources"]))
-        servers[name] = record
-        return
-
-    if existing["kind"] == "http" and record["kind"] == "http":
-        existing["sources"] = sorted(set(existing["sources"] + record["sources"]))
-        if not existing.get("headers") and record.get("headers"):
-            existing["headers"] = record["headers"]
-        if not existing.get("missing_headers") and record.get("missing_headers"):
-            existing["missing_headers"] = record["missing_headers"]
-        return
-
-    existing["sources"] = sorted(set(existing["sources"] + record["sources"]))
-
-servers = {}
-
-codex_path = os.path.join(config_home, "codex", "config.toml")
-codex_data = read_toml(codex_path)
-for name, cfg in codex_data.get("mcp_servers", {}).items():
-    url = cfg.get("url")
-    command = cfg.get("command")
-    headers, missing = expand_headers(
-        cfg.get("env_http_headers", {}),
-        {},
-        cfg.get("bearer_token_env_var"),
-    )
-    record = {
-        "name": name,
-        "kind": "http" if url else "stdio",
-        "url": url,
-        "command": command,
-        "args": cfg.get("args", []),
-        "headers": headers,
-        "missing_headers": missing,
-        "sources": [f"codex:{codex_path}"],
-    }
-    add_server(servers, name, record)
-
-gemini_path = os.path.join(config_home, "gemini", "settings.json")
-gemini_data = read_json(gemini_path)
-for name, cfg in gemini_data.get("mcpServers", {}).items():
-    url = cfg.get("httpUrl")
-    command = cfg.get("command")
-    headers, missing = expand_headers(cfg.get("headers", {}), {}, None)
-    record = {
-        "name": name,
-        "kind": "http" if url else "stdio",
-        "url": url,
-        "command": command,
-        "args": cfg.get("args", []),
-        "headers": headers,
-        "missing_headers": missing,
-        "sources": [f"gemini:{gemini_path}"],
-    }
-    add_server(servers, name, record)
-
-claude_paths = [
-    os.path.join(config_home, "claude", ".claude.json"),
-    os.path.join(config_home, "claude-secondary", ".claude.json"),
-    os.path.join(home_dir, ".claude.json"),
-]
-for path in claude_paths:
-    claude_data = read_json(path)
-    for name, cfg in claude_data.get("mcpServers", {}).items():
-        command = cfg.get("command")
-        args = cfg.get("args", [])
-        url = None
-        if "mcp-remote" in args:
-            idx = args.index("mcp-remote")
-            if idx + 1 < len(args):
-                candidate = args[idx + 1]
-                if isinstance(candidate, str) and candidate.startswith("http"):
-                    url = candidate
-        record = {
+    inventory.append(
+        {
             "name": name,
-            "kind": "http" if url else "stdio",
+            "transport": transport,
+            "gateway_transport": gateway_transport,
             "url": url,
+            "headers": headers,
+            "missing_headers": sorted(missing),
+            "auth_type": auth_type,
+            "auth_headers": auth_headers,
+            "oauth_config": oauth_config,
             "command": command,
             "args": args,
-            "headers": {},
-            "missing_headers": [],
-            "sources": [f"claude:{path}"],
+            "env": env,
+            "bridge_url": bridge_url,
+            "gateway_register": bool(gateway_register),
         }
-        add_server(servers, name, record)
+    )
 
-output = sorted(servers.values(), key=lambda item: item["name"])
+inventory = sorted(inventory, key=lambda item: item["name"])
 with open(output_path, "w", encoding="utf-8") as handle:
-    json.dump(output, handle, indent=2, sort_keys=True)
+    json.dump(inventory, handle, indent=2, sort_keys=True)
 PY
 
     chmod 600 "$temp_file"
@@ -334,64 +454,112 @@ PY
     fi
 
     gateway_url="http://${cfg.host}:${toString cfg.port}"
-    secrets_file="${config_dir}/secrets.env"
 
     if ! curl -sf "$gateway_url/health" >/dev/null 2>&1; then
       echo "gateway sync: gateway not healthy"
       exit 1
     fi
 
-    if [[ ! -f "$secrets_file" ]]; then
-      echo "gateway sync: secrets file missing"
-      exit 1
-    fi
-
-    set -a
-    # shellcheck disable=SC1090
-    . "$secrets_file"
-    set +a
-
-    if [[ -z "''${JWT_TOKEN:-}" ]]; then
-      echo "gateway sync: jwt token missing"
-      exit 1
-    fi
-
-    gateways_json="$(curl -sf -H "Authorization: Bearer $JWT_TOKEN" "$gateway_url/gateways" 2>/dev/null || true)"
+    gateways_json="$(curl -sf --max-time 10 "$gateway_url/gateways" 2>/dev/null || true)"
     if [[ -z "$gateways_json" ]]; then
       echo "gateway sync: failed to fetch gateways"
       exit 1
     fi
 
-    ${pkgs.jq}/bin/jq -c '.[] | select(.kind == "http" and .url != null)' "$output_file" | while read -r server; do
+    ${pkgs.jq}/bin/jq -c '.[]' "$output_file" | while read -r server; do
       name="$(echo "$server" | ${pkgs.jq}/bin/jq -r '.name')"
-      url="$(echo "$server" | ${pkgs.jq}/bin/jq -r '.url')"
-      missing="$(echo "$server" | ${pkgs.jq}/bin/jq -r '.missing_headers[]?' || true)"
+      transport="$(echo "$server" | ${pkgs.jq}/bin/jq -r '.transport')"
+      gateway_transport="$(echo "$server" | ${pkgs.jq}/bin/jq -r '.gateway_transport // empty')"
+      url="$(echo "$server" | ${pkgs.jq}/bin/jq -r '.url // empty')"
+      bridge_url="$(echo "$server" | ${pkgs.jq}/bin/jq -r '.bridge_url // empty')"
+      register="$(echo "$server" | ${pkgs.jq}/bin/jq -r '.gateway_register')"
+      missing_count="$(echo "$server" | ${pkgs.jq}/bin/jq -r '.missing_headers | length')"
+      auth_type="$(echo "$server" | ${pkgs.jq}/bin/jq -r '.auth_type // empty')"
+      auth_headers="$(echo "$server" | ${pkgs.jq}/bin/jq -c '.auth_headers // []')"
+      oauth_config="$(echo "$server" | ${pkgs.jq}/bin/jq -c '.oauth_config // {}')"
 
-      if [[ -n "$missing" ]]; then
-        echo "gateway sync: skipping $name (missing env)"
+      if [[ "$register" != "true" ]]; then
+        echo "  $name: skipped (gateway_register=false)"
+        continue
+      fi
+
+      if [[ "$missing_count" -gt 0 ]]; then
+        missing_names="$(echo "$server" | ${pkgs.jq}/bin/jq -r '.missing_headers | join(", ")')"
+        echo "  $name: skipped (missing env vars: $missing_names)"
+        continue
+      fi
+
+      register_url="$url"
+      if [[ "$transport" != "http" ]]; then
+        register_url="$bridge_url"
+      fi
+
+      if [[ -z "$register_url" ]]; then
+        echo "  $name: skipped (no url — stdio server without bridge.port?)"
         continue
       fi
 
       if echo "$gateways_json" | ${pkgs.jq}/bin/jq -e --arg name "$name" '.gateways // . // [] | any(.name == $name)' >/dev/null 2>&1; then
-        echo "gateway sync: already registered $name"
+        echo "  $name: already registered"
         continue
       fi
 
-      headers="$(echo "$server" | ${pkgs.jq}/bin/jq -c '.headers // {}')"
-      if [[ "$headers" == "{}" ]]; then
-        body="$( ${pkgs.jq}/bin/jq -n --arg name "$name" --arg url "$url" '{name: $name, url: $url}' )"
-      else
-        body="$( ${pkgs.jq}/bin/jq -n --arg name "$name" --arg url "$url" --argjson headers "$headers" '{name: $name, url: $url, headers: $headers}' )"
+      # pre-check: verify bridge is reachable for stdio servers
+      if [[ "$transport" == "stdio" && -n "$bridge_url" ]]; then
+        if ! curl -sf --max-time 3 "$bridge_url" >/dev/null 2>&1; then
+          echo "  $name: bridge not reachable at $bridge_url" >&2
+          echo "    check: tail ~/Library/Logs/contextforge-bridge.log" >&2
+          echo "    check: mcpgw-bridges" >&2
+          continue
+        fi
       fi
 
-      if curl -sf -X POST \
-        -H "Authorization: Bearer $JWT_TOKEN" \
+      body="$(echo "$server" | ${pkgs.jq}/bin/jq -c \
+        --arg name "$name" \
+        --arg url "$register_url" \
+        --arg auth_type "$auth_type" \
+        --arg transport "$gateway_transport" \
+        --argjson auth_headers "$auth_headers" \
+        --argjson oauth_config "$oauth_config" \
+        '{
+          name: $name,
+          url: $url,
+          initialize_timeout: null
+        }
+        + (if $transport != "" then {transport: $transport} else {} end)
+        + (if $auth_type != "" then {auth_type: $auth_type} else {} end)
+        + (if ($auth_headers | length) > 0 then {auth_headers: $auth_headers} else {} end)
+        + (if ($oauth_config | type) == "object" and ($oauth_config | length) > 0 then {oauth_config: $oauth_config} else {} end)
+        ' )"
+
+      resp_file="$(mktemp)"
+      http_code="$(curl -s --max-time 30 -o "$resp_file" -w '%{http_code}' \
+        -X POST \
         -H "Content-Type: application/json" \
         -d "$body" \
-        "$gateway_url/gateways" >/dev/null 2>&1; then
-        echo "gateway sync: registered $name"
+        "$gateway_url/gateways" 2>&1)" || http_code="000"
+      resp_body="$(cat "$resp_file" 2>/dev/null || true)"
+      rm -f "$resp_file"
+
+      if [[ "$http_code" =~ ^2[0-9][0-9]$ ]]; then
+        echo "  $name: registered ($register_url)"
+      elif [[ "$http_code" == "409" ]]; then
+        echo "  $name: already registered"
+      elif [[ "$http_code" == "503" ]]; then
+        reason="$(echo "$resp_body" | ${pkgs.jq}/bin/jq -r '.message // empty' 2>/dev/null)"
+        echo "  $name: unreachable ($register_url)" >&2
+        if [[ -n "$reason" ]]; then
+          echo "    reason: $reason" >&2
+        fi
+        if [[ "$transport" == "stdio" ]]; then
+          echo "    check: tail ~/Library/Logs/contextforge-bridge.log" >&2
+        fi
       else
-        echo "gateway sync: failed to register $name"
+        reason="$(echo "$resp_body" | ${pkgs.jq}/bin/jq -r '.message // .detail // empty' 2>/dev/null)"
+        echo "  $name: failed (http $http_code)" >&2
+        if [[ -n "$reason" ]]; then
+          echo "    reason: $reason" >&2
+        fi
       fi
     done
   '';
@@ -400,14 +568,6 @@ PY
   client_wrapper = pkgs.writeShellScriptBin "mcpgw-wrapper" ''
     set -euo pipefail
     export PATH="${lib.makeBinPath [ pkgs.uv pkgs.coreutils ]}:$PATH"
-
-    # load secrets for auth token
-    if [[ -f "${config_dir}/secrets.env" ]]; then
-      set -a
-      # shellcheck disable=SC1091
-      . "${config_dir}/secrets.env"
-      set +a
-    fi
 
     # read virtual server uuid — fail fast, no polling
     uuid_file="${data_dir}/virtual-server-id"
@@ -420,7 +580,6 @@ PY
     uuid="$(cat "$uuid_file")"
 
     export MCP_SERVER_URL="http://${cfg.host}:${toString cfg.port}/servers/$uuid/mcp"
-    export MCP_AUTH="Bearer ''${JWT_TOKEN:-}"
 
     exec uv run --with mcp-contextforge-gateway python -m mcpgateway.wrapper
   '';
@@ -493,31 +652,34 @@ in
       force = true;
     };
 
-    # 3. activation: create dirs, auto-generate all secrets
+    xdg.configFile."contextforge/mcp-servers.toml" = {
+      source = mcp_servers_source;
+      force = true;
+    };
+
+    # 3. activation: create dirs
     home.activation.contextforge_setup = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
       mkdir -p "${data_dir}"
       mkdir -p "${cache_dir}"
-
-      secrets="${config_dir}/secrets.env"
-      if [[ ! -e "$secrets" ]] || ! grep -q '^JWT_SECRET_KEY=.\+' "$secrets"; then
-        jwt_key="$(${pkgs.openssl}/bin/openssl rand -hex 32)"
-        basic_pw="$(${pkgs.openssl}/bin/openssl rand -hex 16)"
-
-        export JWT_SECRET_KEY="$jwt_key"
-        jwt_token="$(${pkgs.uv}/bin/uv run --with mcp-contextforge-gateway \
-          python -m mcpgateway.utils.create_jwt_token)"
-
-        tmp="$(mktemp)"
-        cat > "$tmp" <<EOF
-JWT_SECRET_KEY=$jwt_key
-BASIC_AUTH_USER=admin
-BASIC_AUTH_PASSWORD=$basic_pw
-JWT_TOKEN=$jwt_token
-EOF
-        chmod 600 "$tmp"
-        mv "$tmp" "$secrets"
-      fi
     '';
+
+    # 3b. post-activation: ensure launchd agents are loaded after setupLaunchAgents
+    # home-manager's bootout+bootstrap can race; this catches any agents that
+    # failed to start and re-bootstraps them.
+    home.activation.contextforge_ensure_agents = lib.mkIf is_darwin (
+      lib.hm.dag.entryAfter [ "setupLaunchAgents" ] ''
+        uid="$(id -u)"
+        domain="gui/$uid"
+        agent_dir="$HOME/Library/LaunchAgents"
+        for label in com.contextforge.gateway com.contextforge.bridge-supervisor com.contextforge.setup; do
+          plist="$agent_dir/$label.plist"
+          [[ -f "$plist" ]] || continue
+          if ! /bin/launchctl print "$domain/$label" >/dev/null 2>&1; then
+            /bin/launchctl bootstrap "$domain" "$plist" 2>/dev/null || true
+          fi
+        done
+      ''
+    );
 
     # 4. platform service — darwin launchd agent
     launchd.agents.contextforge-gateway = lib.mkIf is_darwin (
@@ -588,6 +750,53 @@ EOF
       }
     );
 
+    # 5c. bridge supervisor service — darwin launchd agent
+    launchd.agents.contextforge-bridge-supervisor = lib.mkIf is_darwin (
+      let
+        bridge_log_path = "${config.home.homeDirectory}/Library/Logs/contextforge-bridge.log";
+      in
+      {
+        enable = true;
+        config = {
+          Label = "com.contextforge.bridge-supervisor";
+          ProgramArguments = [ "${bridge_supervisor_script}" ];
+          RunAtLoad = true;
+          KeepAlive = true;
+          StandardOutPath = bridge_log_path;
+          StandardErrorPath = bridge_log_path;
+          EnvironmentVariables = {
+            PATH = lib.makeBinPath [
+              pkgs.uv
+              pkgs.python3
+              pkgs.nodejs
+              pkgs.curl
+              pkgs.jq
+              pkgs.coreutils
+            ];
+          };
+        };
+      }
+    );
+
+    # 5d. bridge supervisor service — linux systemd user service
+    systemd.user.services.contextforge-bridge-supervisor = lib.mkIf (!is_darwin) {
+      Unit = {
+        Description = "ContextForge MCP bridge supervisor";
+        After = [ "contextforge-gateway.service" ];
+      };
+      Service = {
+        ExecStart = "${bridge_supervisor_script}";
+        Restart = "always";
+        RestartSec = 5;
+        Environment = [
+          "PATH=${lib.makeBinPath [ pkgs.uv pkgs.python3 pkgs.nodejs pkgs.curl pkgs.jq pkgs.coreutils ]}"
+        ];
+      };
+      Install = {
+        WantedBy = [ "default.target" ];
+      };
+    };
+
     # 5b. one-shot setup service — linux systemd user service
     systemd.user.services.contextforge-setup = lib.mkIf (!is_darwin) {
       Unit = {
@@ -624,17 +833,13 @@ EOF
       }
 
       # contextforge manual repair/re-setup tool
-      # not required for first-time setup — activation and the
-      # contextforge-setup service handle that automatically.
+      # re-creates the virtual server (auth is disabled)
       function mcpgw-setup() {
         local url="http://${cfg.host}:${toString cfg.port}"
-        local config_dir="${config_dir}"
         local data_dir="${data_dir}"
-        local secrets="$config_dir/secrets.env"
         local uuid_file="$data_dir/virtual-server-id"
 
         echo "==> manual repair/re-setup for contextforge"
-        echo "(first-time setup runs automatically during rebuild)"
         echo ""
 
         echo "==> waiting for gateway health..."
@@ -650,50 +855,32 @@ EOF
         echo "gateway is healthy"
 
         echo ""
-        echo "==> regenerating secrets..."
-        local jwt_key basic_pw jwt_token
-        jwt_key="$(openssl rand -hex 32)"
-        basic_pw="$(openssl rand -hex 16)"
-
-        export JWT_SECRET_KEY="$jwt_key"
-        jwt_token="$(uv run --with mcp-contextforge-gateway \
-          python -m mcpgateway.utils.create_jwt_token 2>/dev/null)" || {
-          echo "error: failed to generate jwt token" >&2
-          return 1
-        }
-
-        local tmp
-        tmp="$(mktemp)"
-        cat > "$tmp" <<EOF
-JWT_SECRET_KEY=$jwt_key
-BASIC_AUTH_USER=admin
-BASIC_AUTH_PASSWORD=$basic_pw
-JWT_TOKEN=$jwt_token
-EOF
-        chmod 600 "$tmp"
-        mv "$tmp" "$secrets"
-        echo "secrets regenerated at $secrets"
-
-        echo ""
         echo "==> creating virtual server with all tools..."
-        local response
+        local response uuid
         response="$(curl -sf -X POST \
-          -H "Authorization: Bearer $jwt_token" \
           -H "Content-Type: application/json" \
-          -d '{"name": "contextforge-all", "tools": "all"}' \
+          -d '{"server": {"name": "contextforge-all", "tools": "all"}}' \
           "$url/servers" 2>/dev/null)" || {
-          echo "error: failed to create virtual server" >&2
-          return 1
+          # 409 means it already exists — fetch the existing uuid
+          uuid="$(curl -sf "$url/servers" 2>/dev/null \
+            | ${pkgs.jq}/bin/jq -r '.[] | select(.name == "contextforge-all") | .id // empty')"
+          if [[ -z "$uuid" ]]; then
+            echo "error: failed to create or find virtual server" >&2
+            return 1
+          fi
+          echo "virtual server already exists: $uuid"
         }
 
-        local uuid
-        uuid="$(echo "$response" | ${pkgs.jq}/bin/jq -r '.id // .uuid // empty')"
-        if [[ -z "$uuid" ]]; then
-          echo "error: no uuid returned from server creation" >&2
-          echo "response: $response"
-          return 1
+        if [[ -z "''${uuid:-}" ]]; then
+          uuid="$(echo "$response" | ${pkgs.jq}/bin/jq -r '.id // .uuid // empty')"
+          if [[ -z "$uuid" ]]; then
+            echo "error: no uuid returned from server creation" >&2
+            echo "response: $response"
+            return 1
+          fi
         fi
 
+        local tmp
         tmp="$(mktemp)"
         echo "$uuid" > "$tmp"
         mv "$tmp" "$uuid_file"
@@ -702,6 +889,57 @@ EOF
 
         echo ""
         echo "==> done! verify with: mcpgw-status"
+      }
+
+      # contextforge bridge status checker
+      function mcpgw-bridges() {
+        local config_file="${config_dir}/mcp-servers.toml"
+        python3 - "$config_file" <<'PYBRIDGE'
+import sys
+
+try:
+    import tomllib
+except ModuleNotFoundError:
+    print("error: python3 lacks tomllib", file=sys.stderr)
+    sys.exit(1)
+
+import subprocess
+
+config_path = sys.argv[1]
+with open(config_path, "rb") as f:
+    data = tomllib.load(f)
+
+bridges = []
+for server in data.get("servers", []):
+    if not isinstance(server, dict):
+        continue
+    transport = (server.get("transport") or "").lower()
+    if transport != "stdio":
+        continue
+    bridge = server.get("bridge") or {}
+    port = bridge.get("port")
+    if not port:
+        continue
+    name = server.get("name", "unknown")
+    bridges.append((name, port))
+
+if not bridges:
+    print("no stdio bridges configured")
+    sys.exit(0)
+
+print(f"{'name':<20} {'port':<8} {'status'}")
+print("-" * 40)
+for name, port in bridges:
+    try:
+        result = subprocess.run(
+            ["curl", "-sf", "--max-time", "2", f"http://127.0.0.1:{port}/mcp"],
+            capture_output=True, timeout=5
+        )
+        status = "healthy" if result.returncode == 0 else "unreachable"
+    except Exception:
+        status = "unreachable"
+    print(f"{name:<20} {port:<8} {status}")
+PYBRIDGE
       }
     '';
   };

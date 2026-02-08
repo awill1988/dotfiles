@@ -1,47 +1,9 @@
 {
   "mcpServers": {
-    "github": {
-      "command": "github-mcp-server",
-      "args": ["stdio"],
-      "env": {
-        "GITHUB_PERSONAL_ACCESS_TOKEN": "${GITHUB_PERSONAL_ACCESS_TOKEN}"
-      }
-    },
-    "aws": {
-      "command": "uvx",
-      "args": ["awslabs.core-mcp-server@latest"],
+    "contextforge": {
+      "command": "mcpgw-wrapper",
+      "args": [],
       "env": {}
-    },
-    "aws-docs": {
-      "command": "uvx",
-      "args": ["awslabs.aws-documentation-mcp-server@latest"],
-      "env": {}
-    },
-    "postgres": {
-      "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-postgres", "${POSTGRES_URL:-postgresql://postgres:postgres@localhost:5432/postgres}"],
-      "env": {}
-    },
-    "kubernetes": {
-      "command": "npx",
-      "args": ["-y", "kubernetes-mcp-server"],
-      "env": {}
-    },
-    "context7": {
-      "command": "npx",
-      "args": ["-y", "mcp-remote", "https://mcp.context7.com/mcp"],
-      "env": {
-        "CONTEXT7_API_KEY": "${CONTEXT7_API_KEY}"
-      }
-    },
-    "slack": {
-      "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-slack"],
-      "env": {
-        "SLACK_BOT_TOKEN": "${SLACK_BOT_TOKEN}",
-        "SLACK_TEAM_ID": "${SLACK_TEAM_ID}",
-        "SLACK_CHANNEL_IDS": "${SLACK_CHANNEL_IDS}"
-      }
     }
   }
 }
