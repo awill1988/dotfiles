@@ -17,6 +17,7 @@ let
   snowflake_mcp_config = pkgs.writeText "snowflake-mcp-config.yaml" ''
     sql_statement_permissions:
       - select: true
+      - command: true
     other_services:
       query_manager: true
   '';

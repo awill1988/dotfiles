@@ -194,11 +194,13 @@
         home-gpg = import ./home/gpg.nix;
         home-gemini = import ./modules/home/programs/gemini;
         home-claude = import ./modules/home/programs/claude;
+        home-contextforge = import ./modules/home/programs/contextforge;
         home-packages = import ./home/packages.nix;
         home-shells = import ./home/shells.nix;
         home-terminal = import ./home/terminal.nix;
         home-awscli = import ./modules/home/programs/awscli;
         home-codex = import ./modules/home/programs/codex;
+        home-podman = import ./modules/home/programs/podman;
         home-node = import ./modules/home/programs/node;
         home-nvim = import ./home/nvim.nix;
         home-user-info =
