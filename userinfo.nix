@@ -9,7 +9,7 @@
 # - username: system username
 # - fullName: full name for git commits
 # - git.github: github username
-# - git.signingKey: gpg key id OR ssh key path for commit signing
+# - git.signingKey: gpg key id (used by gpg.nix and shells.nix)
 # - git.signingFormat: "openpgp" or "ssh" (must be set if signingKey is set)
 # - git.email: primary git email address
 # - git.emailSecondary: optional secondary email for work/personal separation
@@ -23,7 +23,7 @@
   git = {
     github = "awill1988";
     signingKey = "4A0DB07DEDB705FBA45F557B7A0F7A351FABE619";
-    signingFormat = "openpgp"; # "openpgp" or "ssh"
+    signingFormat = "ssh";
     email = "adam@williams.engineer";
     emailSecondary = "adam@arrofinance.com";
   };

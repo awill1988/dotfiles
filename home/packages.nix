@@ -15,6 +15,8 @@ in
   modules.dev.node.enable = true;
 
   programs.codex.enable = true;
+  programs.contextforge.enable = true;
+  programs.podman.enable = true;
   programs.claude = {
     enable = true;
     primary = {
@@ -138,6 +140,7 @@ in
         forwardAgent = true;
         serverAliveInterval = 60;
         hashKnownHosts = true;
+        identityFile = [ "~/.ssh/id_ed25519" ];
       };
       "private-nets" = {
         host = "master-* node-*";
@@ -226,7 +229,6 @@ in
     bash-completion
     direnv # auto-activating shell envs
     oh-my-zsh
-    zsh
     coreutils
     findutils # GNU find utils
     fd # fancy `find`
