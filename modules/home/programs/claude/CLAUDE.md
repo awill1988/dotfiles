@@ -93,6 +93,15 @@ Workflow: edit `mcp-servers.toml` → `darwin-rebuild switch` → `contextforge-
 - **Bridge secrets** (env vars for slack, opnsense, etc.) go in `~/.config/contextforge/mcpgw-bridge.env`
 - **Diagnostics**: `mcpgw-status` (gateway health), `mcpgw-bridges` (bridge status), `mcpgw-setup` (repair virtual server)
 
+## Documentation Maintenance
+
+When encountering documentation files (README.md, AGENTS.md, inline doc comments, etc.) that are stale, incomplete, or inconsistent with the current codebase:
+
+- **Track discrepancies** as you work — note outdated references, missing sections, or incorrect instructions
+- **Enter plan mode** before making documentation updates so the user can review proposed changes before they land
+- **Never update documentation as a sub-task** of an implementation change — treat it as a separate, user-approved action
+- This keeps documentation changes under human-in-the-loop review rather than silently drifting
+
 ## AI Assistant Ecosystem
 
 This system has multiple AI coding assistants available:
