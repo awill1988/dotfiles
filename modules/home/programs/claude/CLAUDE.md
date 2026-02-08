@@ -65,6 +65,34 @@ Before executing any SQL query against a database:
 - Reference files: path:line format (e.g., flake.nix:42)
 - File operations: Read → Edit pattern preferred
 
+## Snowflake MCP
+
+The Snowflake MCP server is configured with restricted permissions:
+
+- **Only `SHOW` and `SELECT` statements are allowed**—all other statement types will be rejected
+- Use `SHOW` commands for metadata exploration (e.g., `SHOW PIPES`, `SHOW TABLES`, `SHOW SCHEMAS`)
+- Use `SELECT` for data queries with appropriate `LIMIT` clauses
+
+## Context7 MCP
+
+Use the Context7 MCP server to fetch current documentation when:
+
+- User asks about specific library/framework APIs
+- User mentions a version that may be newer than training data
+- User asks "how to do X in [library]"
+- User is debugging library-specific behavior
+
+Workflow: `resolve-library-id` → `query-docs`
+
+## MCP Sync
+
+All MCP servers are managed through the contextforge gateway (`localhost:4444`). The single source of truth is `modules/home/programs/contextforge/mcp-servers.toml`.
+
+Workflow: edit `mcp-servers.toml` → `darwin-rebuild switch` → `contextforge-mcp-sync`
+
+- **Bridge secrets** (env vars for slack, opnsense, etc.) go in `~/.config/contextforge/mcpgw-bridge.env`
+- **Diagnostics**: `mcpgw-status` (gateway health), `mcpgw-bridges` (bridge status), `mcpgw-setup` (repair virtual server)
+
 ## AI Assistant Ecosystem
 
 This system has multiple AI coding assistants available:

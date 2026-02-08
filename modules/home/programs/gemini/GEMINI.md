@@ -28,6 +28,15 @@
 - Comments should capture intent and rationale; documentation stays in standard Markdown.
 - When using fixed binary sizes, add a comment with the human-readable value (e.g., `# 200 MiB`).
 
+## MCP Sync
+
+All MCP servers are managed through the contextforge gateway (`localhost:4444`). The single source of truth is `modules/home/programs/contextforge/mcp-servers.toml`.
+
+Workflow: edit `mcp-servers.toml` → `darwin-rebuild switch` → `contextforge-mcp-sync`
+
+- **Bridge secrets** (env vars for slack, opnsense, etc.) go in `~/.config/contextforge/mcpgw-bridge.env`
+- **Diagnostics**: `mcpgw-status` (gateway health), `mcpgw-bridges` (bridge status), `mcpgw-setup` (repair virtual server)
+
 ## AI Assistant Ecosystem
 
 This system has multiple AI coding assistants available:
