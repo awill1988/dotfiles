@@ -248,15 +248,17 @@ Four caching layers reduce redundant tool invocations, speed up registry lookups
 | **In-memory cache** | gateway-level request/response | — | `CACHE_TYPE=memory` in `gateway.env` |
 | **Registry cache** | tool/prompt/resource/agent/server/gateway lookups | 15-20s | `REGISTRY_CACHE_*` env vars in `gateway.env` |
 | **Admin stats cache** | system and observability stats | 30-60s | `ADMIN_STATS_CACHE_*` env vars in `gateway.env` |
-| **Plugin caches** | tool invocation results | 300-900s | `plugins.yaml` (two plugins below) |
+| **Plugin caches** | tool invocation results | LRU (no TTL) | `plugins.yaml` (two plugins below) |
 
 ### Plugin caches
 
 Defined in `~/.config/contextforge/plugins.yaml` (managed by nix, deployed via `xdg.configFile`). Plugin source files are from [IBM/mcp-context-forge](https://github.com/IBM/mcp-context-forge/tree/main/plugins) and assembled into a nix derivation that the gateway script adds to `PYTHONPATH`.
 
-**ResponseCacheByPrompt** (priority 120, TTL 900s) — semantic similarity caching for search/query tools. Compares input fields using a 0.92 similarity threshold. Cached tools: `context7-query-docs`, `context7-resolve-library-id`, `aws-docs-*`, `github-search-*`.
+**ResponseCacheByPrompt** (priority 120, LRU, max 1000/tool) — semantic similarity caching for search/query tools. Compares input fields using a 0.92 cosine similarity threshold. Entries are evicted by least-recent access when the per-tool limit is reached. Cached tools: `context7-query-docs`, `context7-resolve-library-id`, `aws-docs-*`, `github-search-*`.
 
-**CachedToolResult** (priority 110, TTL 300s) — deterministic caching for idempotent read-only tools. Exact argument match. Cached tools: `context7-resolve-library-id`, `github-get-*`, `github-list-branches`, `github-list-tags`, `github-list-releases`, `github-list-issue-types`, `aws-docs-*`.
+**CachedToolResult** (priority 110, LRU, max 5000) — deterministic caching for idempotent read-only tools. Exact argument match via SHA256 key. Uses `OrderedDict` with move-to-end on access; oldest entries are evicted when the limit is reached. Cached tools: `context7-resolve-library-id`, `github-get-*`, `github-list-branches`, `github-list-tags`, `github-list-releases`, `github-list-issue-types`, `aws-docs-*`.
+
+Both plugins default to `ttl: 0` (no time-based expiration). Set `ttl` to a positive value in `plugins.yaml` to add TTL on top of LRU.
 
 **Excluded from both caches**: all write/mutate tools, rapidly-changing list endpoints (issues, PRs, commits), and stateful servers (slack, postgres, opnsense).
 

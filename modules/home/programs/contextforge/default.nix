@@ -92,7 +92,7 @@ let
             - "github-search-pull-requests"
             - "github-search-users"
           fields: ["prompt", "input", "query", "url", "libraryName"]
-          ttl: 900
+          ttl: 0
           threshold: 0.92
           max_entries: 1000
 
@@ -118,7 +118,7 @@ let
             - "github-list-issue-types"
             - "aws-docs-read-documentation"
             - "aws-docs-recommend"
-          ttl: 300
+          ttl: 0
           max_entries: 5000
   '';
 
