@@ -8,12 +8,8 @@ let
   cfg = config.programs.podman;
   is_darwin = pkgs.stdenv.isDarwin;
 
-  # platform-conditional socket path
-  docker_host =
-    if is_darwin then
-      "unix://$HOME/.local/share/containers/podman/machine/podman.sock"
-    else
-      "unix://$XDG_RUNTIME_DIR/podman/podman.sock";
+  # linux socket path (static — systemd creates it at a known location)
+  linux_docker_host = "unix://$XDG_RUNTIME_DIR/podman/podman.sock";
 
   profile_bin = "${config.home.profileDirectory}/bin";
 
@@ -50,8 +46,10 @@ in
     # 1. package installation
     home.packages = [ cfg.package podman_machine_pkg ];
 
-    # 2. DOCKER_HOST session variable (platform-conditional)
-    home.sessionVariables.DOCKER_HOST = docker_host;
+    # 2. DOCKER_HOST session variable (linux only — darwin resolves dynamically in zsh init)
+    home.sessionVariables = lib.mkIf (!is_darwin) {
+      DOCKER_HOST = linux_docker_host;
+    };
 
     # 3. darwin: launchd user agent for machine lifecycle
     launchd.agents.podman-machine = lib.mkIf is_darwin (
@@ -71,10 +69,20 @@ in
       }
     );
 
-    # 4. shell integration: podman-status function
+    # 4. shell integration: DOCKER_HOST export + podman-status function
     programs.zsh.initContent = lib.mkAfter (
       if is_darwin then
         ''
+          # resolve DOCKER_HOST dynamically — podman 5.x puts the socket under
+          # /var/folders (TMPDIR), not a static ~/.local/share path.
+          if command -v podman >/dev/null 2>&1; then
+            _sock="$(podman machine inspect --format '{{.ConnectionInfo.PodmanSocket.Path}}' 2>/dev/null)"
+            if [[ -n "$_sock" ]]; then
+              export DOCKER_HOST="unix://$_sock"
+            fi
+            unset _sock
+          fi
+
           # podman machine status helper
           function podman-status() {
             if ! command -v podman >/dev/null 2>&1; then
@@ -89,6 +97,8 @@ in
         ''
       else
         ''
+          export DOCKER_HOST="${linux_docker_host}"
+
           # podman socket status helper
           function podman-status() {
             if ! command -v podman >/dev/null 2>&1; then
