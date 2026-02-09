@@ -19,6 +19,16 @@
 - Conventional commits: `feat:`, `fix:`, `refactor:`, `chore:`, `docs:`
 - Never attribute commits or PRs to AI agents; no co-authored-by tags or agent signatures
 
+### Push Safety (Strictly Enforced)
+
+Git is configured with `push.default = simple` and `push.autoSetupRemote = true`.
+
+- **Always verify the current branch** before any push: `git branch --show-current`
+- **Never push to `master` or `main`** without explicit user approval
+- **Use plain `git push`** — never use explicit refspecs (`git push origin local:remote`) as this bypasses safety checks
+- **Never use `git push --force`** on `master`, `main`, or any shared branch
+- **If `git push` refuses**, do not attempt to fix it — ask the user
+
 ## Practices
 
 - Code defensively, validate inputs early, never hardcode secrets—pull from environment variables.

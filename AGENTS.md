@@ -52,3 +52,4 @@ macOS host:
 - One logical change per commit
 - PRs should state target host/profile, list affected modules, and note manual steps
 - All contributions are attributed to the repository owner; no AI agent attribution in commits or PRs
+- **Push safety**: use plain `git push` — never use explicit refspecs or `--force` on `master`/`main`. Verify the current branch before pushing. If `git push` refuses, ask the user.

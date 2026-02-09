@@ -131,7 +131,8 @@ in
         merge.tool = "${pkgs.vim}/bin/vimdiff";
         mergetool.keepBackup = true;
         pull.rebase = true;
-        push.default = "tracking";
+        push.autoSetupRemote = true;
+        push.default = "simple";
         rebase.autosquash = true;
         rerere.enabled = true;
         status.submoduleSummary = true;

@@ -42,6 +42,19 @@ Before executing any SQL query against a database:
 - Prefix subject with `[TICKET-#]` extracted from branch name if present (e.g., branch `awill/proj-1-feat-foo` → `[PROJ-1] feat: foo`)
 - PR format: State changes, list affected modules, document manual steps
 
+### Push Safety (Strictly Enforced)
+
+Git is configured with `push.default = simple` and `push.autoSetupRemote = true`. These settings mean:
+- `git push` on a new branch auto-creates a same-named remote branch and sets up tracking
+- `git push` refuses if the local branch name differs from its upstream branch name
+
+**Rules:**
+- **Always verify the current branch** before any push: `git branch --show-current`
+- **Never push to `master` or `main`** without explicit user approval
+- **Use plain `git push`** — never use explicit refspecs (`git push origin local:remote`) as this bypasses safety checks
+- **Never use `git push --force`** on `master`, `main`, or any shared branch
+- **If `git push` refuses**, do not attempt to fix it — ask the user. A refusal means the upstream tracking is mismatched and forcing it risks overwriting the wrong branch
+
 ### No AI Attribution (Strictly Enforced)
 
 - **Never** add `Co-Authored-By` tags referencing Claude, Anthropic, OpenAI, Codex, Gemini, or any AI agent
