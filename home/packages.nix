@@ -19,11 +19,92 @@ in
   programs.podman.enable = true;
   programs.claude = {
     enable = true;
-    primary = {};
+    primary = {
+      mcpServers = {
+        postgres = {
+          command = "npx";
+          args = [
+            "-y"
+            "@modelcontextprotocol/server-postgres"
+            "\${POSTGRES_URL:-postgresql://postgres:postgres@localhost:5432/postgres}"
+          ];
+        };
+        snowflake = {
+          command = "uvx";
+          args = [
+            "snowflake-labs-mcp"
+            "--service-config-file"
+            "\${SNOWFLAKE_MCP_CONFIG_FILE}"
+            "--account"
+            "\${SNOWFLAKE_ACCOUNT}"
+            "--user"
+            "\${SNOWFLAKE_USER}"
+            "--warehouse"
+            "\${SNOWFLAKE_WAREHOUSE}"
+            "--private-key-file"
+            "\${SNOWFLAKE_PRIVATE_KEY_FILE}"
+            "--role"
+            "\${SNOWFLAKE_ROLE}"
+          ];
+        };
+        aws = {
+          command = "uvx";
+          args = [ "awslabs.core-mcp-server@latest" ];
+        };
+      };
+    };
     secondary = {
       pathPrefix = "$HOME/projects/arro";
       awsProfile = "arro-staging";
       awsRegion = "us-west-2";
+      mcpServers = {
+        atlassian = {
+          command = "npx";
+          args = [
+            "-y"
+            "mcp-remote"
+            "https://mcp.atlassian.com/v1/mcp"
+          ];
+        };
+        linear = {
+          command = "npx";
+          args = [
+            "-y"
+            "mcp-remote"
+            "https://mcp.linear.app/mcp"
+          ];
+        };
+        postgres = {
+          command = "npx";
+          args = [
+            "-y"
+            "@modelcontextprotocol/server-postgres"
+            "\${POSTGRES_URL:-postgresql://postgres:postgres@localhost:5432/postgres}"
+          ];
+        };
+        snowflake = {
+          command = "uvx";
+          args = [
+            "snowflake-labs-mcp"
+            "--service-config-file"
+            "\${SNOWFLAKE_MCP_CONFIG_FILE}"
+            "--account"
+            "\${SNOWFLAKE_ACCOUNT}"
+            "--user"
+            "\${SNOWFLAKE_USER}"
+            "--warehouse"
+            "\${SNOWFLAKE_WAREHOUSE}"
+            "--private-key-file"
+            "\${SNOWFLAKE_PRIVATE_KEY_FILE}"
+            "--role"
+            "\${SNOWFLAKE_ROLE}"
+          ];
+        };
+        aws = {
+          command = "uvx";
+          args = [ "awslabs.core-mcp-server@latest" ];
+        };
+      };
     };
   };
   programs.gemini.enable = true;
@@ -226,6 +307,9 @@ in
       mix local.rebar --force
       mix escript.install --force hex protobuf
     '')
+
+    # rust
+    rustup
 
     # go
     go_1_25

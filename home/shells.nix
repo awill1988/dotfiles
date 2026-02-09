@@ -48,9 +48,9 @@ in
     ALLOW_NINJA_ENV = "true";
     USE_CCACHE = 1;
 
-    # Rust
-    RUSTUP_HOME = "$HOME/.rustup";
-    CARGO_HOME = "$HOME/.cargo";
+    # Rust (XDG)
+    RUSTUP_HOME = "${config.xdg.dataHome}/rustup";
+    CARGO_HOME = "${config.xdg.dataHome}/cargo";
 
     # Amazon Web Services
     AWS_CONFIG_FILE = "${config.xdg.configHome}/aws/config";
@@ -59,7 +59,9 @@ in
     AWS_VAULT_PASS_CMD = "${pkgs.pass}/bin/pass";
 
     # Prefer nix-provided tools (e.g., gnupg) ahead of system binaries to avoid version skew.
-    PATH = "$LOCAL_BIN:$PYENV_HOME/shims:$PYENV_HOME/bin:$ELIXIR_PATH:$CARGO_HOME/bin:$GOPATH/bin:$RBENV_ROOT/plugins/ruby-build/bin:$HOME/google-cloud-sdk/bin:$PATH";
+    # nix-provided tools come first (via $PATH which includes the nix profile),
+    # then cargo-install binaries are appended so they never shadow nix proxies.
+    PATH = "$LOCAL_BIN:$PYENV_HOME/shims:$PYENV_HOME/bin:$ELIXIR_PATH:$GOPATH/bin:$RBENV_ROOT/plugins/ruby-build/bin:$HOME/google-cloud-sdk/bin:$PATH:$CARGO_HOME/bin";
   };
 
   xdg.configFile = {
