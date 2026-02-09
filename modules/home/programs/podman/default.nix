@@ -13,24 +13,23 @@ let
 
   profile_bin = "${config.home.profileDirectory}/bin";
 
-  # wrapper script for darwin launchd agent
-  podman_machine_pkg = pkgs.writeShellScriptBin "podman-machine-init" ''
-    set -euo pipefail
-    export PATH="${lib.makeBinPath [ cfg.package ]}:$PATH"
+  # darwin helper binaries needed by podman machine (gvproxy, vfkit)
+  darwin_helpers = lib.optionals is_darwin [ pkgs.gvproxy pkgs.vfkit ];
 
-    log() { echo "$(date '+%Y-%m-%d %H:%M:%S') $*"; }
+  # directories containing helper binaries (gvproxy, vfkit) for containers.conf
+  helper_bin_dirs = map (p: "${p}/bin") darwin_helpers;
 
-    # ensure a default machine exists
-    if ! podman machine inspect 2>/dev/null; then
-      log "no default machine found, initializing..."
-      podman machine init
-    fi
-
-    # start is idempotent — exits cleanly if already running
-    log "starting podman machine..."
-    podman machine start || true
-    log "podman machine ready"
-  '';
+  # launchd wrapper — template substitution at build time
+  podman_machine_pkg = pkgs.writeTextFile {
+    name = "podman-machine-init";
+    text = builtins.replaceStrings
+      [ "@BASH@" "@PATH@" ]
+      [ "${pkgs.bash}/bin/bash"
+        (lib.makeBinPath [ cfg.package ]) ]
+      (builtins.readFile ./scripts/machine-init.sh.tpl);
+    executable = true;
+    destination = "/bin/podman-machine-init";
+  };
 in
 {
   options.programs.podman = {
@@ -51,7 +50,15 @@ in
       DOCKER_HOST = linux_docker_host;
     };
 
-    # 3. darwin: launchd user agent for machine lifecycle
+    # 3. darwin: containers.conf — tell podman where to find gvproxy/vfkit
+    xdg.configFile."containers/containers.conf" = lib.mkIf is_darwin {
+      text = ''
+        [engine]
+        helper_binaries_dir = [${lib.concatMapStringsSep ", " (d: ''"${d}"'') helper_bin_dirs}]
+      '';
+    };
+
+    # 4. darwin: launchd user agent for machine lifecycle
     launchd.agents.podman-machine = lib.mkIf is_darwin (
       let
         log_path = "${config.home.homeDirectory}/Library/Logs/podman-machine.log";
@@ -69,7 +76,7 @@ in
       }
     );
 
-    # 4. shell integration: DOCKER_HOST export + podman-status function
+    # 5. shell integration: DOCKER_HOST export + podman-status function
     programs.zsh.initContent = lib.mkAfter (
       if is_darwin then
         ''
