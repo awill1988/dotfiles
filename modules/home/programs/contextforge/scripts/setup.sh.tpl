@@ -20,11 +20,13 @@ done
 echo "gateway healthy"
 
 # ensure virtual server exists — validate saved uuid against live gateway
+first_run=1
 needs_create=0
 if [[ -f "$uuid_file" ]]; then
   saved_uuid="$(cat "$uuid_file")"
   if curl -sf "$url/servers/$saved_uuid" >/dev/null 2>&1; then
     echo "virtual server verified: $saved_uuid"
+    first_run=0
   else
     echo "virtual server stale (db recreated?), removing $uuid_file"
     rm -f "$uuid_file" "$token_file"
@@ -99,31 +101,35 @@ for env_file in "$HOME/.env" "@CONFIG_DIR@/mcpgw-bridge.env"; do
   fi
 done
 
-# wait for at least one bridge to become reachable before syncing;
-# the bridge supervisor starts in parallel, so give it time.
-# probe the first expected bridge port with curl (lsof may not be in PATH)
-echo "waiting for bridges..."
-bridge_wait=0
-bridge_max=30
-while (( bridge_wait < bridge_max )); do
-  if curl -sf --max-time 1 -X POST -H "Content-Type: application/json" \
-      -d '{}' "http://127.0.0.1:4450/mcp" >/dev/null 2>&1 || \
-     curl -sf --max-time 1 -X POST -H "Content-Type: application/json" \
-      -d '{}' "http://127.0.0.1:4451/mcp" >/dev/null 2>&1; then
-    break
-  fi
-  sleep 1
-  (( bridge_wait++ )) || true
-done
-if (( bridge_wait >= bridge_max )); then
-  echo "warning: no bridges reachable after ${bridge_max}s, syncing anyway"
-else
-  echo "bridge detected after ${bridge_wait}s"
-  # settle time for remaining bridges to finish starting
-  sleep 3
-fi
-
 # sync mcp servers with gateway (registers http + bridged servers)
 export PATH="@SYNC_PATH@:$PATH"
-echo "syncing mcp servers..."
-@SYNC_BIN@ || echo "warning: sync failed" >&2
+
+if [[ "$first_run" -eq 1 ]]; then
+  # first run: wait for bridges to come up before full sync
+  echo "waiting for bridges..."
+  bridge_wait=0
+  bridge_max=30
+  while (( bridge_wait < bridge_max )); do
+    if curl -sf --max-time 1 -X POST -H "Content-Type: application/json" \
+        -d '{}' "http://127.0.0.1:4450/mcp" >/dev/null 2>&1 || \
+       curl -sf --max-time 1 -X POST -H "Content-Type: application/json" \
+        -d '{}' "http://127.0.0.1:4451/mcp" >/dev/null 2>&1; then
+      break
+    fi
+    sleep 1
+    (( bridge_wait++ )) || true
+  done
+  if (( bridge_wait >= bridge_max )); then
+    echo "warning: no bridges reachable after ${bridge_max}s, syncing anyway"
+  else
+    echo "bridge detected after ${bridge_wait}s"
+    # settle time for remaining bridges to finish starting
+    sleep 3
+  fi
+  echo "syncing mcp servers..."
+  @SYNC_BIN@ || echo "warning: sync failed" >&2
+else
+  # subsequent runs: lightweight reconcile (skips tool discovery when nothing new)
+  echo "reconciling mcp servers..."
+  @SYNC_BIN@ --reconcile || echo "warning: reconcile failed" >&2
+fi

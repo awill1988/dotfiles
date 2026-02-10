@@ -11,6 +11,7 @@ let
   config_dir = "${config.xdg.configHome}/contextforge";
   data_dir = "${config.xdg.dataHome}/contextforge";
   cache_dir = "${config.xdg.cacheHome}/contextforge";
+  libexec_dir = "${config.home.homeDirectory}/.local/libexec/contextforge";
 
   db_path = "${data_dir}/gateway.db";
 
@@ -162,7 +163,7 @@ let
     text = builtins.replaceStrings
       [ "@BASH@" "@PATH@" "@HOME@" "@CACHE_DIR@" "@CONFIG_DIR@" "@PARSE_TOML_PY@" ]
       [ "${pkgs.bash}/bin/bash"
-        (lib.makeBinPath [ pkgs.uv pkgs.python3 pkgs.nodejs pkgs.coreutils ])
+        (lib.makeBinPath [ pkgs.bash pkgs.uv pkgs.python3 pkgs.nodejs pkgs.coreutils pkgs.fivetran-mcp-server ])
         "${config.home.homeDirectory}" cache_dir config_dir
         "${bridge_supervisor_parse_toml_py}" ]
       (builtins.readFile ./scripts/bridge-supervisor.sh.tpl);
@@ -292,7 +293,25 @@ in
       force = true;
     };
 
-    # 3. activation: create dirs + prune old logs (darwin only — linux uses journald)
+    # 3. activation: stable wrappers for launchd (avoids nix store hashes in
+    # macOS Background Activity display). must run before setupLaunchAgents so
+    # the executables exist when launchd first loads the plists.
+    home.activation.contextforge_wrappers = lib.mkIf is_darwin (
+      lib.hm.dag.entryBetween [ "setupLaunchAgents" ] [ "writeBoundary" ] ''
+        mkdir -p "${libexec_dir}"
+        for pair in \
+          "contextforge-gateway:${gateway_script}" \
+          "contextforge-bridge-supervisor:${bridge_supervisor_script}" \
+          "contextforge-setup:${setup_script}"; do
+          name="''${pair%%:*}"
+          target="''${pair#*:}"
+          printf '#!/bin/bash\nexec "%s" "$@"\n' "$target" > "${libexec_dir}/$name"
+          chmod +x "${libexec_dir}/$name"
+        done
+      ''
+    );
+
+    # 3a. activation: create dirs + prune old logs (darwin only — linux uses journald)
     home.activation.contextforge_setup = lib.hm.dag.entryAfter [ "writeBoundary" ] (''
       mkdir -p "${data_dir}"
       mkdir -p "${cache_dir}"
@@ -360,7 +379,7 @@ in
         enable = true;
         config = {
           Label = "com.contextforge.gateway";
-          ProgramArguments = [ "${gateway_script}" ];
+          ProgramArguments = [ "${libexec_dir}/contextforge-gateway" ];
           RunAtLoad = true;
           KeepAlive = true;
           StandardOutPath = log_path;
@@ -403,8 +422,9 @@ in
         enable = true;
         config = {
           Label = "com.contextforge.setup";
-          ProgramArguments = [ "${setup_script}" ];
+          ProgramArguments = [ "${libexec_dir}/contextforge-setup" ];
           RunAtLoad = true;
+          StartInterval = 30;
           KeepAlive = false;
           StandardOutPath = setup_log_path;
           StandardErrorPath = setup_log_path;
@@ -430,7 +450,7 @@ in
         enable = true;
         config = {
           Label = "com.contextforge.bridge-supervisor";
-          ProgramArguments = [ "${bridge_supervisor_script}" ];
+          ProgramArguments = [ "${libexec_dir}/contextforge-bridge-supervisor" ];
           RunAtLoad = true;
           KeepAlive = true;
           StandardOutPath = bridge_log_path;
@@ -468,23 +488,32 @@ in
       };
     };
 
-    # 5b. one-shot setup service — linux systemd user service
+    # 5b. one-shot setup service — linux systemd user service + periodic timer
     systemd.user.services.contextforge-setup = lib.mkIf (!is_darwin) {
       Unit = {
-        Description = "ContextForge MCP gateway auto-setup";
+        Description = "ContextForge MCP gateway auto-setup and reconciliation";
         After = [ "contextforge-gateway.service" ];
         Requires = [ "contextforge-gateway.service" ];
       };
       Service = {
         Type = "oneshot";
-        RemainAfterExit = true;
         ExecStart = "${setup_script}";
         Environment = [
           "PATH=${lib.makeBinPath [ pkgs.uv pkgs.python3 pkgs.curl pkgs.jq pkgs.coreutils ]}"
         ];
       };
+    };
+
+    systemd.user.timers.contextforge-setup = lib.mkIf (!is_darwin) {
+      Unit = {
+        Description = "ContextForge MCP periodic reconciliation";
+      };
+      Timer = {
+        OnBootSec = "10s";
+        OnUnitActiveSec = "30s";
+      };
       Install = {
-        WantedBy = [ "default.target" ];
+        WantedBy = [ "timers.target" ];
       };
     };
 

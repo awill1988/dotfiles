@@ -7,9 +7,10 @@ config_file="@CONFIG_DIR@/mcp-servers.toml"
 output_file="@CONFIG_DIR@/mcp-servers.json"
 dry_run=0
 print_only=0
+reconcile=0
 
 usage() {
-  echo "usage: contextforge-mcp-sync [--dry-run] [--print]"
+  echo "usage: contextforge-mcp-sync [--dry-run] [--print] [--reconcile]"
 }
 
 while [[ $# -gt 0 ]]; do
@@ -19,6 +20,9 @@ while [[ $# -gt 0 ]]; do
       ;;
     --print)
       print_only=1
+      ;;
+    --reconcile)
+      reconcile=1
       ;;
     -h|--help)
       usage
@@ -72,6 +76,9 @@ fi
 
 bridge_fail_marker="$(mktemp)"
 rm -f "$bridge_fail_marker"
+
+new_reg_marker="$(mktemp)"
+rm -f "$new_reg_marker"
 
 @JQ@ -c '.[]' "$output_file" | while read -r server; do
   name="$(echo "$server" | @JQ@ -r '.name')"
@@ -149,8 +156,9 @@ rm -f "$bridge_fail_marker"
 
   if [[ "$http_code" =~ ^2[0-9][0-9]$ ]]; then
     echo "  $name: ok (registered)"
+    touch "$new_reg_marker"
   elif [[ "$http_code" == "409" ]]; then
-    echo "  $name: ok (registered)"
+    echo "  $name: ok (already exists)"
   elif [[ "$http_code" == "503" ]]; then
     reason="$(echo "$resp_body" | @JQ@ -r '.message // empty' 2>/dev/null)"
     echo "  $name: unreachable${reason:+ — $reason}"
@@ -168,6 +176,14 @@ if [[ -f "$bridge_fail_marker" ]]; then
   echo "  mcpgw-bridges"
   echo "  tail ~/Library/Logs/contextforge-bridge.log"
 fi
+
+# in reconcile mode, skip tool discovery when no new servers were registered
+if [[ "$reconcile" -eq 1 && ! -f "$new_reg_marker" ]]; then
+  echo "reconcile: all servers registered, skipping tool discovery"
+  rm -f "$new_reg_marker"
+  exit 0
+fi
+rm -f "$new_reg_marker"
 
 # associate discovered tools with the virtual server, applying exclude_tools policy.
 # waits for tool discovery to stabilize after registering new gateways.

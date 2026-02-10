@@ -130,6 +130,7 @@ in
         hub.protocol = "ssh";
         merge.tool = "${pkgs.vim}/bin/vimdiff";
         mergetool.keepBackup = true;
+        branch.autoSetupMerge = "simple";
         pull.rebase = true;
         push.autoSetupRemote = true;
         push.default = "simple";
