@@ -83,15 +83,15 @@ gateway_register = true
 # # oauth_config = { grant_type = "authorization_code", client_id = "...", client_secret = "...", authorization_url = "https://linear.app/oauth/authorize", token_url = "https://api.linear.app/oauth/token", redirect_uri = "http://127.0.0.1:4444/oauth/callback", scopes = ["read"] }
 # gateway_register = true
 
-# TODO: stdio servers pending bridge setup (ports 4455+, alpha-sorted)
-#
-# [[servers]]
-# name = "fivetran"
-# transport = "stdio"
-# command = "fivetran-mcp-server"
-# env = { FIVETRAN_API_KEY = "$FIVETRAN_API_KEY", FIVETRAN_API_SECRET = "$FIVETRAN_API_SECRET" }
-# bridge = { port = 4455 }
-# gateway_register = true
+[[servers]]
+name = "fivetran"
+transport = "stdio"
+command = "fivetran-mcp-server"
+env = { FIVETRAN_API_KEY = "$FIVETRAN_API_KEY", FIVETRAN_API_SECRET = "$FIVETRAN_API_SECRET" }
+bridge = { port = 4455 }
+gateway_register = true
+
+# TODO: stdio servers pending bridge setup (ports 4456+, alpha-sorted)
 #
 # [[servers]]
 # name = "snowflake"

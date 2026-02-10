@@ -84,7 +84,6 @@
     # swift/swiftpm/cocoapods/carthage
     ".build/"
     ".swiftpm/"
-    "Packages/"
     "Pods/"
     "Carthage/Build/"
     "*.xcframework"
