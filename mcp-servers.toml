@@ -77,6 +77,13 @@ gateway_register = true
 # gateway_register = true
 #
 # [[servers]]
+# name = "expo"
+# transport = "http"
+# url = "https://mcp.expo.dev/mcp"
+# # oauth_config = { ... }
+# gateway_register = true
+#
+# [[servers]]
 # name = "linear"
 # transport = "http"
 # url = "https://mcp.linear.app/mcp"

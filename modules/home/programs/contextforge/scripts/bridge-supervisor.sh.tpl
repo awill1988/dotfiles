@@ -44,6 +44,13 @@ max_failures=5            # consecutive failures before giving up
 initial_backoff=3         # seconds
 max_backoff=300           # 5 minutes cap
 readiness_timeout=15      # seconds to wait for bridge readiness
+liveness_interval=60      # seconds between liveness checks per bridge
+liveness_timeout=30       # seconds to wait for liveness response
+liveness_restart_after=3  # consecutive failures before restarting (allows slow API calls)
+max_liveness_fails=6      # consecutive failures before giving up entirely
+
+declare -A liveness_fails
+declare -A last_liveness
 
 cleanup() {
   echo "bridge supervisor: shutting down"
@@ -64,13 +71,19 @@ start_bridge() {
   local port="$3"
   local env_vars="$4"
 
-  # kill stale process on port
-  local stale_pid
-  stale_pid="$(lsof -ti :"$port" 2>/dev/null || true)"
-  if [[ -n "$stale_pid" ]]; then
-    echo "bridge supervisor: killing stale process on port $port (pid $stale_pid)"
-    kill "$stale_pid" 2>/dev/null || true
+  # kill stale process on port (SIGTERM → SIGKILL escalation)
+  local stale_pids
+  stale_pids="$(lsof -ti :"$port" 2>/dev/null || true)"
+  if [[ -n "$stale_pids" ]]; then
+    echo "bridge supervisor: killing stale process(es) on port $port (pids: $(echo $stale_pids | tr '\n' ' '))"
+    echo "$stale_pids" | xargs kill 2>/dev/null || true
     sleep 1
+    # force-kill survivors
+    stale_pids="$(lsof -ti :"$port" 2>/dev/null || true)"
+    if [[ -n "$stale_pids" ]]; then
+      echo "$stale_pids" | xargs kill -9 2>/dev/null || true
+      sleep 1
+    fi
   fi
 
   echo "bridge supervisor: starting $name on port $port"
@@ -81,6 +94,8 @@ start_bridge() {
   eval "$bridge_cmd" &
   pids[$name]=$!
   last_start[$name]="$(date +%s)"
+  last_liveness[$name]="$(date +%s)"
+  liveness_fails[$name]=0
   echo "bridge supervisor: $name started (pid ${pids[$name]})"
 }
 
@@ -126,7 +141,7 @@ done
 
 echo "bridge supervisor: monitoring ${#pids[@]} bridge(s)"
 
-# monitor loop — check children, restart dead ones with backoff
+# monitor loop — check children, restart dead/hung ones
 while true; do
   sleep 5
   for name in "${!pids[@]}"; do
@@ -135,7 +150,64 @@ while true; do
       continue
     fi
 
-    if ! kill -0 "${pids[$name]}" 2>/dev/null; then
+    if kill -0 "${pids[$name]}" 2>/dev/null; then
+      # process alive — periodic liveness check via MCP ping
+      now="$(date +%s)"
+      started="${last_start[$name]:-0}"
+
+      # skip during startup grace period
+      if (( now - started < readiness_timeout + 5 )); then
+        continue
+      fi
+
+      last_check="${last_liveness[$name]:-0}"
+      if (( now - last_check < liveness_interval )); then
+        continue
+      fi
+
+      last_liveness[$name]="$now"
+      port="${bridge_ports[$name]}"
+
+      if ! curl -sf --max-time "$liveness_timeout" -X POST \
+          -H "Content-Type: application/json" \
+          -d '{"jsonrpc":"2.0","method":"ping","id":0}' \
+          "http://127.0.0.1:$port/mcp" >/dev/null 2>&1; then
+        lf="${liveness_fails[$name]:-0}"
+        (( lf++ )) || true
+        liveness_fails[$name]=$lf
+
+        if (( lf >= max_liveness_fails )); then
+          echo "bridge supervisor: $name unresponsive $lf consecutive checks, giving up"
+          stopped[$name]=1
+          kill "${pids[$name]}" 2>/dev/null || true
+          sleep 1
+          kill -9 "${pids[$name]}" 2>/dev/null || true
+          continue
+        fi
+
+        if (( lf < liveness_restart_after )); then
+          # might just be a slow API call — warn but don't restart yet
+          echo "bridge supervisor: $name slow on port $port ($lf/$liveness_restart_after before restart)"
+          continue
+        fi
+
+        echo "bridge supervisor: $name unresponsive on port $port ($lf/$max_liveness_fails), restarting"
+        kill "${pids[$name]}" 2>/dev/null || true
+        sleep 1
+        kill -9 "${pids[$name]}" 2>/dev/null || true
+
+        start_bridge "$name" "${bridge_cmds[$name]}" "${bridge_ports[$name]}" "${bridge_envs[$name]}"
+        if check_ready "$name" "${bridge_ports[$name]}"; then
+          echo "bridge supervisor: $name ready on port $port"
+          liveness_fails[$name]=0
+          fail_counts[$name]=0
+          backoff_secs[$name]=$initial_backoff
+        fi
+      else
+        liveness_fails[$name]=0
+      fi
+    else
+      # process dead — restart with backoff
       fc="${fail_counts[$name]}"
       (( fc++ )) || true
       fail_counts[$name]=$fc

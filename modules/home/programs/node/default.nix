@@ -75,6 +75,7 @@ in
       pkgs.nodePackages.typescript
       pkgs.nodePackages.eslint
       pkgs.nodePackages.prettier
+      pkgs.nodePackages.eas-cli
     ]
     ++ optional cfg.installBun pkgs.bun;
     home.sessionVariables = {

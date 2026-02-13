@@ -21,14 +21,14 @@ in
     enable = true;
     primary = {
       mcpServers = {
-        postgres = {
+        /*postgres = {
           command = "npx";
           args = [
             "-y"
             "@modelcontextprotocol/server-postgres"
             "\${POSTGRES_URL:-postgresql://postgres:postgres@localhost:5432/postgres}"
           ];
-        };
+        };*/
         snowflake = {
           command = "uvx";
           args = [
@@ -66,6 +66,14 @@ in
             "https://mcp.atlassian.com/v1/mcp"
           ];
         };
+        expo = {
+          command = "npx";
+          args = [
+            "-y"
+            "mcp-remote"
+            "https://mcp.expo.dev/mcp"
+          ];
+        };
         linear = {
           command = "npx";
           args = [
@@ -74,14 +82,14 @@ in
             "https://mcp.linear.app/mcp"
           ];
         };
-        postgres = {
+        /*postgres = {
           command = "npx";
           args = [
             "-y"
             "@modelcontextprotocol/server-postgres"
             "\${POSTGRES_URL:-postgresql://postgres:postgres@localhost:5432/postgres}"
           ];
-        };
+        };*/
         snowflake = {
           command = "uvx";
           args = [

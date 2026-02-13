@@ -11,7 +11,7 @@ in
 {
   programs.zsh.shellInit = mkIf brewEnabled ''
     # Set HOMEBREW_PREFIX and manually append paths to end of PATH
-    export HOMEBREW_PREFIX="${config.homebrew.brewPrefix}"
+    export HOMEBREW_PREFIX="${builtins.dirOf config.homebrew.brewPrefix}"
 
     # Append Homebrew dirs to end of PATH only if not already present
     if [[ ":$PATH:" != *":$HOMEBREW_PREFIX/bin:"* ]]; then
@@ -39,8 +39,10 @@ in
   homebrew.taps = [ "emqx/mqttx" ];
 
   homebrew.brews = [
+    "apktool"
     "emqx/mqttx/mqttx-cli"
     "imessage-exporter"
+    "jadx"
     "ldns"
     "picotool"
     "pinentry-mac"
@@ -48,5 +50,8 @@ in
     "xcsift"
   ];
 
-  homebrew.casks = [ "dbeaver-community" ];
+  homebrew.casks = [
+    "android-studio"
+    "dbeaver-community"
+  ];
 }

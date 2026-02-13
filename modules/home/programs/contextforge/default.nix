@@ -674,6 +674,194 @@ for name, port in bridges:
     print(f"{name:<20} {port:<8} {status}")
 PYBRIDGE
       }
+
+      # contextforge log viewer
+      function mcpgw-logs() {
+        local component="''${1:-all}"
+        local log_dir="$HOME/Library/Logs"
+        local lines="''${2:-50}"
+
+        case "$component" in
+          gateway)  tail -n "$lines" "$log_dir/contextforge-gateway.log" ;;
+          bridge|bridges)  tail -n "$lines" "$log_dir/contextforge-bridge.log" ;;
+          setup)    tail -n "$lines" "$log_dir/contextforge-setup.log" ;;
+          all)
+            for name in gateway bridge setup; do
+              local f="$log_dir/contextforge-$name.log"
+              [[ -f "$f" ]] || continue
+              echo "==> $name"
+              tail -n "$lines" "$f"
+              echo ""
+            done
+            ;;
+          -f|follow)
+            tail -f "$log_dir"/contextforge-*.log
+            ;;
+          *)
+            echo "usage: mcpgw-logs [gateway|bridge|setup|all|follow] [lines]"
+            echo "  default: all, 50 lines"
+            return 1
+            ;;
+        esac
+      }
+
+      # contextforge full teardown + restart — for when the stack is wedged
+      function mcpgw-nuke() {
+        local full=0
+        [[ "''${1:-}" == "--full" ]] && full=1
+
+        echo "==> tearing down contextforge stack"
+
+        if [[ "$(uname -s)" == "Darwin" ]]; then
+          local uid agent_dir
+          uid="$(id -u)"
+          agent_dir="$HOME/Library/LaunchAgents"
+
+          for label in com.contextforge.setup com.contextforge.bridge-supervisor com.contextforge.gateway; do
+            /bin/launchctl bootout "gui/$uid/$label" 2>/dev/null || true
+          done
+          echo "    unloaded launchd agents"
+        else
+          systemctl --user stop \
+            contextforge-setup.service \
+            contextforge-bridge-supervisor.service \
+            contextforge-gateway.service 2>/dev/null || true
+          echo "    stopped systemd services"
+        fi
+
+        # kill any surviving mcpgateway processes (gateway, translate, wrapper)
+        pkill -f mcpgateway 2>/dev/null || true
+        sleep 1
+        pkill -9 -f mcpgateway 2>/dev/null || true
+
+        # force-kill anything still holding gateway or bridge ports
+        for port in ${toString cfg.port} $(python3 -c "
+import tomllib, sys
+try:
+    with open('${config_dir}/mcp-servers.toml', 'rb') as f:
+        data = tomllib.load(f)
+    for s in data.get('servers', []):
+        p = (s.get('bridge') or {}).get('port')
+        if p: print(p)
+except Exception:
+    pass
+" 2>/dev/null); do
+          lsof -ti :"$port" 2>/dev/null | xargs kill -9 2>/dev/null || true
+        done
+        echo "    killed remaining processes"
+
+        # wipe state (db, uuid, token)
+        rm -f "${data_dir}/gateway.db" \
+              "${data_dir}/virtual-server-id" \
+              "${data_dir}/gateway-token"
+        echo "    cleared state (db, uuid, token)"
+
+        if [[ "$full" -eq 1 ]]; then
+          rm -rf "${cache_dir}"
+          mkdir -p "${cache_dir}"
+          echo "    cleared caches (uv, npm)"
+        fi
+
+        # truncate logs (darwin only — linux uses journald)
+        if [[ "$(uname -s)" == "Darwin" ]]; then
+          for f in "$HOME/Library/Logs"/contextforge-*.log; do
+            [[ -f "$f" ]] && : > "$f"
+          done
+          echo "    truncated logs"
+        fi
+
+        echo ""
+        echo "==> re-bootstrapping contextforge stack"
+
+        if [[ "$(uname -s)" == "Darwin" ]]; then
+          for label in com.contextforge.gateway com.contextforge.bridge-supervisor com.contextforge.setup; do
+            local plist="$agent_dir/$label.plist"
+            [[ -f "$plist" ]] || continue
+            if ! /bin/launchctl bootstrap "gui/$uid" "$plist" 2>/dev/null; then
+              echo "    warning: failed to bootstrap $label" >&2
+            fi
+          done
+          echo "    bootstrapped launchd agents"
+        else
+          systemctl --user start \
+            contextforge-gateway.service \
+            contextforge-bridge-supervisor.service 2>/dev/null || true
+          systemctl --user start contextforge-setup.service 2>/dev/null || true
+          echo "    started systemd services"
+        fi
+
+        echo ""
+        echo "==> waiting for gateway health..."
+        local url="http://${cfg.host}:${toString cfg.port}"
+        local i=0
+        while ! curl -sf --max-time 2 "$url/health" >/dev/null 2>&1; do
+          i=$((i + 1))
+          if [[ $i -ge 15 ]]; then
+            echo "error: gateway not healthy after 30s — check logs" >&2
+            return 1
+          fi
+          sleep 2
+        done
+        echo "gateway is healthy"
+
+        echo ""
+        echo "==> waiting for bridges to start..."
+        local bridge_ports
+        bridge_ports="$(python3 -c "
+import tomllib
+try:
+    with open('${config_dir}/mcp-servers.toml', 'rb') as f:
+        data = tomllib.load(f)
+    for s in data.get('servers', []):
+        p = (s.get('bridge') or {}).get('port')
+        if p: print(p)
+except Exception:
+    pass
+" 2>/dev/null)"
+
+        if [[ -n "$bridge_ports" ]]; then
+          local total ready prev_ready attempt
+          total="$(echo "$bridge_ports" | wc -l | tr -d ' ')"
+          prev_ready=0
+          attempt=0
+
+          while (( attempt < 20 )); do
+            ready=0
+            while IFS= read -r port; do
+              if curl -sf --max-time 2 -X POST \
+                  -H "Content-Type: application/json" -d '{}' \
+                  "http://127.0.0.1:$port/mcp" >/dev/null 2>&1; then
+                (( ready++ )) || true
+              fi
+            done <<< "$bridge_ports"
+
+            if (( ready > prev_ready )); then
+              echo "    $ready/$total bridges ready"
+              prev_ready=$ready
+            fi
+
+            # done if all up, or if count stabilized after at least one is ready
+            if (( ready == total )); then
+              break
+            fi
+            if (( ready > 0 && ready == prev_ready && attempt > 5 )); then
+              echo "    $ready/$total bridges ready (continuing, remaining may have missing env)"
+              break
+            fi
+
+            (( attempt++ )) || true
+            sleep 3
+          done
+
+          if (( prev_ready == 0 )); then
+            echo "    no bridges ready after 60s (continuing anyway)"
+          fi
+        fi
+
+        echo ""
+        echo "==> registering servers and tools..."
+        mcpgw-setup
+      }
     '';
   };
 }
