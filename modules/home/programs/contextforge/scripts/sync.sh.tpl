@@ -68,6 +68,38 @@ if ! curl -sf "$gateway_url/health" >/dev/null 2>&1; then
   exit 1
 fi
 
+is_http_transport() {
+  case "$1" in
+    http|streamablehttp|streamable_http|sse)
+      return 0
+      ;;
+    *)
+      return 1
+      ;;
+  esac
+}
+
+gateway_array_filter='if type == "object" then .gateways // [] else . end'
+
+refresh_gateway_state() {
+  gateways_json="$(curl -sf --max-time 10 "$gateway_url/gateways" 2>/dev/null || echo '[]')"
+  all_tools_json="$(curl -sf --max-time 10 "$gateway_url/tools" 2>/dev/null || echo '[]')"
+}
+
+probe_mcp_endpoint() {
+  local target_url="$1"
+  local auth_headers_json="$2"
+  local -a curl_args
+
+  curl_args=(-sf --max-time 3 -X POST -H "Content-Type: application/json" -d '{}')
+  while IFS= read -r header; do
+    [[ -n "$header" ]] || continue
+    curl_args+=(-H "$header")
+  done < <(echo "$auth_headers_json" | @JQ@ -r '.[] | "\(.key): \(.value)"')
+
+  curl "${curl_args[@]}" "$target_url" >/dev/null 2>&1
+}
+
 # poll until total tool count stabilizes (gateway discovers tools async after registration)
 wait_for_stable_tools() {
   local max_polls="${1:-15}"
@@ -126,7 +158,7 @@ rm -f "$new_reg_marker"
   fi
 
   register_url="$url"
-  if [[ "$transport" != "http" ]]; then
+  if ! is_http_transport "$transport"; then
     register_url="$bridge_url"
   fi
 
@@ -135,34 +167,91 @@ rm -f "$new_reg_marker"
     continue
   fi
 
-  if echo "$gateways_json" | @JQ@ -e --arg name "$name" \
-      '(if type == "object" then .gateways // [] else . end) | any(.name == $name)' >/dev/null 2>&1; then
+  existing_gateway_count="$(echo "$gateways_json" | @JQ@ \
+    --arg name "$name" \
+    --arg url "$register_url" \
+    "($gateway_array_filter | map(select(.name == \$name and .url == \$url))) | length")"
 
-    gw_id="$(echo "$gateways_json" | @JQ@ -r --arg name "$name" \
-      '(if type == "object" then .gateways // [] else . end)[] | select(.name == $name) | .id')"
-    gw_tool_count="$(echo "$all_tools_json" | @JQ@ \
-      --arg gid "$gw_id" '[.[] | select(.gatewayId == $gid)] | length')"
+  # fallback for legacy entries that may not have an exact url match
+  if (( existing_gateway_count == 0 )); then
+    existing_gateway_count="$(echo "$gateways_json" | @JQ@ \
+      --arg name "$name" \
+      "($gateway_array_filter | map(select(.name == \$name))) | length")"
+  fi
+
+  if (( existing_gateway_count > 0 )); then
+    gw_id="$(echo "$gateways_json" | @JQ@ -r \
+      --arg name "$name" \
+      --arg url "$register_url" \
+      --argjson tools "$all_tools_json" \
+      "
+      ($gateway_array_filter
+      | map(select(.name == \$name and ((.url // \"\") == \$url or \$url == \"\"))) ) as \$matches
+      | (if (\$matches | length) > 0
+          then \$matches
+          else ($gateway_array_filter | map(select(.name == \$name)))
+        end)
+      | map(. as \$gw | . + {tool_count: (\$tools | map(select(.gatewayId == \$gw.id)) | length)})
+      | sort_by(-.tool_count, .id)
+      | .[0].id // empty
+      ")"
+
+    if [[ -n "$gw_id" ]]; then
+      duplicate_ids="$(echo "$gateways_json" | @JQ@ -r \
+        --arg name "$name" \
+        --arg url "$register_url" \
+        --arg keep_id "$gw_id" \
+        "
+        ($gateway_array_filter
+        | map(select(.name == \$name and ((.url // \"\") == \$url or \$url == \"\")))) as \$matches
+        | (if (\$matches | length) > 0
+            then \$matches
+            else ($gateway_array_filter | map(select(.name == \$name)))
+          end)
+        | .[] | select(.id != \$keep_id) | .id
+        ")"
+
+      if [[ -n "$duplicate_ids" ]]; then
+        while IFS= read -r dup_id; do
+          [[ -n "$dup_id" ]] || continue
+          curl -sf --max-time 5 -X DELETE "$gateway_url/gateways/$dup_id" >/dev/null 2>&1 || true
+        done <<< "$duplicate_ids"
+        refresh_gateway_state
+        echo "  $name: removed duplicate gateway entries"
+      fi
+    fi
+
+    if [[ -n "$gw_id" ]]; then
+      gw_tool_count="$(echo "$all_tools_json" | @JQ@ \
+        --arg gid "$gw_id" '[.[] | select(.gatewayId == $gid)] | length')"
+    else
+      gw_tool_count=0
+    fi
 
     if (( gw_tool_count > 0 )); then
       echo "  $name: ok ($gw_tool_count tools)"
       continue
     fi
 
-    # 0 tools — check if bridge is healthy before re-registering
+    # 0 tools — check if endpoint is healthy before re-registering
     check_url="$register_url"
     if [[ "$transport" == "stdio" && -n "$bridge_url" ]]; then
       check_url="$bridge_url"
     fi
 
-    if [[ -n "$check_url" ]] && curl -sf --max-time 3 -X POST \
-        -H "Content-Type: application/json" -d '{}' "$check_url" >/dev/null 2>&1; then
-      curl -sf --max-time 5 -X DELETE "$gateway_url/gateways/$gw_id" >/dev/null 2>&1 || true
-      # refresh gateways list so subsequent iterations don't see stale data
-      gateways_json="$(curl -sf --max-time 10 "$gateway_url/gateways" 2>/dev/null || echo '[]')"
+    if [[ -n "$check_url" ]] && probe_mcp_endpoint "$check_url" "$auth_headers"; then
+      if [[ -n "$gw_id" ]]; then
+        curl -sf --max-time 5 -X DELETE "$gateway_url/gateways/$gw_id" >/dev/null 2>&1 || true
+      fi
+      refresh_gateway_state
       echo "  $name: stale (0 tools), re-registering"
       # fall through to registration
     else
-      echo "  $name: ok (0 tools, bridge down)"
+      if [[ "$transport" == "stdio" ]]; then
+        echo "  $name: ok (0 tools, bridge down)"
+      else
+        echo "  $name: ok (0 tools, endpoint down)"
+      fi
       continue
     fi
   fi

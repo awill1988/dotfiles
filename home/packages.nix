@@ -21,32 +21,6 @@ in
     enable = true;
     primary = {
       mcpServers = {
-        /*postgres = {
-          command = "npx";
-          args = [
-            "-y"
-            "@modelcontextprotocol/server-postgres"
-            "\${POSTGRES_URL:-postgresql://postgres:postgres@localhost:5432/postgres}"
-          ];
-        };*/
-        snowflake = {
-          command = "uvx";
-          args = [
-            "snowflake-labs-mcp"
-            "--service-config-file"
-            "\${SNOWFLAKE_MCP_CONFIG_FILE}"
-            "--account"
-            "\${SNOWFLAKE_ACCOUNT}"
-            "--user"
-            "\${SNOWFLAKE_USER}"
-            "--warehouse"
-            "\${SNOWFLAKE_WAREHOUSE}"
-            "--private-key-file"
-            "\${SNOWFLAKE_PRIVATE_KEY_FILE}"
-            "--role"
-            "\${SNOWFLAKE_ROLE}"
-          ];
-        };
         aws = {
           command = "uvx";
           args = [ "awslabs.core-mcp-server@latest" ];
@@ -82,35 +56,30 @@ in
             "https://mcp.linear.app/mcp"
           ];
         };
-        /*postgres = {
-          command = "npx";
-          args = [
-            "-y"
-            "@modelcontextprotocol/server-postgres"
-            "\${POSTGRES_URL:-postgresql://postgres:postgres@localhost:5432/postgres}"
-          ];
-        };*/
-        snowflake = {
-          command = "uvx";
-          args = [
-            "snowflake-labs-mcp"
-            "--service-config-file"
-            "\${SNOWFLAKE_MCP_CONFIG_FILE}"
-            "--account"
-            "\${SNOWFLAKE_ACCOUNT}"
-            "--user"
-            "\${SNOWFLAKE_USER}"
-            "--warehouse"
-            "\${SNOWFLAKE_WAREHOUSE}"
-            "--private-key-file"
-            "\${SNOWFLAKE_PRIVATE_KEY_FILE}"
-            "--role"
-            "\${SNOWFLAKE_ROLE}"
-          ];
-        };
         aws = {
           command = "uvx";
           args = [ "awslabs.core-mcp-server@latest" ];
+        };
+        vanta = {
+          command = "npx";
+          args = [
+            "-y"
+            "@vantasdk/vanta-mcp-server"
+          ];
+          env = {
+            VANTA_ENV_FILE = "\${VANTA_ENV_FILE}";
+          };
+        };
+        google-docs = {
+          command = "npx";
+          args = [
+            "-y"
+            "google-docs-mcp"
+          ];
+          env = {
+            GOOGLE_CLIENT_ID = "\${GOOGLE_CLIENT_ID}";
+            GOOGLE_CLIENT_SECRET = "\${GOOGLE_CLIENT_SECRET}";
+          };
         };
       };
     };
@@ -403,5 +372,6 @@ in
     ffmpeg # video processing and conversion
     imagemagick
     midicsv
+    poppler-utils # pdf rendering and utilities (pdftotext, pdfinfo, etc.)
   ];
 }
