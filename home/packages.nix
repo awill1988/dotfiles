@@ -85,6 +85,49 @@ in
     };
   };
   programs.gemini.enable = true;
+  programs.karabiner-elements = lib.mkIf pkgs.stdenv.isDarwin {
+    enable = true;
+    install_method = "homebrew";
+    tartarus_pro = {
+      enable = true;
+      # from `karabiner_cli --list-connected-devices`
+      # to ensure remaps only apply to the razer tartarus pro.
+      vendor_id = 5426;
+      product_id = 580;
+      frontmost_application = {
+        bundle_identifiers = [
+          "^com\\.avid\\.Sibelius.*$"
+          "^com\\.avid\\.sibelius.*$"
+        ];
+        file_paths = [ "^/Applications/Sibelius.*\\.app/" ];
+      };
+      mapping = {
+        "1" = "delete_or_backspace";
+        "2" = "keypad_7";
+        "3" = "keypad_8";
+        "4" = "keypad_9";
+        "5" = "keypad_plus";
+        a = "keypad_1";
+        c = "keypad_slash";
+        caps_lock = "delete_or_backspace";
+        d = "keypad_3";
+        e = "keypad_6";
+        f = "keypad_asterisk";
+        left_shift = "keypad_enter";
+        q = "keypad_4";
+        r = "keypad_hyphen";
+        s = "keypad_2";
+        spacebar = "keypad_period";
+        tab = "keypad_7";
+        w = "keypad_5";
+        x = "keypad_period";
+        z = "keypad_0";
+      };
+      simple_modifications = [
+        # { from_key_code = "q"; to_key_code = "keypad_7"; }
+      ];
+    };
+  };
 
   programs.awscli-custom.enable = true;
   programs.awscli-custom.package = pkgs.awscli2;

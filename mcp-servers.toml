@@ -90,15 +90,15 @@ env = { FIVETRAN_API_KEY = "$FIVETRAN_API_KEY", FIVETRAN_API_SECRET = "$FIVETRAN
 bridge = { port = 4455 }
 gateway_register = true
 
-# TODO: stdio servers pending bridge setup (ports 4456+, alpha-sorted)
-#
-# [[servers]]
-# name = "snowflake"
-# transport = "stdio"
-# command = "uvx"
-# args = ["snowflake-labs-mcp", "--service-config-file", "$SNOWFLAKE_MCP_CONFIG_FILE", "--account", "$SNOWFLAKE_ACCOUNT", "--user", "$SNOWFLAKE_USER", "--warehouse", "$SNOWFLAKE_WAREHOUSE", "--private-key-file", "$SNOWFLAKE_PRIVATE_KEY_FILE", "--role", "$SNOWFLAKE_ROLE"]
-# bridge = { port = 4456 }
-# gateway_register = true
+[[servers]]
+name = "snowflake"
+transport = "stdio"
+command = "uvx"
+args = ["snowflake-labs-mcp", "--service-config-file", "$SNOWFLAKE_MCP_CONFIG_FILE", "--account", "$SNOWFLAKE_ACCOUNT", "--user", "$SNOWFLAKE_USER", "--warehouse", "$SNOWFLAKE_WAREHOUSE", "--private-key-file", "$SNOWFLAKE_PRIVATE_KEY_FILE", "--role", "$SNOWFLAKE_ROLE"]
+bridge = { port = 4456 }
+gateway_register = true
+
+# TODO: stdio servers pending bridge setup (ports 4457+, alpha-sorted)
 #
 # [[servers]]
 # name = "kubernetes"

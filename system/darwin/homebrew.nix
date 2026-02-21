@@ -5,8 +5,28 @@
   ...
 }:
 let
-  inherit (lib) mkIf elem;
+  inherit (lib)
+    attrByPath
+    hasAttrByPath
+    mkIf
+    optionals
+    ;
   brewEnabled = config.homebrew.enable;
+  primary_username = config.users.primaryUser.username;
+  hm_karabiner_path = [
+    "home-manager"
+    "users"
+    primary_username
+    "programs"
+    "karabiner-elements"
+  ];
+  hm_karabiner_cfg =
+    if primary_username != null && hasAttrByPath hm_karabiner_path config then
+      attrByPath hm_karabiner_path { } config
+    else
+      { };
+  install_karabiner_via_homebrew =
+    (hm_karabiner_cfg.enable or false) && (hm_karabiner_cfg.install_method or "nix") == "homebrew";
 in
 {
   programs.zsh.shellInit = mkIf brewEnabled ''
@@ -53,5 +73,6 @@ in
   homebrew.casks = [
     "android-studio"
     "dbeaver-community"
-  ];
+  ]
+  ++ optionals install_karabiner_via_homebrew [ "karabiner-elements" ];
 }

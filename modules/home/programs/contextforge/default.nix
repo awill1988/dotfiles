@@ -123,6 +123,15 @@ let
           max_entries: 5000
   '';
 
+  # snowflake mcp service config (enables query_manager for sql execution)
+  snowflake_mcp_config = pkgs.writeText "snowflake-mcp-config.yaml" ''
+    sql_statement_permissions:
+      - select: true
+      - command: true
+    other_services:
+      query_manager: true
+  '';
+
   mcp_servers_source = ../../../../mcp-servers.toml;
 
   # --- python helper derivations ---
@@ -293,6 +302,11 @@ in
       force = true;
     };
 
+    xdg.configFile."mcp/snowflake-mcp-config.yaml" = {
+      source = snowflake_mcp_config;
+      force = true;
+    };
+
     # 3. activation: stable wrappers for launchd (avoids nix store hashes in
     # macOS Background Activity display). must run before setupLaunchAgents so
     # the executables exist when launchd first loads the plists.
@@ -456,6 +470,9 @@ in
           StandardOutPath = bridge_log_path;
           StandardErrorPath = bridge_log_path;
           EnvironmentVariables = {
+            # /usr/bin is appended so uvx-spawned subprocesses that need a C
+            # compiler (e.g. cffi for snowflake-connector-python on python 3.14
+            # where no prebuilt wheel exists) can find the system clang.
             PATH = lib.makeBinPath [
               pkgs.uv
               pkgs.python3
@@ -463,7 +480,7 @@ in
               pkgs.curl
               pkgs.jq
               pkgs.coreutils
-            ];
+            ] + ":/usr/bin";
           };
         };
       }

@@ -99,14 +99,24 @@ start_bridge() {
   echo "bridge supervisor: $name started (pid ${pids[$name]})"
 }
 
-# readiness check — POST to bridge /mcp endpoint
+# readiness check — POST to bridge /mcp endpoint, then perform MCP initialize
+# handshake so the subprocess is ready for subsequent liveness pings.
 check_ready() {
   local name="$1"
   local port="$2"
   local elapsed=0
+  local base_url="http://127.0.0.1:$port/mcp"
   while (( elapsed < readiness_timeout )); do
-    if curl -sf --max-time 2 -X POST -H "Content-Type: application/json" -d '{}' "http://127.0.0.1:$port/mcp" >/dev/null 2>&1; then
-      return 0
+    if curl -sf --max-time 2 -X POST -H "Content-Type: application/json" -d '{}' "$base_url" >/dev/null 2>&1; then
+      # bridge http layer is up — send mcp initialize handshake so the stdio
+      # subprocess is ready to respond to liveness pings.
+      local init_body='{"jsonrpc":"2.0","method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"bridge-supervisor","version":"1.0"}},"id":0}'
+      local notif_body='{"jsonrpc":"2.0","method":"notifications/initialized"}'
+      if curl -sf --max-time 10 -X POST -H "Content-Type: application/json" -d "$init_body" "$base_url" >/dev/null 2>&1; then
+        curl -sf --max-time 3 -X POST -H "Content-Type: application/json" -d "$notif_body" "$base_url" >/dev/null 2>&1 || true
+        return 0
+      fi
+      # initialize failed — subprocess may not be ready yet, keep trying
     fi
     sleep 1
     (( elapsed++ )) || true
