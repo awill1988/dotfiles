@@ -6,7 +6,7 @@ let
   platform_info = {
     aarch64-darwin = {
       suffix = "aarch64-apple-darwin";
-      hash = "sha256-TmVDaTSbFF2vAnyWOm7Vqjv5pd8dtf/7ULZO1jvF/Dk=";
+      hash = "sha256-mH5zDJyCJXU18rRepHAJMjJ1ajdw9ftDcOZShaN6/Bs=";
     };
     x86_64-darwin = {
       suffix = "x86_64-apple-darwin";
