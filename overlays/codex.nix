@@ -1,24 +1,24 @@
 final: prev:
 let
-  version = "0.98.0";
+  version = "0.107.0";
 
   # platform-specific binary info
   platform_info = {
     aarch64-darwin = {
       suffix = "aarch64-apple-darwin";
-      hash = "sha256-PMdXcogDruDEyZTFaCENmQCrxs7GC+Aj57LApuMBglU=";
+      hash = "sha256-TmVDaTSbFF2vAnyWOm7Vqjv5pd8dtf/7ULZO1jvF/Dk=";
     };
     x86_64-darwin = {
       suffix = "x86_64-apple-darwin";
-      hash = "sha256-3TbAn2eJKapd/StIzqP5PGuLEzkafQV1BSH99GUofEo=";
+      hash = "sha256-p8WCclILa34i3qic3zSmWQjeAVU4aGuoY3Ej/W6rdRk=";
     };
     x86_64-linux = {
       suffix = "x86_64-unknown-linux-gnu";
-      hash = "sha256-Hy4JfXeItUkuGgkvT40i9OxT88bZrYtD2R4vzsD4yj8=";
+      hash = "sha256-Up1p93xQH6z7HN5Fnihfc8CmQdUHn3u00/ESycIqbSU=";
     };
     aarch64-linux = {
       suffix = "aarch64-unknown-linux-gnu";
-      hash = "sha256-MhFwVo/ltOutfxCrl5A+BJNEhnqTsHLzP/YO3YYxA40=";
+      hash = "sha256-WXAHjFZgVv240eCdZifCuy3ZCqRNkERVtu0McqcRGKs=";
     };
   };
 

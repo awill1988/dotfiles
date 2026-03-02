@@ -85,6 +85,7 @@ let
           cacheable_tools:
             - "context7-query-docs"
             - "context7-resolve-library-id"
+            - "aws-prompt-understanding"
             - "aws-docs-read-documentation"
             - "aws-docs-recommend"
             - "github-search-code"
@@ -117,6 +118,7 @@ let
             - "github-list-tags"
             - "github-list-releases"
             - "github-list-issue-types"
+            - "aws-prompt-understanding"
             - "aws-docs-read-documentation"
             - "aws-docs-recommend"
           ttl: 0

@@ -24,6 +24,14 @@ headers = { CONTEXT7_API_KEY = "$CONTEXT7_API_KEY" }
 # bridge ports: 4450+ alpha-sorted (gateway on 4444, 4445-4449 reserved)
 
 [[servers]]
+name = "aws"
+transport = "stdio"
+command = "uvx"
+args = ["awslabs.core-mcp-server@latest"]
+bridge = { port = 4450 }
+gateway_register = true
+
+[[servers]]
 name = "aws-docs"
 transport = "stdio"
 command = "uvx"

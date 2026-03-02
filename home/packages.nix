@@ -19,14 +19,7 @@ in
   programs.podman.enable = true;
   programs.claude = {
     enable = true;
-    primary = {
-      mcpServers = {
-        aws = {
-          command = "uvx";
-          args = [ "awslabs.core-mcp-server@latest" ];
-        };
-      };
-    };
+    primary = { };
     secondary = {
       pathPrefix = "$HOME/projects/arro";
       awsProfile = "arro-staging";
@@ -55,10 +48,6 @@ in
             "mcp-remote"
             "https://mcp.linear.app/mcp"
           ];
-        };
-        aws = {
-          command = "uvx";
-          args = [ "awslabs.core-mcp-server@latest" ];
         };
         vanta = {
           command = "npx";

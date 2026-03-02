@@ -44,6 +44,10 @@ in
     GOPATH = "$HOME/go";
 
     # Android SDK Environment Variables
+    ANDROID_HOME =
+      if pkgs.stdenv.isDarwin
+      then "$HOME/Library/Android/sdk"
+      else "$HOME/Android/Sdk";
     ANDROID_JAVA_HOME = "${pkgs.jdk.home}";
     ALLOW_NINJA_ENV = "true";
     USE_CCACHE = 1;
@@ -51,6 +55,9 @@ in
     # Rust (XDG)
     RUSTUP_HOME = "${config.xdg.dataHome}/rustup";
     CARGO_HOME = "${config.xdg.dataHome}/cargo";
+
+    # CocoaPods (XDG)
+    CP_HOME_DIR = "${config.xdg.dataHome}/cocoapods";
 
     # Amazon Web Services
     AWS_CONFIG_FILE = "${config.xdg.configHome}/aws/config";
@@ -61,7 +68,7 @@ in
     # Prefer nix-provided tools (e.g., gnupg) ahead of system binaries to avoid version skew.
     # nix-provided tools come first (via $PATH which includes the nix profile),
     # then cargo-install binaries are appended so they never shadow nix proxies.
-    PATH = "$LOCAL_BIN:$PYENV_HOME/shims:$PYENV_HOME/bin:$ELIXIR_PATH:$GOPATH/bin:$RBENV_ROOT/plugins/ruby-build/bin:$HOME/google-cloud-sdk/bin:$PATH:$CARGO_HOME/bin";
+    PATH = "$LOCAL_BIN:$PYENV_HOME/shims:$PYENV_HOME/bin:$ELIXIR_PATH:$GOPATH/bin:$RBENV_ROOT/plugins/ruby-build/bin:$HOME/google-cloud-sdk/bin:$ANDROID_HOME/emulator:$ANDROID_HOME/platform-tools:$PATH:$CARGO_HOME/bin";
   };
 
   xdg.configFile = {
