@@ -106,12 +106,19 @@ args = ["snowflake-labs-mcp", "--service-config-file", "$SNOWFLAKE_MCP_CONFIG_FI
 bridge = { port = 4456 }
 gateway_register = true
 
-# TODO: stdio servers pending bridge setup (ports 4457+, alpha-sorted)
+[[servers]]
+name = "drawio"
+transport = "stdio"
+command = "drawio-mcp"
+bridge = { port = 4457 }
+gateway_register = true
+
+# TODO: stdio servers pending bridge setup (ports 4458+, alpha-sorted)
 #
 # [[servers]]
 # name = "kubernetes"
 # transport = "stdio"
 # command = "npx"
 # args = ["-y", "@manusa/kubernetes-mcp-server"]
-# bridge = { port = 4457 }
+# bridge = { port = 4458 }
 # gateway_register = true

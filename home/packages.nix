@@ -59,6 +59,14 @@ in
             VANTA_ENV_FILE = "\${VANTA_ENV_FILE}";
           };
         };
+        figma = {
+          command = "npx";
+          args = [
+            "-y"
+            "mcp-remote"
+            "https://mcp.figma.com/mcp"
+          ];
+        };
         google-docs = {
           command = "npx";
           args = [
@@ -384,6 +392,7 @@ in
     steampipe # select * from cloud
 
     # ai tooling
+    drawio-mcp
     fivetran-mcp-server
     github-mcp-server
     llama-cpp

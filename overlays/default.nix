@@ -1,6 +1,7 @@
 {
   claude = import ./claude.nix;
   codex = import ./codex.nix;
+  drawio-mcp = import ./drawio-mcp.nix;
   fivetran-mcp-server = import ./fivetran-mcp-server.nix;
   gemini = import ./gemini.nix;
   github-mcp-server = import ./github-mcp-server.nix;

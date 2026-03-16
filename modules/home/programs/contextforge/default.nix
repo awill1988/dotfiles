@@ -174,7 +174,7 @@ let
     text = builtins.replaceStrings
       [ "@BASH@" "@PATH@" "@HOME@" "@CACHE_DIR@" "@CONFIG_DIR@" "@PARSE_TOML_PY@" ]
       [ "${pkgs.bash}/bin/bash"
-        (lib.makeBinPath [ pkgs.bash pkgs.uv pkgs.python3 pkgs.nodejs pkgs.coreutils pkgs.fivetran-mcp-server ])
+        (lib.makeBinPath [ pkgs.bash pkgs.uv pkgs.python3 pkgs.nodejs pkgs.coreutils pkgs.drawio-mcp pkgs.fivetran-mcp-server ])
         "${config.home.homeDirectory}" cache_dir config_dir
         "${bridge_supervisor_parse_toml_py}" ]
       (builtins.readFile ./scripts/bridge-supervisor.sh.tpl);
