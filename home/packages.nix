@@ -386,6 +386,7 @@ in
     # marksman # markdown language server
 
     # cloud and infra
+    cf2tf # convert cloudformation to terraform/opentofu
     opentofu
     k9s
     lazydocker # terminal ui for docker

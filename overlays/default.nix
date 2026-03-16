@@ -1,4 +1,5 @@
 {
+  cf2tf = import ./cf2tf.nix;
   claude = import ./claude.nix;
   codex = import ./codex.nix;
   drawio-mcp = import ./drawio-mcp.nix;
