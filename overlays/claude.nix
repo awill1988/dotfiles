@@ -1,25 +1,25 @@
 final: prev:
 let
-  version = "2.1.63";
+  version = "2.1.77";
   gcs_bucket = "https://storage.googleapis.com/claude-code-dist-86c565f3-f756-42ad-8dfa-d59b1c096819/claude-code-releases";
 
   # platform-specific binary info (native installer)
   platform_info = {
     aarch64-darwin = {
       platform = "darwin-arm64";
-      sha256 = "2e8667322e0bd104087df2a8857f176acc75d7091aa02828825dfeb4a5708531";
+      sha256 = "6426772419c758e71146725582d67f1dda42687c693c83def9ad3422bb81ebf1";
     };
     x86_64-darwin = {
       platform = "darwin-x64";
-      sha256 = "07842d6521f59bc68979d833ef33cbc1b985b9f5e09fa8975efe039989666aa9";
+      sha256 = "9be4a24a213cd3f475713e8fb7548c631aabdc355ca191e926ccb63f12976409";
     };
     x86_64-linux = {
       platform = "linux-x64";
-      sha256 = "734447e461bb92f0ffd5f683bb6216c35a3c16e8dd84be8d150b43605d39b0d1";
+      sha256 = "34559c9cc9eeadc942d6731367aed3915b6b7351d98c61ebfebbd8fa59508ecd";
     };
     aarch64-linux = {
       platform = "linux-arm64";
-      sha256 = "1fec8c8369606b4a6c00af963354b7d48aee793ed5db378fe4cf280149f3190a";
+      sha256 = "f4303a1a3455b0ebbdd356c1337ae3076affc122fb79a78a2d1886e5c62f289c";
     };
   };
 

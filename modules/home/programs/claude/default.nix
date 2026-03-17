@@ -52,6 +52,11 @@ let
   # settings.json - non-MCP settings only
   settings_json = pkgs.writeText "settings.json" (
     builtins.toJSON {
+      env = {
+        CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC = "1";
+        DISABLE_NON_ESSENTIAL_MODEL_CALLS = "1";
+        CLAUDE_CODE_MAX_OUTPUT_TOKENS = "128000";
+      };
       telemetry = {
         enabled = false;
         analytics = false;

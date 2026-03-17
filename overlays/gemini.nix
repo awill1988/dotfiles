@@ -1,9 +1,9 @@
 final: prev:
 let
-  version = "0.31.0";
+  version = "0.33.2";
   src = prev.fetchurl {
     url = "https://github.com/google-gemini/gemini-cli/releases/download/v${version}/gemini.js";
-    hash = "sha256-b/xQN42G06Iu82MOKqLb8ybuBfvdtx/dlefI1YfXVeQ=";
+    hash = "sha256-mSFsftSSn3vwfiTWnJw0unpxIsxUMfMU5ZM1WWXMJmI=";
   };
   nodejs = prev.nodejs_latest;
 in
