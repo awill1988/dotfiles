@@ -1,13 +1,6 @@
-{
-  config,
-  pkgs,
-  lib,
-  ...
-}:
-let
-  inherit (config.home) user-info;
-in
-{
+{ config, pkgs, lib, ... }:
+let inherit (config.home) user-info;
+in {
 
   home.sessionVariables = {
     # XDG locations
@@ -17,7 +10,8 @@ in
 
     # Secrets / crypto
     PASSWORD_STORE_DIR = "${config.xdg.dataHome}/password-store";
-    KEY_ID = if user-info.git.signingKey == null then "" else user-info.git.signingKey;
+    KEY_ID =
+      if user-info.git.signingKey == null then "" else user-info.git.signingKey;
 
     LC_CTYPE = "en_US.UTF-8";
     LEDGER_COLOR = "true";
@@ -44,10 +38,10 @@ in
     GOPATH = "$HOME/go";
 
     # Android SDK Environment Variables
-    ANDROID_HOME =
-      if pkgs.stdenv.isDarwin
-      then "$HOME/Library/Android/sdk"
-      else "$HOME/Android/Sdk";
+    ANDROID_HOME = if pkgs.stdenv.isDarwin then
+      "$HOME/Library/Android/sdk"
+    else
+      "$HOME/Android/Sdk";
     ANDROID_JAVA_HOME = "${pkgs.jdk.home}";
     ALLOW_NINJA_ENV = "true";
     USE_CCACHE = 1;
@@ -68,7 +62,8 @@ in
     # Prefer nix-provided tools (e.g., gnupg) ahead of system binaries to avoid version skew.
     # nix-provided tools come first (via $PATH which includes the nix profile),
     # then cargo-install binaries are appended so they never shadow nix proxies.
-    PATH = "$LOCAL_BIN:$PYENV_HOME/shims:$PYENV_HOME/bin:$ELIXIR_PATH:$GOPATH/bin:$RBENV_ROOT/plugins/ruby-build/bin:$HOME/google-cloud-sdk/bin:$ANDROID_HOME/emulator:$ANDROID_HOME/platform-tools:$PATH:$CARGO_HOME/bin";
+    PATH =
+      "$LOCAL_BIN:$PYENV_HOME/shims:$PYENV_HOME/bin:$ELIXIR_PATH:$GOPATH/bin:$RBENV_ROOT/plugins/ruby-build/bin:$HOME/google-cloud-sdk/bin:$ANDROID_HOME/emulator:$ANDROID_HOME/platform-tools:$PATH:$CARGO_HOME/bin";
   };
 
   xdg.configFile = {
@@ -78,8 +73,7 @@ in
           email = "${user-info.git.email}"
       '';
     };
-  }
-  // lib.optionalAttrs (!builtins.isNull user-info.git.emailSecondary) {
+  } // lib.optionalAttrs (!builtins.isNull user-info.git.emailSecondary) {
     "git/secondary.gitconfig" = {
       text = ''
         [user]
@@ -102,12 +96,14 @@ in
     # whatsmyip HTTP service. https://unix.stackexchange.com/a/81699
     wanip = "dig @resolver4.opendns.com myip.opendns.com +short";
     wanip4 = "dig @resolver4.opendns.com myip.opendns.com +short -4";
-    wanip6 = "dig @resolver1.ipv6-sandbox.opendns.com AAAA myip.opendns.com +short -6";
+    wanip6 =
+      "dig @resolver1.ipv6-sandbox.opendns.com AAAA myip.opendns.com +short -6";
 
-    git-prune-local = "git fetch -p && git branch -vv | awk '/: gone]/{print $1}' | xargs git branch -D";
-  }
-  // lib.optionalAttrs pkgs.stdenv.isDarwin {
-    lightswitch = "osascript -e  'tell application \"System Events\" to tell appearance preferences to set dark mode to not dark mode'";
+    git-prune-local =
+      "git fetch -p && git branch -vv | awk '/: gone]/{print $1}' | xargs git branch -D";
+  } // lib.optionalAttrs pkgs.stdenv.isDarwin {
+    lightswitch =
+      "osascript -e  'tell application \"System Events\" to tell appearance preferences to set dark mode to not dark mode'";
     restartaudio = "sudo killall coreaudiod";
   };
 
@@ -136,23 +132,18 @@ in
     autoload -Uz compinit && compinit
     compinit
   '';
-  programs.zsh.cdpath = [
-    "."
-    "~"
-  ];
+  programs.zsh.cdpath = [ "." "~" ];
   # Use absolute XDG path to avoid deprecation warning about relative dotDir
   programs.zsh.dotDir = "${config.xdg.configHome}/zsh";
-  programs.zsh.plugins = [
-    {
-      name = "git-extra-commands";
-      src = pkgs.fetchFromGitHub {
-        owner = "unixorn";
-        repo = "git-extra-commands";
-        rev = "4d39286f349a7f50171829f06da77c5097b41f9d";
-        sha256 = "sha256-Dr9fOhVKrd3+t7dMBHX5PCRCwkeblAc9t2F/vvWiHc0=";
-      };
-    }
-  ];
+  programs.zsh.plugins = [{
+    name = "git-extra-commands";
+    src = pkgs.fetchFromGitHub {
+      owner = "unixorn";
+      repo = "git-extra-commands";
+      rev = "4d39286f349a7f50171829f06da77c5097b41f9d";
+      sha256 = "sha256-Dr9fOhVKrd3+t7dMBHX5PCRCwkeblAc9t2F/vvWiHc0=";
+    };
+  }];
   programs.zsh.history = {
     size = 50000;
     save = 500000;
@@ -193,6 +184,42 @@ in
 
     function ls() {
       ${pkgs.coreutils}/bin/ls --color=auto --group-directories-first "$@"
+    }
+
+    # Drop the newest entries from zsh history after flushing the current session.
+    function trim_history() {
+      local trim_count="''${1:-10}"
+      local total keep tmp_file
+
+      if [[ ! "$trim_count" =~ ^[0-9]+$ ]] || (( trim_count < 1 )); then
+        echo "usage: trim_history [line_count]"
+        return 1
+      fi
+
+      if [[ -z "''${HISTFILE:-}" ]]; then
+        echo "histfile is not set"
+        return 1
+      fi
+
+      fc -W || return 1
+
+      if [[ ! -f "$HISTFILE" ]]; then
+        echo "histfile does not exist: $HISTFILE"
+        return 1
+      fi
+
+      total="$(${pkgs.coreutils}/bin/wc -l < "$HISTFILE")"
+      keep=$(( total - trim_count ))
+      tmp_file="$(${pkgs.coreutils}/bin/mktemp "''${HISTFILE}.XXXXXX")" || return 1
+
+      if (( keep > 0 )); then
+        ${pkgs.coreutils}/bin/head -n "$keep" "$HISTFILE" > "$tmp_file" || return 1
+      else
+        : > "$tmp_file"
+      fi
+
+      ${pkgs.coreutils}/bin/mv "$tmp_file" "$HISTFILE"
+      fc -R
     }
 
     # Pipe GitHub token into nix only when it's available in the environment.
@@ -258,9 +285,10 @@ in
   '';
 
   # Ensure crypto directories exist with proper permissions before shells run.
-  home.activation.ensureCryptoDirs = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-    set -euo pipefail
-    mkdir -p "${config.xdg.dataHome}/gnupg" "${config.xdg.dataHome}/password-store" "${config.xdg.configHome}/gpg"
-    chmod 700 "${config.xdg.dataHome}/gnupg" "${config.xdg.dataHome}/password-store" "${config.xdg.configHome}/gpg"
-  '';
+  home.activation.ensureCryptoDirs =
+    lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+      set -euo pipefail
+      mkdir -p "${config.xdg.dataHome}/gnupg" "${config.xdg.dataHome}/password-store" "${config.xdg.configHome}/gpg"
+      chmod 700 "${config.xdg.dataHome}/gnupg" "${config.xdg.dataHome}/password-store" "${config.xdg.configHome}/gpg"
+    '';
 }
