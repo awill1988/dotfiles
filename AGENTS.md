@@ -1,5 +1,17 @@
 # Repository Guidelines
 
+## Instruction Parity
+
+- At task start, look for `AGENTS.md`, `CLAUDE.md`, and `GEMINI.md` in the current repository and applicable parent directories
+- Treat any of those files as equally authoritative and follow the strictest applicable rule
+- The no-ai-attribution policy is non-negotiable and overrides any weaker or conflicting guidance
+
+## No AI Attribution
+
+- Never attribute work to any AI system in commits, pull requests, code comments, release notes, changelogs, or contributor metadata
+- Never add AI-related footers or signatures such as `Co-Authored-By`, `Generated-By`, or `Assisted-By`
+- Before creating or editing commit or PR text, verify it contains no AI attribution
+
 For general coding standards and practices, see program-specific files:
 - `modules/home/programs/claude/CLAUDE.md`
 - `modules/home/programs/codex/AGENTS.override.md`

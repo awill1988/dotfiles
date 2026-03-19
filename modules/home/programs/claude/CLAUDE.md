@@ -1,5 +1,13 @@
 See @README.md and @AGENTS.md for full documentation.
 
+## Highest Priority Policy
+
+- At task start, look for `AGENTS.md`, `CLAUDE.md`, and `GEMINI.md` in the current repository and applicable parent directories
+- Treat any of those files as equally authoritative and follow the strictest applicable rule
+- Never attribute work to any AI system in commits, pull requests, code comments, release notes, changelogs, or contributor metadata
+- Never add AI-related footers or signatures such as `Co-Authored-By`, `Generated-By`, or `Assisted-By`
+- Before creating or editing commit or PR text, verify it contains no AI attribution
+
 ## Profile
 
 - **Role**: Expert developer & DevOps engineer
@@ -57,9 +65,8 @@ Git is configured with `push.default = simple` and `push.autoSetupRemote = true`
 
 ### No AI Attribution (Strictly Enforced)
 
-- **Never** add `Co-Authored-By` tags referencing Claude, Anthropic, OpenAI, Codex, Gemini, or any AI agent
-- **Never** include signatures, footers, or metadata indicating AI contribution
-- **Never** mention AI assistance in commit messages, PR descriptions, or code comments
+- **Never** add `Co-Authored-By` or any AI-related signature, footer, or metadata
+- **Never** mention AI assistance in commit messages, PR descriptions, code comments, release notes, or contributor metadata
 - All commits must appear as solely human-authored; AI tooling is an implementation detail, not a contributor
 
 ## Practices

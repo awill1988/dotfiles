@@ -7,7 +7,7 @@
     }
   },
   "context": {
-    "fileName": ["AGENTS.md", "CONTEXT.md", "GEMINI.md"]
+    "fileName": ["AGENTS.md", "CLAUDE.md", "CONTEXT.md", "GEMINI.md"]
   },
   "telemetry": {
     "enabled": false,
