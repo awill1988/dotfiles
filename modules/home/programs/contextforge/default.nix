@@ -44,6 +44,17 @@ let
       "ADMIN_STATS_CACHE_SYSTEM_TTL=60"
       "ADMIN_STATS_CACHE_OBSERVABILITY_TTL=30"
 
+      # sqlite pool — keep small; sqlite serializes writes so large pools
+      # just leak connections.  upstream default is 200 (capped to 50).
+      "DB_POOL_SIZE=5"
+      "DB_MAX_OVERFLOW=2"
+      "DB_POOL_TIMEOUT=10"
+      "DB_POOL_RECYCLE=1800"
+
+      # tool invocation timeout — must exceed snowflake session timeout (10s)
+      # plus bridge overhead
+      "TOOL_TIMEOUT=30"
+
       "ENVIRONMENT=${cfg.environment}"
       "AUTH_REQUIRED=false"
       "SECURE_COOKIES=false"
@@ -128,6 +139,7 @@ let
   '';
 
   # snowflake mcp service config (enables query_manager for sql execution)
+  # command: true allows ALTER SESSION (agents set STATEMENT_TIMEOUT_IN_SECONDS)
   snowflake_mcp_config = pkgs.writeText "snowflake-mcp-config.yaml" ''
     sql_statement_permissions:
       - select: true
@@ -663,7 +675,7 @@ in
             function mcpgw-status() {
               local url="http://${cfg.host}:${toString cfg.port}"
               local health
-              health="$(curl -sf "$url/health" 2>/dev/null)" || {
+              health="$(curl -sf --max-time 5 "$url/health" 2>/dev/null)" || {
                 echo "contextforge gateway: not reachable at $url"
                 return 1
               }
@@ -690,7 +702,7 @@ in
               echo ""
               echo "==> waiting for gateway health..."
               local attempts=0
-              while ! curl -sf "$url/health" >/dev/null 2>&1; do
+              while ! curl -sf --max-time 5 "$url/health" >/dev/null 2>&1; do
                 attempts=$((attempts + 1))
                 if [[ $attempts -ge 30 ]]; then
                   echo "error: gateway not healthy after 30 attempts" >&2
@@ -703,12 +715,12 @@ in
               echo ""
               echo "==> creating virtual server with all tools..."
               local response uuid
-              response="$(curl -sf -X POST \
+              response="$(curl -sf --max-time 10 -X POST \
                 -H "Content-Type: application/json" \
                 -d '{"server": {"name": "contextforge-all", "tools": "all"}}' \
                 "$url/servers" 2>/dev/null)" || {
                 # 409 means it already exists — fetch the existing uuid
-                uuid="$(curl -sf "$url/servers" 2>/dev/null \
+                uuid="$(curl -sf --max-time 10 "$url/servers" 2>/dev/null \
                   | ${pkgs.jq}/bin/jq -r '.[] | select(.name == "contextforge-all") | .id // empty')"
                 if [[ -z "$uuid" ]]; then
                   echo "error: failed to create or find virtual server" >&2

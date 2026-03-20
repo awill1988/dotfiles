@@ -9,7 +9,7 @@ token_file="@DATA_DIR@/gateway-token"
 # wait for gateway health (60s max, 2s intervals)
 attempts=0
 max_attempts=30
-while ! curl -sf "$url/health" >/dev/null 2>&1; do
+while ! curl -sf --max-time 5 "$url/health" >/dev/null 2>&1; do
   attempts=$((attempts + 1))
   if [[ $attempts -ge $max_attempts ]]; then
     echo "error: gateway not healthy after $((max_attempts * 2))s" >&2
@@ -24,7 +24,7 @@ first_run=1
 needs_create=0
 if [[ -f "$uuid_file" ]]; then
   saved_uuid="$(cat "$uuid_file")"
-  if curl -sf "$url/servers/$saved_uuid" >/dev/null 2>&1; then
+  if curl -sf --max-time 5 "$url/servers/$saved_uuid" >/dev/null 2>&1; then
     echo "virtual server verified: $saved_uuid"
     first_run=0
   else
@@ -37,12 +37,12 @@ else
 fi
 
 if [[ "$needs_create" -eq 1 ]]; then
-  response="$(curl -sf -X POST \
+  response="$(curl -sf --max-time 10 -X POST \
     -H "Content-Type: application/json" \
     -d '{"server": {"name": "contextforge-all", "tools": "all"}}' \
     "$url/servers" 2>/dev/null)" || {
     # 409 means it already exists — fetch the existing uuid
-    uuid="$(curl -sf "$url/servers" 2>/dev/null \
+    uuid="$(curl -sf --max-time 10 "$url/servers" 2>/dev/null \
       | jq -r '.[] | select(.name == "contextforge-all") | .id // empty')"
     if [[ -z "$uuid" ]]; then
       echo "error: failed to create or find virtual server" >&2

@@ -46,6 +46,35 @@ Git is configured with `push.default = simple` and `push.autoSetupRemote = true`
 - Comments should capture intent and rationale; documentation stays in standard Markdown.
 - When using fixed binary sizes, add a comment with the human-readable value (e.g., `# 200 MiB`).
 
+## Snowflake MCP
+
+The Snowflake MCP server is configured with restricted permissions:
+
+- **Only `SHOW`, `SELECT`, and `COMMAND` statements are allowed**—all other statement types will be rejected
+- Use `SHOW` commands for metadata exploration (e.g., `SHOW PIPES`, `SHOW TABLES`, `SHOW SCHEMAS`)
+- Use `SELECT` for data queries with appropriate `LIMIT` clauses
+
+### Session Setup (Required)
+
+Before running any Snowflake query, set the session timeout:
+
+```sql
+ALTER SESSION SET STATEMENT_TIMEOUT_IN_SECONDS = 10
+```
+
+This only needs to run once per session (the Snowflake MCP server uses a persistent connection).
+
+### Query Evaluation (Required)
+
+Before executing any Snowflake `SELECT` query:
+
+1. **Run `EXPLAIN` first** to review the query plan and estimate cost
+2. **Check for partition pruning** — avoid queries that scan all partitions
+3. **If EXPLAIN shows a full scan on a large table**, refine the query with tighter filters before executing
+4. **Only then execute the actual query**
+
+This applies to all `SELECT` statements, including those against `SNOWFLAKE.ACCOUNT_USAGE` views which can be expensive.
+
 ## MCP Sync
 
 All MCP servers are managed through the contextforge gateway (`localhost:4444`). The single source of truth is `modules/home/programs/contextforge/mcp-servers.toml`.

@@ -63,7 +63,7 @@ fi
 
 gateway_url="@GATEWAY_URL@"
 
-if ! curl -sf "$gateway_url/health" >/dev/null 2>&1; then
+if ! curl -sf --max-time 5 "$gateway_url/health" >/dev/null 2>&1; then
   echo "gateway sync: gateway not healthy"
   exit 1
 fi
