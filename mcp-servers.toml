@@ -51,8 +51,8 @@ gateway_register = true
 [[servers]]
 name = "postgres"
 transport = "stdio"
-command = "npx"
-args = ["-y", "@modelcontextprotocol/server-postgres", "${POSTGRES_URL:-postgresql://postgres:postgres@localhost:5432/postgres}"]
+command = "contextforge-postgres-mcp"
+args = ["${POSTGRES_URL:-postgresql://postgres:postgres@localhost:5432/postgres}"]
 bridge = { port = 4453 }
 gateway_register = true
 
