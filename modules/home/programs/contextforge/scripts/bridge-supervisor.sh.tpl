@@ -87,7 +87,14 @@ start_bridge() {
   fi
 
   echo "bridge supervisor: starting $name on port $port"
-  local bridge_cmd="uv run --with mcp-contextforge-gateway python -m mcpgateway.translate --stdio \"$cmd\" --expose-streamable-http --port $port --host 127.0.0.1 --stateless --jsonResponse"
+  local bridge_cmd
+  if [[ "$name" == "snowflake" ]]; then
+    # wait slightly longer than the enforced 10s snowflake session timeout so
+    # the bridge returns the real error instead of a hanging accepted response.
+    bridge_cmd="uv run --with mcp-contextforge-gateway python \"@SNOWFLAKE_BRIDGE_PY@\" --cmd \"$cmd\" --port $port --host 127.0.0.1 --response-timeout 15"
+  else
+    bridge_cmd="uv run --with mcp-contextforge-gateway python -m mcpgateway.translate --stdio \"$cmd\" --expose-streamable-http --port $port --host 127.0.0.1 --stateless --jsonResponse"
+  fi
   if [[ -n "$env_vars" ]]; then
     bridge_cmd="env $env_vars $bridge_cmd"
   fi

@@ -169,6 +169,7 @@ let
   );
 
   postgres_mcp_py = pkgs.writeText "postgres-mcp.py" (builtins.readFile ./scripts/postgres_mcp.py);
+  snowflake_bridge_py = pkgs.writeText "snowflake-bridge.py" (builtins.readFile ./scripts/snowflake_bridge.py);
 
   postgres_mcp_python = pkgs.python3.withPackages (ps: [
     ps.mcp
@@ -213,7 +214,7 @@ let
     name = "contextforge-bridge-supervisor";
     text =
       builtins.replaceStrings
-        [ "@BASH@" "@PATH@" "@HOME@" "@CACHE_DIR@" "@CONFIG_DIR@" "@PARSE_TOML_PY@" ]
+        [ "@BASH@" "@PATH@" "@HOME@" "@CACHE_DIR@" "@CONFIG_DIR@" "@PARSE_TOML_PY@" "@SNOWFLAKE_BRIDGE_PY@" ]
         [
           "${pkgs.bash}/bin/bash"
           (lib.makeBinPath [
@@ -230,6 +231,7 @@ let
           cache_dir
           config_dir
           "${bridge_supervisor_parse_toml_py}"
+          "${snowflake_bridge_py}"
         ]
         (builtins.readFile ./scripts/bridge-supervisor.sh.tpl);
     executable = true;
