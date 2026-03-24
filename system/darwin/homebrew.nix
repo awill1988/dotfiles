@@ -74,6 +74,7 @@ in
   homebrew.casks = [
     "android-studio"
     "dbeaver-community"
+    "macfuse"
   ]
   ++ optionals install_karabiner_via_homebrew [ "karabiner-elements" ];
 }
