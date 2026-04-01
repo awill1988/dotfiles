@@ -74,7 +74,7 @@ fi
 # the /mcp endpoint requires bearer auth even with AUTH_REQUIRED=false;
 # since this is local dev with a known secret, we mint a static token
 if [[ ! -f "$token_file" ]]; then
-  token="$(uv run --with PyJWT python3 "@GENERATE_TOKEN_PY@" 2>/dev/null)" || {
+  token="$(@GATEWAY_PYTHON@ "@GENERATE_TOKEN_PY@" 2>/dev/null)" || {
     echo "warning: failed to generate jwt, wrapper may not authenticate" >&2
     exit 0
   }

@@ -20,4 +20,4 @@ if [[ -f "$token_file" ]]; then
   export MCP_AUTH="Bearer $(cat "$token_file")"
 fi
 
-exec uv run --with mcp-contextforge-gateway python -m mcpgateway.wrapper
+exec @GATEWAY_PYTHON@ -m mcpgateway.wrapper

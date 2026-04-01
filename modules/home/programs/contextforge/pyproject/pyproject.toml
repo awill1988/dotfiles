@@ -1,0 +1,20 @@
+[project]
+name = "contextforge-nix"
+version = "0.0.0"
+description = "Nix-managed virtualenv for contextforge gateway and MCP bridges"
+requires-python = ">=3.13,<3.15"
+dependencies = [
+  # gateway + translate bridge (C deps: cryptography, orjson, jq, cffi)
+  "mcp-contextforge-gateway>=0.9.0",
+
+  # snowflake mcp server (C deps: nanoarrow via snowflake-connector-python, asyncmy)
+  "snowflake-labs-mcp>=0.3.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.uv]
+# no editable install of this wrapper — it exists only to lock deps
+no-build-package = ["contextforge-nix"]

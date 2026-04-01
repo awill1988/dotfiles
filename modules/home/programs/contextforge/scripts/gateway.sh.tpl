@@ -55,7 +55,7 @@ start_gateway() {
     sleep 1
   fi
 
-  uvx --from mcp-contextforge-gateway mcpgateway \
+  @MCPGATEWAY_BIN@ \
     --host "$HOST" --port "$PORT" &
   gw_pid=$!
   consecutive_failures=0

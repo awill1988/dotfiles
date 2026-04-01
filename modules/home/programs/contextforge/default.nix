@@ -15,6 +15,10 @@ let
 
   db_path = "${data_dir}/gateway.db";
 
+  # nix-built virtualenv with mcp-contextforge-gateway + snowflake-labs-mcp
+  # (all C extensions pre-compiled at build time — no runtime uvx compilation)
+  gateway_venv = pkgs.contextforge-gateway-env;
+
   gateway_env = pkgs.writeText "gateway.env" (
     lib.concatStringsSep "\n" [
       "HOST=${cfg.host}"
@@ -189,21 +193,21 @@ let
 
   # --- bash script derivations (template substitution) ---
 
-  # gateway daemon wrapper — sources env files, execs uvx
+  # gateway daemon wrapper — sources env files, execs nix-built mcpgateway
   gateway_script = pkgs.writeTextFile {
     name = "contextforge-gateway";
     text =
       builtins.replaceStrings
-        [ "@BASH@" "@PATH@" "@PLUGINS_DIR@" "@CONFIG_DIR@" "@DATA_DIR@" ]
+        [ "@BASH@" "@PATH@" "@PLUGINS_DIR@" "@CONFIG_DIR@" "@DATA_DIR@" "@MCPGATEWAY_BIN@" ]
         [
           "${pkgs.bash}/bin/bash"
           (lib.makeBinPath [
-            pkgs.uv
             pkgs.coreutils
           ])
           "${plugins_dir}"
           config_dir
           data_dir
+          "${gateway_venv}/bin/mcpgateway"
         ]
         (builtins.readFile ./scripts/gateway.sh.tpl);
     executable = true;
@@ -214,7 +218,7 @@ let
     name = "contextforge-bridge-supervisor";
     text =
       builtins.replaceStrings
-        [ "@BASH@" "@PATH@" "@HOME@" "@CACHE_DIR@" "@CONFIG_DIR@" "@PARSE_TOML_PY@" "@SNOWFLAKE_BRIDGE_PY@" ]
+        [ "@BASH@" "@PATH@" "@HOME@" "@CACHE_DIR@" "@CONFIG_DIR@" "@PARSE_TOML_PY@" "@SNOWFLAKE_BRIDGE_PY@" "@GATEWAY_PYTHON@" ]
         [
           "${pkgs.bash}/bin/bash"
           (lib.makeBinPath [
@@ -232,6 +236,7 @@ let
           config_dir
           "${bridge_supervisor_parse_toml_py}"
           "${snowflake_bridge_py}"
+          "${gateway_venv}/bin/python"
         ]
         (builtins.readFile ./scripts/bridge-supervisor.sh.tpl);
     executable = true;
@@ -286,11 +291,11 @@ let
           "@SYNC_PATH@"
           "@SYNC_BIN@"
           "@GENERATE_TOKEN_PY@"
+          "@GATEWAY_PYTHON@"
         ]
         [
           "${pkgs.bash}/bin/bash"
           (lib.makeBinPath [
-            pkgs.uv
             pkgs.python3
             pkgs.curl
             pkgs.jq
@@ -307,6 +312,7 @@ let
           ])
           "${sync_script}/bin/contextforge-mcp-sync"
           "${setup_generate_token_py}"
+          "${gateway_venv}/bin/python"
         ]
         (builtins.readFile ./scripts/setup.sh.tpl);
     executable = true;
@@ -317,16 +323,16 @@ let
     name = "mcpgw-wrapper";
     text =
       builtins.replaceStrings
-        [ "@BASH@" "@PATH@" "@DATA_DIR@" "@GATEWAY_HOST@" "@GATEWAY_PORT@" ]
+        [ "@BASH@" "@PATH@" "@DATA_DIR@" "@GATEWAY_HOST@" "@GATEWAY_PORT@" "@GATEWAY_PYTHON@" ]
         [
           "${pkgs.bash}/bin/bash"
           (lib.makeBinPath [
-            pkgs.uv
             pkgs.coreutils
           ])
           data_dir
           cfg.host
           (toString cfg.port)
+          "${gateway_venv}/bin/python"
         ]
         (builtins.readFile ./scripts/client-wrapper.sh.tpl);
     executable = true;
@@ -513,7 +519,6 @@ in
           StandardErrorPath = log_path;
           EnvironmentVariables = {
             PATH = lib.makeBinPath [
-              pkgs.uv
               pkgs.coreutils
             ];
           };
@@ -534,7 +539,6 @@ in
         Environment = [
           "PATH=${
             lib.makeBinPath [
-              pkgs.uv
               pkgs.coreutils
             ]
           }"
@@ -562,7 +566,6 @@ in
           StandardErrorPath = setup_log_path;
           EnvironmentVariables = {
             PATH = lib.makeBinPath [
-              pkgs.uv
               pkgs.python3
               pkgs.curl
               pkgs.jq
@@ -588,9 +591,8 @@ in
           StandardOutPath = bridge_log_path;
           StandardErrorPath = bridge_log_path;
           EnvironmentVariables = {
-            # /usr/bin is appended so uvx-spawned subprocesses that need a C
-            # compiler (e.g. cffi for snowflake-connector-python on python 3.14
-            # where no prebuilt wheel exists) can find the system clang.
+            # /usr/bin is appended so uvx-spawned subprocesses (aws mcp servers)
+            # can find the system clang if a wheel needs compilation.
             PATH =
               lib.makeBinPath [
                 pkgs.uv
@@ -647,7 +649,6 @@ in
         Environment = [
           "PATH=${
             lib.makeBinPath [
-              pkgs.uv
               pkgs.python3
               pkgs.curl
               pkgs.jq
@@ -750,7 +751,7 @@ in
               echo ""
               echo "==> generating gateway token..."
               local token
-              token="$(uv run --with PyJWT python3 -c "
+              token="$(${gateway_venv}/bin/python -c "
       import jwt, warnings
       warnings.filterwarnings('ignore')
       print(jwt.encode(
