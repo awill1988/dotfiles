@@ -60,6 +60,7 @@ in
 
   homebrew.brews = [
     "apktool"
+    "bundletool"
     "cocoapods"
     "emqx/mqttx/mqttx-cli"
     "imessage-exporter"
