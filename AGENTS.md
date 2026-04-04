@@ -12,6 +12,12 @@
 - Never add AI-related footers or signatures such as `Co-Authored-By`, `Generated-By`, or `Assisted-By`
 - Before creating or editing commit or PR text, verify it contains no AI attribution
 
+## SQL Tool Usage
+
+- **Execute SQL tool calls sequentially** — never invoke more than one SQL query tool at a time
+- Planning multiple queries in parallel is fine, but each must wait for the previous to complete before executing
+- This applies to all SQL-capable MCP tools (Snowflake, Postgres, and any future database tools)
+
 For general coding standards and practices, see program-specific files:
 - `modules/home/programs/claude/CLAUDE.md`
 - `modules/home/programs/codex/AGENTS.override.md`

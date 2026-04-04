@@ -34,6 +34,8 @@ When performing AWS operations (CLI commands, SDK calls, infrastructure changes)
 
 ## SQL Operations
 
+**Sequential execution required** — never invoke more than one SQL query tool at a time. Planning multiple queries in parallel is fine, but each must wait for the previous to complete before executing. This applies to all SQL-capable MCP tools (Snowflake, Postgres, and any future database tools).
+
 Before executing any SQL query against a database:
 
 - **Always run `EXPLAIN`** (or `EXPLAIN ANALYZE` where safe) first to review the query plan

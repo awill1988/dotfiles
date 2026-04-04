@@ -218,7 +218,7 @@ let
     name = "contextforge-bridge-supervisor";
     text =
       builtins.replaceStrings
-        [ "@BASH@" "@PATH@" "@HOME@" "@CACHE_DIR@" "@CONFIG_DIR@" "@PARSE_TOML_PY@" "@SNOWFLAKE_BRIDGE_PY@" "@GATEWAY_PYTHON@" ]
+        [ "@BASH@" "@PATH@" "@HOME@" "@CACHE_DIR@" "@CONFIG_DIR@" "@HOST@" "@PORT@" "@PARSE_TOML_PY@" "@SNOWFLAKE_BRIDGE_PY@" "@GATEWAY_PYTHON@" ]
         [
           "${pkgs.bash}/bin/bash"
           (lib.makeBinPath [
@@ -226,6 +226,7 @@ let
             pkgs.uv
             pkgs.python3
             pkgs.nodejs
+            pkgs.curl
             pkgs.coreutils
             pkgs.drawio-mcp
             pkgs.fivetran-mcp-server
@@ -234,6 +235,8 @@ let
           "${config.home.homeDirectory}"
           cache_dir
           config_dir
+          cfg.host
+          (toString cfg.port)
           "${bridge_supervisor_parse_toml_py}"
           "${snowflake_bridge_py}"
           "${gateway_venv}/bin/python"
@@ -300,6 +303,7 @@ let
             pkgs.curl
             pkgs.jq
             pkgs.coreutils
+            pkgs.util-linux
           ])
           "http://${cfg.host}:${toString cfg.port}"
           data_dir
@@ -515,6 +519,7 @@ in
           ProgramArguments = [ "${libexec_dir}/contextforge-gateway" ];
           RunAtLoad = true;
           KeepAlive = true;
+          ThrottleInterval = 5;
           StandardOutPath = log_path;
           StandardErrorPath = log_path;
           EnvironmentVariables = {
@@ -560,7 +565,7 @@ in
           Label = "com.contextforge.setup";
           ProgramArguments = [ "${libexec_dir}/contextforge-setup" ];
           RunAtLoad = true;
-          StartInterval = 30;
+          StartInterval = 120;
           KeepAlive = false;
           StandardOutPath = setup_log_path;
           StandardErrorPath = setup_log_path;
@@ -570,6 +575,7 @@ in
               pkgs.curl
               pkgs.jq
               pkgs.coreutils
+              pkgs.util-linux
             ];
           };
         };
@@ -653,6 +659,7 @@ in
               pkgs.curl
               pkgs.jq
               pkgs.coreutils
+              pkgs.util-linux
             ]
           }"
         ];
@@ -665,7 +672,7 @@ in
       };
       Timer = {
         OnBootSec = "10s";
-        OnUnitActiveSec = "30s";
+        OnUnitActiveSec = "120s";
       };
       Install = {
         WantedBy = [ "timers.target" ];

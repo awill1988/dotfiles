@@ -46,6 +46,10 @@ Git is configured with `push.default = simple` and `push.autoSetupRemote = true`
 - Comments should capture intent and rationale; documentation stays in standard Markdown.
 - When using fixed binary sizes, add a comment with the human-readable value (e.g., `# 200 MiB`).
 
+## SQL Operations
+
+**Sequential execution required** — never invoke more than one SQL query tool at a time. Planning multiple queries in parallel is fine, but each must wait for the previous to complete before executing. This applies to all SQL-capable MCP tools (Snowflake, Postgres, and any future database tools).
+
 ## Snowflake MCP
 
 The Snowflake MCP server is configured with restricted permissions:

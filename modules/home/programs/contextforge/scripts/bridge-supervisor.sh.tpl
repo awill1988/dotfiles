@@ -20,6 +20,23 @@ else
   echo "bridge supervisor: no $env_file found, bridges relying on env vars may fail"
 fi
 
+# wait for gateway health before starting bridges (darwin has no service
+# ordering, so the gateway may not be up yet at boot)
+gateway_url="http://@HOST@:@PORT@"
+gw_attempts=0
+gw_max=30
+while ! curl -sf --max-time 2 "$gateway_url/health" >/dev/null 2>&1; do
+  gw_attempts=$((gw_attempts + 1))
+  if [[ $gw_attempts -ge $gw_max ]]; then
+    echo "bridge supervisor: gateway not healthy after $((gw_max * 2))s, starting bridges anyway"
+    break
+  fi
+  sleep 2
+done
+if [[ $gw_attempts -lt $gw_max ]]; then
+  echo "bridge supervisor: gateway healthy"
+fi
+
 config_file="@CONFIG_DIR@/mcp-servers.toml"
 
 # extract bridge configs: "name command arg1 arg2 ... |port|key1=val1 key2=val2"
@@ -39,15 +56,17 @@ declare -A fail_counts    # consecutive failures per bridge
 declare -A backoff_secs   # current backoff per bridge
 declare -A last_start     # epoch of last start attempt per bridge
 declare -A stopped        # bridges that hit max failures
+declare -A stopped_at     # epoch when bridge was stopped (for cooldown retry)
 
-max_failures=5            # consecutive failures before giving up
+max_failures=5            # consecutive failures before backing off
 initial_backoff=3         # seconds
 max_backoff=300           # 5 minutes cap
+retry_cooldown=600        # 10 minutes before retrying a stopped bridge
 readiness_timeout=15      # seconds to wait for bridge readiness
-liveness_interval=60      # seconds between liveness checks per bridge
-liveness_timeout=30       # seconds to wait for liveness response
-liveness_restart_after=3  # consecutive failures before restarting (allows slow API calls)
-max_liveness_fails=6      # consecutive failures before giving up entirely
+liveness_interval=15      # seconds between liveness checks per bridge
+liveness_timeout=10       # seconds to wait for liveness response
+liveness_restart_after=2  # consecutive failures before restarting (allows slow API calls)
+max_liveness_fails=8      # consecutive failures before backing off
 
 declare -A liveness_fails
 declare -A last_liveness
@@ -141,6 +160,7 @@ for entry in "${bridges[@]}"; do
   fail_counts[$name]=0
   backoff_secs[$name]=$initial_backoff
   stopped[$name]=0
+  stopped_at[$name]=0
   start_bridge "$name" "$cmd" "$port" "$env_vars"
 done
 
@@ -162,15 +182,53 @@ echo "bridge supervisor: monitoring ${#pids[@]} bridge(s)"
 while true; do
   sleep 5
   for name in "${!pids[@]}"; do
-    # skip bridges that hit max failures
+    # retry stopped bridges after cooldown period
     if (( ${stopped[$name]} )); then
+      now="$(date +%s)"
+      sa="${stopped_at[$name]:-0}"
+      if (( now - sa < retry_cooldown )); then
+        continue
+      fi
+      echo "bridge supervisor: $name cooldown expired, retrying"
+      stopped[$name]=0
+      fail_counts[$name]=0
+      backoff_secs[$name]=$initial_backoff
+      liveness_fails[$name]=0
+      start_bridge "$name" "${bridge_cmds[$name]}" "${bridge_ports[$name]}" "${bridge_envs[$name]}"
+      if check_ready "$name" "${bridge_ports[$name]}"; then
+        echo "bridge supervisor: $name ready on port ${bridge_ports[$name]}"
+      else
+        echo "bridge supervisor: $name not ready after retry, will check again in ${retry_cooldown}s"
+        stopped[$name]=1
+        stopped_at[$name]="$(date +%s)"
+      fi
       continue
     fi
 
     if kill -0 "${pids[$name]}" 2>/dev/null; then
-      # process alive — periodic liveness check via MCP ping
+      # process alive — but check if its stdio child is still running.
+      # translate stays alive with a dead child, serving 500s on every request.
+      # detect this early: if the bridge process has no children, restart it
+      # immediately instead of waiting for liveness checks.
       now="$(date +%s)"
       started="${last_start[$name]:-0}"
+      if (( now - started >= readiness_timeout + 5 )); then
+        bridge_pid="${pids[$name]}"
+        if ! pgrep -P "$bridge_pid" >/dev/null 2>&1; then
+          echo "bridge supervisor: $name (pid $bridge_pid) has no child process, restarting"
+          kill "$bridge_pid" 2>/dev/null || true
+          sleep 1
+          kill -9 "$bridge_pid" 2>/dev/null || true
+          start_bridge "$name" "${bridge_cmds[$name]}" "${bridge_ports[$name]}" "${bridge_envs[$name]}"
+          if check_ready "$name" "${bridge_ports[$name]}"; then
+            echo "bridge supervisor: $name ready on port ${bridge_ports[$name]}"
+            liveness_fails[$name]=0
+            fail_counts[$name]=0
+            backoff_secs[$name]=$initial_backoff
+          fi
+          continue
+        fi
+      fi
 
       # skip during startup grace period
       if (( now - started < readiness_timeout + 5 )); then
@@ -194,8 +252,9 @@ while true; do
         liveness_fails[$name]=$lf
 
         if (( lf >= max_liveness_fails )); then
-          echo "bridge supervisor: $name unresponsive $lf consecutive checks, giving up"
+          echo "bridge supervisor: $name unresponsive $lf consecutive checks, backing off for ${retry_cooldown}s"
           stopped[$name]=1
+          stopped_at[$name]="$(date +%s)"
           kill "${pids[$name]}" 2>/dev/null || true
           sleep 1
           kill -9 "${pids[$name]}" 2>/dev/null || true
@@ -231,8 +290,9 @@ while true; do
       bo="${backoff_secs[$name]}"
 
       if (( fc >= max_failures )); then
-        echo "bridge supervisor: $name failed $fc times consecutively, giving up (check config/env)"
+        echo "bridge supervisor: $name failed $fc times consecutively, backing off for ${retry_cooldown}s"
         stopped[$name]=1
+        stopped_at[$name]="$(date +%s)"
         continue
       fi
 

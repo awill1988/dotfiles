@@ -16,9 +16,9 @@ mkdir -p "@DATA_DIR@"
 
 # --- watchdog configuration ---
 health_url="http://${HOST}:${PORT}/health"
-health_interval=15       # seconds between health checks
+health_interval=30       # seconds between health checks
 health_timeout=5         # seconds per health check request
-max_failures=3           # consecutive failures before restart
+max_failures=5           # consecutive failures before restart
 startup_grace=10         # seconds after start before first health check
 
 gw_pid=""

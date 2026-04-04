@@ -2,6 +2,15 @@
 set -euo pipefail
 export PATH="@PATH@:$PATH"
 
+# prevent overlapping runs (launchd/systemd timer may fire while a previous
+# sync is still in progress)
+lock_file="@DATA_DIR@/setup.lock"
+exec 9>"$lock_file"
+if ! flock -n 9; then
+  echo "setup: another instance is running, skipping"
+  exit 0
+fi
+
 url="@GATEWAY_URL@"
 uuid_file="@DATA_DIR@/virtual-server-id"
 token_file="@DATA_DIR@/gateway-token"
