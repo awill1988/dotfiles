@@ -1,9 +1,10 @@
 final: prev:
 let
-  version = "0.33.2";
-  src = prev.fetchurl {
-    url = "https://github.com/google-gemini/gemini-cli/releases/download/v${version}/gemini.js";
-    hash = "sha256-mSFsftSSn3vwfiTWnJw0unpxIsxUMfMU5ZM1WWXMJmI=";
+  version = "0.36.0";
+  src = prev.fetchzip {
+    url = "https://github.com/google-gemini/gemini-cli/releases/download/v${version}/gemini-cli-bundle.zip";
+    hash = "sha256-wu+QZ5roBNY1mwtte+7opKFBRdOCXONW95UEJ7M3gJI=";
+    stripRoot = false;
   };
   nodejs = prev.nodejs_latest;
 in
@@ -19,18 +20,17 @@ in
           inherit version src nodejs;
 
           nativeBuildInputs = [ prev.makeWrapper ];
-          dontUnpack = true;
           dontConfigure = true;
           dontBuild = true;
 
           installPhase = ''
             runHook preInstall
             mkdir -p $out/libexec/gemini $out/bin
-            cp ${src} $out/libexec/gemini/gemini.js
+            cp -r . $out/libexec/gemini/
 
             makeWrapper ${nodejs}/bin/node $out/bin/gemini \
               --add-flags "$out/libexec/gemini/gemini.js" \
-              --set GEMINI_CLI_TELEMETRY_ENABLED false
+              --set GEMINI_TELEMETRY_ENABLED false
             runHook postInstall
           '';
 

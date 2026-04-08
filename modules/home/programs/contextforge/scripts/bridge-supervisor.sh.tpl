@@ -37,6 +37,47 @@ if [[ $gw_attempts -lt $gw_max ]]; then
   echo "bridge supervisor: gateway healthy"
 fi
 
+# collect all descendant pids (depth-first) so children are killed
+# before parents, preventing reparenting to pid 1 during sigkill.
+_descendants() {
+  local parent="$1"
+  local children
+  children="$(pgrep -P "$parent" 2>/dev/null || true)"
+  for child in $children; do
+    _descendants "$child"
+  done
+  echo "$parent"
+}
+
+# clean up orphaned translate processes from previous supervisor runs.
+# these are children of a dead supervisor, reparented to pid 1, still
+# holding bridge ports. also kills their descendants (uvicorn workers).
+orphan_pids="$(
+  { pgrep -f 'mcpgateway\.translate.*--expose-streamable-http'
+    pgrep -f 'snowflake-bridge\.py.*--port'
+  } 2>/dev/null || true
+)"
+if [[ -n "$orphan_pids" ]]; then
+  kill_targets=()
+  for opid in $orphan_pids; do
+    if [[ "$(ps -o ppid= -p "$opid" 2>/dev/null | tr -d ' ')" == "1" ]]; then
+      echo "bridge supervisor: killing orphaned translate process $opid (and descendants)"
+      while IFS= read -r p; do
+        [[ -n "$p" ]] && kill_targets+=("$p")
+      done < <(_descendants "$opid")
+    fi
+  done
+  for p in "${kill_targets[@]+"${kill_targets[@]}"}"; do
+    kill "$p" 2>/dev/null || true
+  done
+  sleep 2
+  # force-kill any survivors
+  for p in "${kill_targets[@]+"${kill_targets[@]}"}"; do
+    kill -0 "$p" 2>/dev/null && kill -9 "$p" 2>/dev/null || true
+  done
+  sleep 1
+fi
+
 config_file="@CONFIG_DIR@/mcp-servers.toml"
 
 # extract bridge configs: "name command arg1 arg2 ... |port|key1=val1 key2=val2"
@@ -73,12 +114,18 @@ declare -A last_liveness
 
 cleanup() {
   echo "bridge supervisor: shutting down"
+  local all_pids=()
   for pid in "${pids[@]}"; do
-    kill "$pid" 2>/dev/null || true
+    while IFS= read -r p; do
+      [[ -n "$p" ]] && all_pids+=("$p")
+    done < <(_descendants "$pid")
+  done
+  for p in "${all_pids[@]}"; do
+    kill "$p" 2>/dev/null || true
   done
   sleep 2
-  for pid in "${pids[@]}"; do
-    kill -9 "$pid" 2>/dev/null || true
+  for p in "${all_pids[@]}"; do
+    kill -9 "$p" 2>/dev/null || true
   done
   exit 0
 }

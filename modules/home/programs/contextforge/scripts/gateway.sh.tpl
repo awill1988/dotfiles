@@ -64,6 +64,7 @@ start_gateway() {
 
 cleanup() {
   echo "gateway watchdog: shutting down"
+  pkill -P "${gw_pid:-0}" 2>/dev/null || true
   kill_gateway
   exit 0
 }

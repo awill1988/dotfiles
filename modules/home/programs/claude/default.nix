@@ -66,6 +66,11 @@ let
         prompt = false;
         surveys.enabled = false;
       };
+      feedbackSurveyRate = 0;
+      attribution = {
+        commit = "";
+        pr = "";
+      };
       permissions = {
         allow = allowed_bash_commands;
         deny = denied_mcp_tools;
