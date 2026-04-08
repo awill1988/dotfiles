@@ -177,7 +177,12 @@ let
 
   postgres_mcp_python = pkgs.python3.withPackages (ps: [
     ps.mcp
-    ps.psycopg
+    (ps.psycopg.overridePythonAttrs (old: {
+      # avoid pulling django test suite (fails on python 3.13)
+      doCheck = false;
+      # imports check expects psycopg_pool which is a separate optional package
+      pythonImportsCheck = [ "psycopg" ];
+    }))
   ]);
 
   postgres_mcp = pkgs.writeTextFile {

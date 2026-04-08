@@ -46,6 +46,8 @@ in
     buildInputs = final.lib.optionals is_linux [
       prev.openssl
       prev.stdenv.cc.cc.lib
+      prev.libcap
+      prev.zlib
     ];
 
     installPhase = ''

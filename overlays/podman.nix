@@ -18,7 +18,7 @@ let
     };
     x86_64-linux = {
       archive = "podman-remote-static-linux_amd64.tar.gz";
-      hash = "sha256-amZnyBHa8tNAzPWYGBlM5emQJRnKpBRMZnZRWcFmVyY=";
+      hash = "sha256-amZ8gR2vLUNAz12PEmTFrpkCUZykFMZ2UUNZ1cFlV28=";
       binary_path = "bin/podman-remote-static-linux_amd64";
       helper_path = null;
     };
