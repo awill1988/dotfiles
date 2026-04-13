@@ -50,6 +50,11 @@ in {
     RUSTUP_HOME = "${config.xdg.dataHome}/rustup";
     CARGO_HOME = "${config.xdg.dataHome}/cargo";
 
+    # Mise (XDG)
+    MISE_DATA_DIR = "${config.xdg.dataHome}/mise";
+    MISE_CACHE_DIR = "${config.xdg.cacheHome}/mise";
+    MISE_STATE_DIR = "${config.xdg.stateHome}/mise";
+
     # CocoaPods (XDG)
     CP_HOME_DIR = "${config.xdg.dataHome}/cocoapods";
 

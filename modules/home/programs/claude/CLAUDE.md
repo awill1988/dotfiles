@@ -51,6 +51,7 @@ Before executing any SQL query against a database:
 - Follow the 50/72 rule: subject line ≤50 chars, body wrapped at 72 chars
 - Prefix subject with `[TICKET-#]` extracted from branch name if present (e.g., branch `awill/proj-1-feat-foo` → `[PROJ-1] feat: foo`)
 - PR format: State changes, list affected modules, document manual steps
+- Do not include task lists or checklists in PR descriptions unless explicitly requested
 
 ### Push Safety (Strictly Enforced)
 

@@ -181,6 +181,10 @@ in
 
   modules.dev.node.enable = true;
 
+  programs.mise = {
+    enable = true;
+    enableZshIntegration = true;
+  };
   programs.codex.enable = true;
   programs.contextforge.enable = true;
   programs.podman.enable = true;

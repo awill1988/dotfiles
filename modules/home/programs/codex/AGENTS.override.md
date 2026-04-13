@@ -26,6 +26,7 @@
 
 - Conventional commits: `feat:`, `fix:`, `refactor:`, `chore:`, `docs:`
 - Never attribute commits or PRs to AI agents; no co-authored-by tags or agent signatures
+- Do not include task lists or checklists in PR descriptions unless explicitly requested
 
 ### Push Safety (Strictly Enforced)
 
