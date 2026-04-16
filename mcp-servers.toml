@@ -113,12 +113,21 @@ command = "drawio-mcp"
 bridge = { port = 4457 }
 gateway_register = true
 
-# TODO: stdio servers pending bridge setup (ports 4458+, alpha-sorted)
+[[servers]]
+name = "blender"
+transport = "stdio"
+command = "uvx"
+args = ["blender-mcp"]
+env = { BLENDER_HOST = "127.0.0.1", BLENDER_PORT = "9876", DISABLE_TELEMETRY = "true" }
+bridge = { port = 4458 }
+gateway_register = true
+
+# TODO: stdio servers pending bridge setup (ports 4459+, alpha-sorted)
 #
 # [[servers]]
 # name = "kubernetes"
 # transport = "stdio"
 # command = "npx"
 # args = ["-y", "@manusa/kubernetes-mcp-server"]
-# bridge = { port = 4458 }
+# bridge = { port = 4459 }
 # gateway_register = true

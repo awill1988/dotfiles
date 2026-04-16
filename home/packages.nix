@@ -598,6 +598,7 @@ in
     radare2
     semgrep
     testssl
+    trivy # container and filesystem vulnerability scanner
     trufflehog
     xkcdpass # generate passwords
     yubikey-manager # configure yubikeys

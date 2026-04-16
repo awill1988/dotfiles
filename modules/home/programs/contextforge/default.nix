@@ -111,9 +111,9 @@ let
             - "github-search-pull-requests"
             - "github-search-users"
           fields: ["prompt", "input", "query", "url", "libraryName"]
-          ttl: 0
+          ttl: 900
           threshold: 0.92
-          max_entries: 1000
+          max_entries: 250
 
       - name: "CachedToolResult"
         kind: "plugins.cached_tool_result.cached_tool_result.CachedToolResultPlugin"
@@ -138,8 +138,8 @@ let
             - "aws-prompt-understanding"
             - "aws-docs-read-documentation"
             - "aws-docs-recommend"
-          ttl: 0
-          max_entries: 5000
+          ttl: 600
+          max_entries: 1000
   '';
 
   # snowflake mcp service config (enables query_manager for sql execution)
