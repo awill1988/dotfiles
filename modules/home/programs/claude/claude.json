@@ -4,6 +4,18 @@
       "command": "mcpgw-wrapper",
       "args": [],
       "env": {}
+    },
+    "blender": {
+      "enabled": false,
+      "command": "blender-mcp",
+      "args": [],
+      "env": {}
+    },
+    "icon-composer": {
+      "enabled": false,
+      "command": "npx",
+      "args": ["-y", "--package=icon-composer-mcp@1.1.0", "-c", "node \"$(realpath \"$(which icon-composer-mcp)\")\""],
+      "env": {}
     }
   }
 }

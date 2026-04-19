@@ -4,6 +4,16 @@
     "contextforge": {
       "command": "mcpgw-wrapper",
       "args": []
+    },
+    "blender": {
+      "enabled": false,
+      "command": "blender-mcp",
+      "args": []
+    },
+    "icon-composer": {
+      "enabled": false,
+      "command": "npx",
+      "args": ["-y", "--package=icon-composer-mcp@1.1.0", "-c", "node \"$(realpath \"$(which icon-composer-mcp)\")\""]
     }
   },
   "context": {
