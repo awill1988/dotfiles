@@ -187,7 +187,13 @@ in
   };
   programs.codex.enable = true;
   programs.contextforge.enable = true;
-  programs.podman.enable = true;
+  programs.blender-mcp = {
+    enable = true;
+    # populate per-host once blender major.minor versions are confirmed
+    blenderAddonVersions = [ ];
+  };
+  programs.hunyuan3d.enable = false;
+  programs.podman.enable = false;
   programs.claude = {
     enable = true;
     primary = { };

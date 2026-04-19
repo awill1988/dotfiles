@@ -1,4 +1,5 @@
 {
+  blender-mcp = import ./blender-mcp.nix;
   cf2tf = import ./cf2tf.nix;
   claude = import ./claude.nix;
   codex = import ./codex.nix;
@@ -6,6 +7,7 @@
   fivetran-mcp-server = import ./fivetran-mcp-server.nix;
   gemini = import ./gemini.nix;
   github-mcp-server = import ./github-mcp-server.nix;
+  hunyuan3d-2 = import ./hunyuan3d-2.nix;
   mtkclient = import ./mtkclient.nix;
   podman = import ./podman.nix;
   # disabled: breaks darwin stdenv bootstrap (llvm packages must come from bootstrap files)
