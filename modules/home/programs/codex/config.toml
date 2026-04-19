@@ -18,14 +18,13 @@ command = "mcpgw-wrapper"
 args = []
 
 [mcp_servers.blender]
-enabled = false
 command = "blender-mcp"
 args = []
 
 [mcp_servers.icon-composer]
-enabled = false
+enabled = true
 command = "npx"
-args = ["-y", "--package=icon-composer-mcp@1.1.0", "-c", "node \"$(realpath \"$(which icon-composer-mcp)\")\""]
+args = ["-y", "--package=icon-composer-mcp@1.1.0", "--call", "node \"$(realpath \"$(which icon-composer-mcp)\")\""]
 
 [shell_environment_policy]
 inherit = "all"
