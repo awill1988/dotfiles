@@ -56,6 +56,8 @@ let
         CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC = "1";
         DISABLE_NON_ESSENTIAL_MODEL_CALLS = "1";
         CLAUDE_CODE_MAX_OUTPUT_TOKENS = "128000";
+        # force medium effort across all models (overrides opus-4-7 launch pin to xhigh)
+        CLAUDE_CODE_EFFORT_LEVEL = "medium";
       };
       telemetry = {
         enabled = false;
