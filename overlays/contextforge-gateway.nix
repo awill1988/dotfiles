@@ -19,6 +19,30 @@ let
 
   python = final.python3;
 
+  # backport v1.0.0-RC-3 fix to 0.9.0: skip empty HTTP 202 responses
+  # when forwarding notifications (e.g. notifications/initialized).
+  # without this, an empty json body triggers make_error which emits a
+  # spurious {"id":"bridge"} parse error on stdout, corrupting the
+  # mcp client's post-init state and suppressing tools/list.
+  wrapper_patch = final': prev': {
+    mcp-contextforge-gateway = prev'.mcp-contextforge-gateway.overrideAttrs (old: {
+      postInstall =
+        (old.postInstall or "")
+        + ''
+          wrapper_py=$out/${python.sitePackages}/mcpgateway/wrapper.py
+          old_block=$(printf '%s\n%s' \
+            '                text = raw.decode("utf-8", errors="replace")' \
+            '                try:')
+          new_block=$(printf '%s\n%s\n%s\n%s' \
+            '                text = raw.decode("utf-8", errors="replace")' \
+            '                if not text.strip():' \
+            '                    return' \
+            '                try:')
+          substituteInPlace "$wrapper_py" --replace-fail "$old_block" "$new_block"
+        '';
+    });
+  };
+
   pythonSet =
     (final.callPackage pyproject-nix.build.packages {
       inherit python;
@@ -27,6 +51,7 @@ let
         lib.composeManyExtensions [
           pyproject-build-systems.overlays.wheel
           overlay
+          wrapper_patch
         ]
       );
 in

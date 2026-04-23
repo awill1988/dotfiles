@@ -13,10 +13,18 @@ if not raw.strip():
     sys.exit(0)
 
 try:
-    tools = json.loads(raw)
+    parsed = json.loads(raw)
 except (json.JSONDecodeError, ValueError):
     print(json.dumps({"ids": [], "excluded": []}))
     sys.exit(0)
+
+# accept both legacy /tools (list) and /admin/tools ({data: [...], pagination: ...})
+if isinstance(parsed, dict) and "data" in parsed:
+    tools = parsed["data"]
+elif isinstance(parsed, list):
+    tools = parsed
+else:
+    tools = []
 
 with open(sys.argv[1], "rb") as f:
     config = tomllib.load(f)

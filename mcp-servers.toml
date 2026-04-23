@@ -94,7 +94,7 @@ gateway_register = true
 name = "firefox-devtools"
 transport = "stdio"
 command = "npx"
-args = ["-y", "firefox-devtools-mcp@latest", "--connect-existing", "--viewport", "1280x720"]
+args = ["-y", "firefox-devtools-mcp@latest", "--viewport", "1280x720", "--enableScript", "--outputFile", "/tmp/firefox-devtools-mcp.log"]
 bridge = { port = 4458 }
 gateway_register = true
 

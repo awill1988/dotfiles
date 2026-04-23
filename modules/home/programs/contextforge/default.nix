@@ -48,10 +48,11 @@ let
       "ADMIN_STATS_CACHE_SYSTEM_TTL=60"
       "ADMIN_STATS_CACHE_OBSERVABILITY_TTL=30"
 
-      # sqlite pool — keep small; sqlite serializes writes so large pools
-      # just leak connections.  upstream default is 200 (capped to 50).
-      "DB_POOL_SIZE=5"
-      "DB_MAX_OVERFLOW=2"
+      # sqlite pool — sized for multi-agent + bridge load. previous 5/2 was
+      # too small: claude/codex/gemini wrappers + bridge probes exhausted the
+      # pool, causing QueuePool timeouts and watchdog-triggered restarts.
+      "DB_POOL_SIZE=20"
+      "DB_MAX_OVERFLOW=10"
       "DB_POOL_TIMEOUT=10"
       "DB_POOL_RECYCLE=1800"
 

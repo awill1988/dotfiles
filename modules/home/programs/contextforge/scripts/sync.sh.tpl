@@ -392,8 +392,16 @@ if [[ -f "$uuid_file" ]]; then
     wait_for_stable_tools 10
   fi
 
-  # fetch tools, apply exclude_tools policy from config, output filtered ids + summary
-  tool_output="$(curl -sf --max-time 10 "$gateway_url/tools" 2>/dev/null \
+  # fetch tools, apply exclude_tools policy from config, output filtered ids + summary.
+  # /tools is hard-capped at 50 in v0.9.0 (cursor pagination broken); use /admin/tools
+  # which supports per_page and returns {data: [...], pagination: {...}}.
+  token_file="@DATA_DIR@/gateway-token"
+  auth_header=""
+  if [[ -f "$token_file" ]]; then
+    auth_header="Authorization: Bearer $(cat "$token_file")"
+  fi
+  tool_output="$(curl -sf --max-time 10 -H "$auth_header" \
+    "$gateway_url/admin/tools?per_page=500" 2>/dev/null \
     | python3 "@FILTER_TOOLS_PY@" "$config_file")" || tool_output='{"ids":[],"excluded":[]}'
 
   tool_ids="$(echo "$tool_output" | @JQ@ -c '.ids')"
