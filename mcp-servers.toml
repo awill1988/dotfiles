@@ -15,12 +15,6 @@ headers = { Authorization = "Bearer $GITHUB_MCP_PAT" }
 command = "github-mcp-server"
 env = { GITHUB_MCP_PAT = "$GITHUB_MCP_PAT" }
 
-[[servers]]
-name = "context7"
-transport = "http"
-url = "https://mcp.context7.com/mcp"
-headers = { CONTEXT7_API_KEY = "$CONTEXT7_API_KEY" }
-
 # bridge ports: 4450+ alpha-sorted (gateway on 4444, 4445-4449 reserved)
 
 [[servers]]
@@ -56,15 +50,6 @@ args = ["${POSTGRES_URL:-postgresql://postgres:postgres@localhost:5432/postgres}
 bridge = { port = 4453 }
 gateway_register = true
 
-[[servers]]
-name = "slack"
-transport = "stdio"
-command = "npx"
-args = ["-y", "@modelcontextprotocol/server-slack"]
-env = { SLACK_BOT_TOKEN = "$SLACK_BOT_TOKEN", SLACK_TEAM_ID = "$SLACK_TEAM_ID", SLACK_CHANNEL_IDS = "$SLACK_CHANNEL_IDS" }
-bridge = { port = 4454 }
-gateway_register = true
-
 # TODO: oauth servers — need contextforge oauth_config or mcp-remote bridge
 # these require interactive browser auth on first use; register via gateway
 # oauth_config once atlassian/linear developer apps are configured.
@@ -91,14 +76,6 @@ gateway_register = true
 # gateway_register = true
 
 [[servers]]
-name = "fivetran"
-transport = "stdio"
-command = "fivetran-mcp-server"
-env = { FIVETRAN_API_KEY = "$FIVETRAN_API_KEY", FIVETRAN_API_SECRET = "$FIVETRAN_API_SECRET" }
-bridge = { port = 4455 }
-gateway_register = true
-
-[[servers]]
 name = "snowflake"
 transport = "stdio"
 command = "uvx"
@@ -113,7 +90,13 @@ command = "drawio-mcp"
 bridge = { port = 4457 }
 gateway_register = true
 
-# 4458 freed (blender migrated to standalone stdio per agent — see modules/home/programs/blender-mcp)
+[[servers]]
+name = "firefox-devtools"
+transport = "stdio"
+command = "npx"
+args = ["-y", "firefox-devtools-mcp@latest", "--connect-existing", "--viewport", "1280x720"]
+bridge = { port = 4458 }
+gateway_register = true
 
 # TODO: stdio servers pending bridge setup (ports 4459+, alpha-sorted)
 #

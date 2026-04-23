@@ -201,6 +201,7 @@ in
       pathPrefix = "$HOME/projects/arro";
       awsProfile = "arro-staging";
       awsRegion = "us-west-2";
+      excludeMcpServers = [ "blender" ];
       mcpServers = {
         atlassian = {
           command = "npx";

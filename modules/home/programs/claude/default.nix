@@ -58,6 +58,8 @@ let
         CLAUDE_CODE_MAX_OUTPUT_TOKENS = "128000";
         # force medium effort across all models (overrides opus-4-7 launch pin to xhigh)
         CLAUDE_CODE_EFFORT_LEVEL = "medium";
+        # suppress claude.ai-sourced mcp servers (gmail, google drive, google calendar, etc.)
+        ENABLE_CLAUDEAI_MCP_SERVERS = "false";
       };
       telemetry = {
         enabled = false;
@@ -86,7 +88,8 @@ let
     let
       base_mcp = base_user_config.mcpServers or { };
       identity_mcp = identity_cfg.mcpServers or { };
-      merged_mcp = base_mcp // identity_mcp;
+      excluded = identity_cfg.excludeMcpServers or [ ];
+      merged_mcp = lib.removeAttrs (base_mcp // identity_mcp) excluded;
       merged_config = base_user_config // {
         mcpServers = merged_mcp;
       };
@@ -160,6 +163,11 @@ let
       type = lib.types.attrsOf mcp_server_type;
       default = { };
       description = "MCP servers for this identity";
+    };
+    excludeMcpServers = lib.mkOption {
+      type = lib.types.listOf lib.types.str;
+      default = [ ];
+      description = "Names of MCP servers from base config to exclude for this identity";
     };
     awsProfile = lib.mkOption {
       type = lib.types.nullOr lib.types.str;
