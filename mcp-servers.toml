@@ -90,14 +90,6 @@ command = "drawio-mcp"
 bridge = { port = 4457 }
 gateway_register = true
 
-[[servers]]
-name = "firefox-devtools"
-transport = "stdio"
-command = "npx"
-args = ["-y", "firefox-devtools-mcp@latest", "--viewport", "1280x720", "--enableScript", "--outputFile", "/tmp/firefox-devtools-mcp.log"]
-bridge = { port = 4458 }
-gateway_register = true
-
 # TODO: stdio servers pending bridge setup (ports 4459+, alpha-sorted)
 #
 # [[servers]]

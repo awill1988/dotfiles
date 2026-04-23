@@ -21,6 +21,10 @@ args = []
 command = "blender-mcp"
 args = []
 
+[mcp_servers.firefox-devtools]
+command = "npx"
+args = ["-y", "firefox-devtools-mcp@latest", "--viewport", "1280x720", "--enableScript", "--outputFile", "/tmp/firefox-devtools-mcp.log"]
+
 [mcp_servers.icon-composer]
 enabled = true
 command = "npx"

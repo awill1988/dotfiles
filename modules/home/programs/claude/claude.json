@@ -10,6 +10,11 @@
       "args": [],
       "env": {}
     },
+    "firefox-devtools": {
+      "command": "npx",
+      "args": ["-y", "firefox-devtools-mcp@latest", "--viewport", "1280x720", "--enableScript", "--outputFile", "/tmp/firefox-devtools-mcp.log"],
+      "env": {}
+    },
     "icon-composer": {
       "command": "npx",
       "args": ["-y", "--package=icon-composer-mcp@1.1.0", "--call", "node \"$(realpath \"$(which icon-composer-mcp)\")\""],
