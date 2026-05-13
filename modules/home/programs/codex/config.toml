@@ -1,5 +1,5 @@
 projects = { "/Users/adam/projects" = { trust_level = "trusted" }, "/home/adam/projects" = { trust_level = "trusted" } }
-model = "gpt-5-codex"
+model = "gpt-5.4"
 model_reasoning_effort = "high"
 approval_policy = "on-request"
 sandbox_mode = "danger-full-access"
@@ -15,6 +15,10 @@ tools.view_image = true
 
 [mcp_servers.contextforge]
 command = "mcpgw-wrapper"
+args = []
+
+[mcp_servers.drive]
+command = "drive-mcp-bridge"
 args = []
 
 [mcp_servers.blender]

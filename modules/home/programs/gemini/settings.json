@@ -5,6 +5,10 @@
       "command": "mcpgw-wrapper",
       "args": []
     },
+    "drive": {
+      "command": "drive-mcp-bridge",
+      "args": []
+    },
     "blender": {
       "command": "blender-mcp",
       "args": []

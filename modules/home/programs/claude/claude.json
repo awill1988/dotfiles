@@ -5,6 +5,11 @@
       "args": [],
       "env": {}
     },
+    "drive": {
+      "command": "drive-mcp-bridge",
+      "args": [],
+      "env": {}
+    },
     "blender": {
       "command": "blender-mcp",
       "args": [],

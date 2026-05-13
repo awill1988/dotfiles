@@ -192,6 +192,7 @@ in
     # populate per-host once blender major.minor versions are confirmed
     blenderAddonVersions = [ ];
   };
+  programs.drive-mcp.enable = true;
   programs.hunyuan3d.enable = false;
   programs.podman.enable = false;
   programs.claude = {
@@ -263,6 +264,14 @@ in
             GOOGLE_CLIENT_ID = "\${GOOGLE_CLIENT_ID}";
             GOOGLE_CLIENT_SECRET = "\${GOOGLE_CLIENT_SECRET}";
           };
+        };
+        posthog = {
+          command = "npx";
+          args = [
+            "-y"
+            "mcp-remote@latest"
+            "https://mcp.posthog.com/mcp"
+          ];
         };
       };
     };
@@ -597,6 +606,7 @@ in
     python3Packages.checkdmarc
     gitleaks
     gnupg
+    grype # vulnerability scanner for container images and filesystems
     gpgme # make gnupg easier
     mitmproxy
     nikto

@@ -216,6 +216,7 @@
         home-terminal = import ./home/terminal.nix;
         home-awscli = import ./modules/home/programs/awscli;
         home-blender-mcp = import ./modules/home/programs/blender-mcp;
+        home-drive-mcp = import ./modules/home/programs/drive-mcp;
         home-codex = import ./modules/home/programs/codex;
         home-hunyuan3d = import ./modules/home/programs/hunyuan3d;
         home-karabiner = import ./modules/home/programs/karabiner;
