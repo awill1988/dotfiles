@@ -50,6 +50,14 @@ args = ["${POSTGRES_URL:-postgresql://postgres:postgres@localhost:5432/postgres}
 bridge = { port = 4453 }
 gateway_register = true
 
+[[servers]]
+name = "mercury"
+transport = "stdio"
+command = "/Users/adam/Library/Developer/Xcode/DerivedData/Workshop-czbstkoxwbdhiddnipimylrdjoqo/Build/Products/Debug/Mercury.app/Contents/MacOS/MCPBridge"
+args = ["--store-path", "/Users/adam/Library/Group Containers/group.ai.yourmood.workshop/Library/Application Support/default.store"]
+bridge = { port = 4454 }
+gateway_register = true
+
 # TODO: oauth servers — need contextforge oauth_config or mcp-remote bridge
 # these require interactive browser auth on first use; register via gateway
 # oauth_config once atlassian/linear developer apps are configured.

@@ -1,24 +1,25 @@
 final: prev:
 let
-  version = "0.121.0";
+  version = "0.130.0";
 
   # platform-specific binary info
+  # upstream switched linux artifacts from -gnu to -musl in the rust-v0.122.0+ releases
   platform_info = {
     aarch64-darwin = {
       suffix = "aarch64-apple-darwin";
-      hash = "sha256-YPcDnmOn3orkdBNqxvWT7BqRPh3coN9ZreH21utff9A=";
+      hash = "sha256-vFCkt/mgyMqZF5GJ5GWbYBEHgwdw4hVH3Awka85zNXc=";
     };
     x86_64-darwin = {
       suffix = "x86_64-apple-darwin";
-      hash = "sha256-lOa6ilUtRiW+7oV/UT+xK8IOVguUJ8SpNzPb2GYZ9BU=";
+      hash = "sha256-/t2xFr2W19g/i7GbNPur5oQ8xkRhuvLknAF+EgatXmc=";
     };
     x86_64-linux = {
-      suffix = "x86_64-unknown-linux-gnu";
-      hash = "sha256-8FOsgenGdpkg+e41ZqutR6sIVut+55JChoFmTs4RNDA=";
+      suffix = "x86_64-unknown-linux-musl";
+      hash = "sha256-Fneee3hXUIp2ijbX1OCE7sM27COUbtcKmwlIm4+GEZA=";
     };
     aarch64-linux = {
-      suffix = "aarch64-unknown-linux-gnu";
-      hash = "sha256-nOXt1VJImK0ulbWfJ4l34xJybgWHlX0fEO44kHD+UDQ=";
+      suffix = "aarch64-unknown-linux-musl";
+      hash = "sha256-HX4A8sIsMBa1vLccYQEJR7AiqQ4pAbxrqv6CJWSSx2c=";
     };
   };
 
@@ -30,7 +31,6 @@ let
     hash = info.hash;
   };
 
-  is_linux = final.stdenv.hostPlatform.isLinux;
 in
 {
   codex = final.stdenv.mkDerivation {
@@ -41,14 +41,8 @@ in
     dontConfigure = true;
     dontBuild = true;
 
-    # autoPatchelfHook is linux-only (elf binaries); macos uses mach-o
-    nativeBuildInputs = final.lib.optionals is_linux [ prev.autoPatchelfHook ];
-    buildInputs = final.lib.optionals is_linux [
-      prev.openssl
-      prev.stdenv.cc.cc.lib
-      prev.libcap
-      prev.zlib
-    ];
+    # linux artifacts are statically linked musl binaries; macos uses mach-o.
+    # neither needs autoPatchelfHook or runtime buildInputs.
 
     installPhase = ''
       runHook preInstall

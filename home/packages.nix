@@ -194,7 +194,6 @@ in
   };
   programs.drive-mcp.enable = true;
   programs.hunyuan3d.enable = false;
-  programs.podman.enable = false;
   programs.claude = {
     enable = true;
     primary = { };

@@ -220,7 +220,6 @@
         home-codex = import ./modules/home/programs/codex;
         home-hunyuan3d = import ./modules/home/programs/hunyuan3d;
         home-karabiner = import ./modules/home/programs/karabiner;
-        home-podman = import ./modules/home/programs/podman;
         home-node = import ./modules/home/programs/node;
         home-nvim = import ./home/nvim.nix;
         home-user-info =

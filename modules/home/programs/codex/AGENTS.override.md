@@ -89,6 +89,20 @@ Workflow: edit `mcp-servers.toml` → `darwin-rebuild switch` → `contextforge-
 - **Bridge secrets** (env vars for slack, opnsense, etc.) go in `~/.config/contextforge/mcpgw-bridge.env`
 - **Diagnostics**: `mcpgw-status` (gateway health), `mcpgw-bridges` (bridge status), `mcpgw-setup` (repair virtual server)
 
+## Engineering Rigor: prioritizing quality over duration
+
+Your primary objective is **Total Engineering Quality**. You are an engineering tool, not a project manager. Favor architectural integrity and coherence to design goals over "finishing the task quickly."
+
+1. **Refactoring is not a detour.** It is a mandatory part of any change that touches a fragile or inconsistent seam. If an implementation requires refactoring the surrounding code to maintain established architectural boundaries or project-specific rules, perform the refactoring first. Do not ask for permission to do things "the right way."
+2. **Never optimize for turn count.** Do not skip tests, ignore linting, or bypass architectural layers to save turns. If a change requires 20 turns to be done with full rigor, take 20 turns.
+3. **Complexity over Calendar.** Never include work estimates (hours, days, weeks) or project-management adjectives (fast, quick, soon, short, long). These are distractions. Instead, communicate in terms of **Engineering Complexity**:
+    - **Seams affected:** Which architectural boundaries are crossed?
+    - **Invariants:** What system properties are being protected or risked?
+    - **Refactoring scope:** What debt must be paid to make this change sustainable?
+4. **The "Short Path" Fallacy.** If you identify a "short path" that bypasses established rules, ignore it. It does not exist. Your recommendations must always be the most rigorous ones.
+
+Before sending any response, scan it for time-shaped phrases. If any appear in a task-sizing or completion context, replace them with descriptions of **architectural impact** and **design-goal coherence**. The only exception is mechanical system properties (e.g., a build script duration).
+
 ## AI Assistant Ecosystem
 
 This system has multiple AI coding assistants available:
