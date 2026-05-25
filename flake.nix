@@ -209,6 +209,7 @@
         home-git-ignores = import ./home/git-ignores.nix;
         home-gpg = import ./home/gpg.nix;
         home-gemini = import ./modules/home/programs/gemini;
+        home-agy = import ./modules/home/programs/agy;
         home-claude = import ./modules/home/programs/claude;
         home-contextforge = import ./modules/home/programs/contextforge;
         home-packages = import ./home/packages.nix;
@@ -255,7 +256,7 @@
           };
         in
         {
-          inherit (pkgs) gemini codex;
+          inherit (pkgs) gemini codex agy;
         }
       );
     };

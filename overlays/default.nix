@@ -6,17 +6,15 @@
   drawio-mcp = import ./drawio-mcp.nix;
   fivetran-mcp-server = import ./fivetran-mcp-server.nix;
   gemini = import ./gemini.nix;
+  agy = import ./agy.nix;
   github-mcp-server = import ./github-mcp-server.nix;
   hunyuan3d-2 = import ./hunyuan3d-2.nix;
   mtkclient = import ./mtkclient.nix;
-  # disabled: breaks darwin stdenv bootstrap (llvm packages must come from bootstrap files)
-  # llvm-xcode = final: prev: { ... };
   libsecret = final: prev: {
     libsecret = prev.libsecret.override {
       withIntrospection = false;
     };
   };
-  # disable wxwidgets support in erlang to avoid webkitgtk build
   erlang-no-wx =
     final: prev:
     let

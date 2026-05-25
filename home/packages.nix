@@ -186,6 +186,7 @@ in
     enableZshIntegration = true;
   };
   programs.codex.enable = true;
+  programs.agy.enable = true;
   programs.contextforge.enable = true;
   programs.blender-mcp = {
     enable = true;
