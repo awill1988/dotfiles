@@ -22,6 +22,26 @@
     "cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY="
   ];
 
+  # scheduled gc: prune generations older than 14d weekly so darwin-rebuild
+  # history does not accrue indefinitely (each generation pins its closure).
+  nix.gc.automatic = true;
+  nix.gc.interval = {
+    Weekday = 0;
+    Hour = 3;
+    Minute = 15;
+  };
+  nix.gc.options = "--delete-older-than 14d";
+
+  # scheduled store optimisation (hard-link dedup). kept separate from the
+  # build-time auto-optimise-store path, which is intentionally disabled
+  # above because it slows every store add.
+  nix.optimise.automatic = true;
+  nix.optimise.interval = {
+    Weekday = 0;
+    Hour = 4;
+    Minute = 0;
+  };
+
   programs.zsh.enable = true;
   programs.zsh.promptInit = "";
 

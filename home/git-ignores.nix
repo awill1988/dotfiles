@@ -103,6 +103,7 @@
     ".aider*"
     ".cursor/"
     ".windsurf/"
+    ".antigravitycli/"
 
     # media
     "*.mp4"
