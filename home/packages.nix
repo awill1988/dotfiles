@@ -273,6 +273,14 @@ in
             "https://mcp.posthog.com/mcp"
           ];
         };
+        sentry = {
+          command = "npx";
+          args = [
+            "-y"
+            "mcp-remote"
+            "https://mcp.sentry.dev/mcp"
+          ];
+        };
       };
     };
   };

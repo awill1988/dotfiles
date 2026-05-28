@@ -106,6 +106,11 @@ in {
 
     git-prune-local =
       "git fetch -p && git branch -vv | awk '/: gone]/{print $1}' | xargs git branch -D";
+
+    # MLX Local LLM serving and lazy env setup for Apple Silicon M5
+    mlx-serve-r1 = "source ~/.local/share/mlx-env/bin/activate && mlx_lm.server --model mlx-community/DeepSeek-R1-Distill-Qwen-32B-4bit --port 8082";
+    mlx-serve-qwen = "source ~/.local/share/mlx-env/bin/activate && mlx_lm.server --model mlx-community/Qwen2.5-Coder-32B-Instruct-4bit --port 8082";
+    mlx-setup-env = "source ~/.local/share/mlx-env/bin/activate && python3 -c 'import mlx_lm; print(\"Pre-loading DeepSeek-R1...\"); mlx_lm.load(\"mlx-community/DeepSeek-R1-Distill-Qwen-32B-4bit\"); print(\"Pre-loading Qwen-2.5-Coder...\"); mlx_lm.load(\"mlx-community/Qwen2.5-Coder-32B-Instruct-4bit\")'";
   } // lib.optionalAttrs pkgs.stdenv.isDarwin {
     lightswitch =
       "osascript -e  'tell application \"System Events\" to tell appearance preferences to set dark mode to not dark mode'";
@@ -295,5 +300,17 @@ in {
       set -euo pipefail
       mkdir -p "${config.xdg.dataHome}/gnupg" "${config.xdg.dataHome}/password-store" "${config.xdg.configHome}/gpg"
       chmod 700 "${config.xdg.dataHome}/gnupg" "${config.xdg.dataHome}/password-store" "${config.xdg.configHome}/gpg"
+    '';
+
+  # Lazy-seed the local python virtual environment for MLX on Apple Silicon.
+  home.activation.setupLocalMlx =
+    lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+      set -euo pipefail
+      MLX_ENV="$HOME/.local/share/mlx-env"
+      if [[ ! -d "$MLX_ENV" ]]; then
+        echo "seeding local mlx-lm virtual environment..."
+        ${pkgs.python3}/bin/python3 -m venv "$MLX_ENV"
+        "$MLX_ENV/bin/pip" install -U mlx-lm
+      fi
     '';
 }
