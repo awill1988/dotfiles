@@ -1,9 +1,9 @@
-See @README.md and @AGENTS.md for full documentation.
+See @README.md for supporting documentation.
 
 ## Highest Priority Policy
 
-- At task start, look for `AGENTS.md`, `CLAUDE.md`, and `GEMINI.md` in the current repository and applicable parent directories
-- Treat any of those files as equally authoritative and follow the strictest applicable rule
+- Treat `CLAUDE.md` as the canonical instruction source for repositories that provide it
+- Treat `AGENTS.md` and `GEMINI.md` as compatibility shims unless a repository explicitly says otherwise
 - Never attribute work to any AI system in commits, pull requests, code comments, release notes, changelogs, or contributor metadata
 - Never add AI-related footers or signatures such as `Co-Authored-By`, `Generated-By`, or `Assisted-By`
 - Before creating or editing commit or PR text, verify it contains no AI attribution
@@ -50,6 +50,8 @@ Before executing any SQL query against a database:
 - Conventional commits: `feat:`, `fix:`, `refactor:`, `chore:`, `docs:`
 - Follow the 50/72 rule: subject line ≤50 chars, body wrapped at 72 chars
 - Prefix subject with `[TICKET-#]` extracted from branch name if present (e.g., branch `awill/proj-1-feat-foo` → `[PROJ-1] feat: foo`)
+- Never include a commit SHA in commit messages or PR titles
+- Keep conventional commit text in PR titles lowercase after any ticket prefix such as `[TICKET-123]`
 - PR format: State changes, list affected modules, document manual steps
 - Do not include task lists or checklists in PR descriptions unless explicitly requested
 
@@ -82,6 +84,13 @@ Git is configured with `push.default = simple` and `push.autoSetupRemote = true`
 - Read files before editing them
 - Use Edit tool for existing files, Write only for new files
 - When using fixed binary sizes, add a comment with the human-readable value (e.g., `# 200 MiB`).
+
+## Documentation Authoring
+
+- Before rendering generated documentation, validate whether Markdown-sensitive output needs escaping
+- Wrap developer-centric literals in backticks, including AWS ARNs, slugs, paths, commands, flags, config keys, environment variables, resource names, and branch names
+- Prefer terse, coherent section structure that reads cleanly in a table of contents over engaging prose or excessive precision
+- Package corrections with restraint and blameless reasoning: describe the invariant, the discrepancy, and the remedy without assigning fault
 
 ## Tool Preferences
 
@@ -139,7 +148,7 @@ Workflow: edit `mcp-servers.toml` → `darwin-rebuild switch` → `contextforge-
 
 ## Documentation Maintenance
 
-When encountering documentation files (README.md, AGENTS.md, inline doc comments, etc.) that are stale, incomplete, or inconsistent with the current codebase:
+When encountering documentation files (README.md, CLAUDE.md, inline doc comments, etc.) that are stale, incomplete, or inconsistent with the current codebase:
 
 - **Track discrepancies** as you work — note outdated references, missing sections, or incorrect instructions
 - **Enter plan mode** before making documentation updates so the user can review proposed changes before they land

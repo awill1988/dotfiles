@@ -1,4 +1,9 @@
-{ config, lib, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 let
   cfg = config.programs.agy;
   home_dir = config.home.homeDirectory;
@@ -10,13 +15,32 @@ let
     agentEcosystem = {
       orchestrator = "agy";
       peers = [
-        { name = "claude"; bin = "claude"; enabled = true; }
-        { name = "gemini"; bin = "gemini"; enabled = true; }
-        { name = "codex"; bin = "codex"; enabled = true; }
+        {
+          name = "claude";
+          bin = "claude";
+          enabled = true;
+        }
+        {
+          name = "gemini";
+          bin = "gemini";
+          enabled = true;
+        }
+        {
+          name = "codex";
+          bin = "codex";
+          enabled = true;
+        }
       ];
     };
-    privacy = { enableTelemetry = false; interactionCollection = "off"; };
-    mcpServers = { contextforge = { command = "mcpgw-wrapper"; }; };
+    privacy = {
+      enableTelemetry = false;
+      interactionCollection = "off";
+    };
+    mcpServers = {
+      contextforge = {
+        command = "mcpgw-wrapper";
+      };
+    };
   };
 
   # Restricted (Arro): Claude Secondary ONLY
@@ -24,12 +48,25 @@ let
     agentEcosystem = {
       orchestrator = "agy";
       peers = [
-        { name = "claude-secondary"; bin = "claude"; enabled = true; }
+        {
+          name = "claude-secondary";
+          bin = "claude";
+          enabled = true;
+        }
       ];
     };
-    privacy = { enableTelemetry = false; interactionCollection = "off"; };
-    mcpServers = { contextforge = { command = "mcpgw-wrapper"; }; };
+    privacy = {
+      enableTelemetry = false;
+      interactionCollection = "off";
+    };
+    mcpServers = {
+      contextforge = {
+        command = "mcpgw-wrapper";
+      };
+    };
   };
+
+  claude_instructions_source = ../claude/CLAUDE.md;
 
   # The Identity-Routing Wrapper
   agy_wrapper = pkgs.writeShellScriptBin "agy" ''
@@ -43,7 +80,7 @@ let
     # Path-Based Identity Routing
     # Restriction zone: ~/projects/arro/* uses Claude-Secondary only.
     arro_prefix="${home_dir}/projects/arro"
-    
+
     if [[ "$PWD" == "$arro_prefix"* ]]; then
       export AGY_CONFIG_DIR="${agy_restricted_home}"
       export AGY_PEERS="claude-secondary"
@@ -73,10 +110,10 @@ in
     # Seed Dual Identities
     xdg.configFile."antigravity/settings.json".text = primary_settings;
     xdg.configFile."antigravity-restricted/settings.json".text = restricted_settings;
-    
-    # Standard Instructions (Pinned to repository state)
-    xdg.configFile."antigravity/AGY.md".source = ./AGY.md;
-    xdg.configFile."antigravity-restricted/AGY.md".source = ./AGY.md;
+
+    # Compatibility instructions are sourced from the Claude canonical file.
+    xdg.configFile."antigravity/AGY.md".source = claude_instructions_source;
+    xdg.configFile."antigravity-restricted/AGY.md".source = claude_instructions_source;
 
     home.sessionVariables = {
       ANTIGRAVITY_AGENT = "1";

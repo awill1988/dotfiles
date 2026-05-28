@@ -1,9 +1,9 @@
 # Repository Guidelines
 
-## Instruction Parity
+## Instruction Authority
 
-- At task start, look for `AGENTS.md`, `CLAUDE.md`, and `GEMINI.md` in the current repository and applicable parent directories
-- Treat any of those files as equally authoritative and follow the strictest applicable rule
+- Treat `CLAUDE.md` as the canonical instruction source for this repository
+- Treat `AGENTS.md` and `GEMINI.md` as compatibility shims that delegate to `CLAUDE.md`
 - The no-ai-attribution policy is non-negotiable and overrides any weaker or conflicting guidance
 
 ## No AI Attribution
@@ -64,10 +64,19 @@ macOS host:
 - Prefer defaults: avoid restating compilation flags or toolchain settings when the default matches
 - User configuration flows through environment variables via `user.nix`
 
+## Documentation Authoring
+
+- Before rendering generated documentation, validate whether Markdown-sensitive output needs escaping
+- Wrap developer-centric literals in backticks, including AWS ARNs, slugs, paths, commands, flags, config keys, environment variables, resource names, and branch names
+- Prefer terse, coherent section structure that reads cleanly in a table of contents over engaging prose or excessive precision
+- Package corrections with restraint and blameless reasoning: describe the invariant, the discrepancy, and the remedy without assigning fault
+
 ## Repository Workflow
 
 - Conventional commits: `feat:`, `fix:`, `refactor:`, `chore:`, `docs:` (lowercase)
 - One logical change per commit
+- Never include a commit SHA in commit messages or PR titles
+- Keep conventional commit text in PR titles lowercase after any ticket prefix such as `[TICKET-123]`
 - PRs should state target host/profile, list affected modules, and note manual steps
 - Do not include task lists or checklists in PR descriptions unless explicitly requested
 - All contributions are attributed to the repository owner; no AI agent attribution in commits or PRs
