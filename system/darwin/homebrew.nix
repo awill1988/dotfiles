@@ -66,6 +66,7 @@ in
     "imessage-exporter"
     "jadx"
     "ldns"
+    "periphery"
     "picotool"
     "pinentry-mac"
     "worktrunk"
