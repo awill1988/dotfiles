@@ -15,7 +15,9 @@ let
     dracula           = { file = "dracula.yaml";            polarity = "dark";  };
   };
 
-  # Active theme name; managed by `code-theme` (writes home/active-theme.nix).
+  # Active theme name. To switch, edit home/active-theme.nix (a one-line
+  # file: `"<name>"`) and run `darwin-rebuild switch`. Available names are
+  # the keys of the `themes` attrset above.
   active = import ./active-theme.nix;
   theme = themes.${active};
 in

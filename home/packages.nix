@@ -462,13 +462,12 @@ in
       # quick exits (vim-like: prefix + z / Z)
       bind z confirm-before -p "kill-window? (y/n)" kill-window
       bind Z confirm-before -p "kill-session? (y/n)" kill-session
-      # alt-space (or prefix+Space) toggles the code picker pane (spawn
-      # 24-col left full-height pane, or kill the existing picker). scoping
-      # via $TMUX_PANE pins the lookup to the *calling* pane's window — without
-      # it, tmux's "current" window in run-shell is ambiguous and the toggle
-      # stacks pickers instead of closing them.
-      bind-key -n M-Space run-shell '${pkgs.tmux}/bin/tmux list-panes -t "$TMUX_PANE" -F "#{pane_id} #{pane_start_command}" | ${pkgs.gawk}/bin/awk "/--picker/{print \$1; exit}" | { read -r p || true; if [ -n "$p" ]; then ${pkgs.tmux}/bin/tmux kill-pane -t "$p"; else ${pkgs.tmux}/bin/tmux split-window -hbf -l 24 -t "$TMUX_PANE" "code --picker"; fi; }'
-      bind Space run-shell '${pkgs.tmux}/bin/tmux list-panes -t "$TMUX_PANE" -F "#{pane_id} #{pane_start_command}" | ${pkgs.gawk}/bin/awk "/--picker/{print \$1; exit}" | { read -r p || true; if [ -n "$p" ]; then ${pkgs.tmux}/bin/tmux kill-pane -t "$p"; else ${pkgs.tmux}/bin/tmux split-window -hbf -l 24 -t "$TMUX_PANE" "code --picker"; fi; }'
+      # alt-space (or prefix+space) toggles the code picker. tmux substitutes
+      # #{session_id}:#{window_id} before exec so the lookup is pinned to the
+      # window where the keystroke happened — $TMUX_PANE is unreliable in
+      # run-shell context and was causing the toggle to stack pickers.
+      bind-key -n M-Space run-shell '${pkgs.tmux}/bin/tmux list-panes -t "#{session_id}:#{window_id}" -F "#{pane_id} #{pane_start_command}" | ${pkgs.gawk}/bin/awk "/--picker/{print \$1; exit}" | { read -r p || true; if [ -n "$p" ]; then ${pkgs.tmux}/bin/tmux kill-pane -t "$p"; else ${pkgs.tmux}/bin/tmux split-window -hbf -l 24 -t "#{session_id}:#{window_id}" "code --picker"; fi; }'
+      bind Space run-shell '${pkgs.tmux}/bin/tmux list-panes -t "#{session_id}:#{window_id}" -F "#{pane_id} #{pane_start_command}" | ${pkgs.gawk}/bin/awk "/--picker/{print \$1; exit}" | { read -r p || true; if [ -n "$p" ]; then ${pkgs.tmux}/bin/tmux kill-pane -t "$p"; else ${pkgs.tmux}/bin/tmux split-window -hbf -l 24 -t "#{session_id}:#{window_id}" "code --picker"; fi; }'
     '';
   };
 
@@ -817,83 +816,6 @@ in
       spawn_session
       exec "$tmux_bin" attach -t "$session"
     '')
-
-    (pkgs.writeShellScriptBin "code-theme" ''
-      # Switch the stylix theme.
-      # Usage:
-      #   code-theme              -> fzf picker over curated themes
-      #   code-theme <name>       -> switch to <name> directly
-      #   code-theme --list       -> list available themes
-      # The selection is written to home/active-theme.nix; darwin-rebuild
-      # switch re-renders alacritty/tmux/nvim/fzf against the new palette.
-      set -euo pipefail
-
-      fzf_bin="${pkgs.fzf}/bin/fzf"
-      flake_root="$HOME/projects/awill1988/dotfiles"
-      active_file="$flake_root/home/active-theme.nix"
-      themes_file="$flake_root/home/theme.nix"
-      flake_target="$flake_root#macbook-arm"
-
-      # extract theme names from theme.nix (the keys of the `themes` attrset).
-      themes=$(awk '
-        /^  themes = \{/ { flag = 1; next }
-        flag && /^  \};/ { exit }
-        flag && /=/ {
-          line = $0
-          sub(/^[ \t]+/, "", line)
-          sub(/[ \t]*=.*$/, "", line)
-          if (line != "") print line
-        }
-      ' "$themes_file")
-
-      case "''${1:-}" in
-        --list|-l)
-          printf '%s\n' "$themes"
-          exit 0
-          ;;
-        -h|--help)
-          printf 'usage: code-theme [<name>|--list]\n' >&2
-          exit 0
-          ;;
-      esac
-
-      current=$(awk '
-        /^"[^"]+"$/ {
-          gsub(/"/, "", $0)
-          print $0
-          exit
-        }
-      ' "$active_file")
-
-      if [ $# -ge 1 ]; then
-        target="$1"
-        if ! printf '%s\n' "$themes" | grep -qx "$target"; then
-          printf 'code-theme: unknown theme "%s"\n' "$target" >&2
-          printf 'available:\n%s\n' "$themes" | sed 's/^/  /' >&2
-          exit 1
-        fi
-      else
-        target=$(printf '%s\n' "$themes" \
-          | "$fzf_bin" --reverse --no-info \
-                       --prompt='theme › ' \
-                       --header="current: $current" --header-first \
-                       --pointer='▶' --highlight-line \
-                       --color='pointer:bright-magenta:bold,current-bg:-1,current-fg:-1:reverse') \
-          || { printf 'code-theme: cancelled\n' >&2; exit 0; }
-      fi
-
-      if [ "$target" = "$current" ]; then
-        printf 'code-theme: already on "%s"\n' "$target"
-        exit 0
-      fi
-
-      printf '"%s"\n' "$target" > "$active_file"
-      printf 'code-theme: %s -> %s\n' "$current" "$target"
-
-      # rebuild against the new theme. uses the user's normal sudo flow.
-      exec darwin-rebuild switch --flake "$flake_target"
-    '')
-
     grpcurl
     sqlite
     postgresql
