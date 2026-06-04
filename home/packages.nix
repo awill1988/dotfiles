@@ -432,10 +432,8 @@ in
       # tighter snapshot cadence so the gap between "last good state" and
       # "tmux died" is bounded by 5 min instead of the default 15.
       set -g @continuum-save-interval '5'
-      # status bar theme: muted neutral palette for less visual noise
-      set -g status-style "bg=colour236,fg=colour250"
-      set -g window-status-style "bg=default,fg=colour245"
-      set -g window-status-current-style "bg=colour239,fg=colour223,bold"
+      # status bar palette is driven by stylix (home/theme.nix); leave the
+      # bg/fg styles unset here so the active base16 scheme fills them in.
       # #F surfaces pane flags (notably Z for zoom) so a stray <prefix>z is obvious
       set -g window-status-format " #I:#W#F "
       set -g window-status-current-format " #I:#W#F "
@@ -819,6 +817,83 @@ in
       spawn_session
       exec "$tmux_bin" attach -t "$session"
     '')
+
+    (pkgs.writeShellScriptBin "code-theme" ''
+      # Switch the stylix theme.
+      # Usage:
+      #   code-theme              -> fzf picker over curated themes
+      #   code-theme <name>       -> switch to <name> directly
+      #   code-theme --list       -> list available themes
+      # The selection is written to home/active-theme.nix; darwin-rebuild
+      # switch re-renders alacritty/tmux/nvim/fzf against the new palette.
+      set -euo pipefail
+
+      fzf_bin="${pkgs.fzf}/bin/fzf"
+      flake_root="$HOME/projects/awill1988/dotfiles"
+      active_file="$flake_root/home/active-theme.nix"
+      themes_file="$flake_root/home/theme.nix"
+      flake_target="$flake_root#macbook-arm"
+
+      # extract theme names from theme.nix (the keys of the `themes` attrset).
+      themes=$(awk '
+        /^  themes = \{/ { flag = 1; next }
+        flag && /^  \};/ { exit }
+        flag && /=/ {
+          line = $0
+          sub(/^[ \t]+/, "", line)
+          sub(/[ \t]*=.*$/, "", line)
+          if (line != "") print line
+        }
+      ' "$themes_file")
+
+      case "''${1:-}" in
+        --list|-l)
+          printf '%s\n' "$themes"
+          exit 0
+          ;;
+        -h|--help)
+          printf 'usage: code-theme [<name>|--list]\n' >&2
+          exit 0
+          ;;
+      esac
+
+      current=$(awk '
+        /^"[^"]+"$/ {
+          gsub(/"/, "", $0)
+          print $0
+          exit
+        }
+      ' "$active_file")
+
+      if [ $# -ge 1 ]; then
+        target="$1"
+        if ! printf '%s\n' "$themes" | grep -qx "$target"; then
+          printf 'code-theme: unknown theme "%s"\n' "$target" >&2
+          printf 'available:\n%s\n' "$themes" | sed 's/^/  /' >&2
+          exit 1
+        fi
+      else
+        target=$(printf '%s\n' "$themes" \
+          | "$fzf_bin" --reverse --no-info \
+                       --prompt='theme › ' \
+                       --header="current: $current" --header-first \
+                       --pointer='▶' --highlight-line \
+                       --color='pointer:bright-magenta:bold,current-bg:-1,current-fg:-1:reverse') \
+          || { printf 'code-theme: cancelled\n' >&2; exit 0; }
+      fi
+
+      if [ "$target" = "$current" ]; then
+        printf 'code-theme: already on "%s"\n' "$target"
+        exit 0
+      fi
+
+      printf '"%s"\n' "$target" > "$active_file"
+      printf 'code-theme: %s -> %s\n' "$current" "$target"
+
+      # rebuild against the new theme. uses the user's normal sudo flow.
+      exec darwin-rebuild switch --flake "$flake_target"
+    '')
+
     grpcurl
     sqlite
     postgresql

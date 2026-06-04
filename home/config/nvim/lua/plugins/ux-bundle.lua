@@ -28,7 +28,10 @@ return {
 	},
 
 	{
-		"ggandor/leap.nvim",
+		-- leap.nvim moved from GitHub (ggandor/leap.nvim) to Codeberg.
+		-- lazy.nvim accepts a url= override that bypasses the github short form.
+		url = "https://codeberg.org/andyg/leap.nvim",
+		name = "leap.nvim",
 		event = "VeryLazy",
 		dependencies = { "tpope/vim-repeat" },
 		config = function()

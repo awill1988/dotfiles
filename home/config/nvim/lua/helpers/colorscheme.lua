@@ -15,11 +15,10 @@ local function get_if_available(name, opts)
 	return "default"
 end
 
--- Uncomment the colorscheme to use
-local colorscheme = get_if_available("catppuccin")
--- local colorscheme = get_if_available('gruvbox')
--- local colorscheme = get_if_available('rose-pine')
--- local colorscheme = get_if_available('everforest')
--- local colorscheme = get_if_available('melange')
+-- Colorscheme is driven by stylix (home/theme.nix). The plugin specs in
+-- plugins/themes.lua still ship the implementations; stylix activates the
+-- one matching the active base16 scheme. The fallback below only fires if
+-- stylix hasn't initialised yet (e.g., running nvim outside the managed env).
+local colorscheme = vim.g.colors_name or get_if_available("catppuccin")
 
 return colorscheme

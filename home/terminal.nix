@@ -48,7 +48,8 @@ in
         family = font_family;
         style = "Bold Italic";
       };
-      size = font_size;
+      # font.size is owned by stylix (home/theme.nix → fonts.sizes.terminal).
+      # Keeping a value here causes a multi-definition conflict with stylix.
     };
   };
 }

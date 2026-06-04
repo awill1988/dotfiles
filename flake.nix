@@ -17,6 +17,12 @@
 
     flake-utils.url = "github:numtide/flake-utils";
     mac-app-util.url = "github:hraban/mac-app-util";
+
+    stylix = {
+      url = "github:danth/stylix/release-25.11";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
     rust-overlay = {
       url = "github:oxalica/rust-overlay";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -204,6 +210,8 @@
       homeManagerModules = {
         home-config-files = import ./home/config-files.nix;
         home-fonts = import ./home/fonts.nix;
+        home-theme = import ./home/theme.nix;
+        home-stylix = inputs.stylix.homeModules.stylix;
         home-wsl = import ./home/wsl.nix;
         home-git = import ./home/git.nix;
         home-git-ignores = import ./home/git-ignores.nix;
