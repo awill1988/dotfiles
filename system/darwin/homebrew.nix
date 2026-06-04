@@ -54,6 +54,8 @@ in
   homebrew.enable = true;
   homebrew.onActivation.autoUpdate = true;
   homebrew.onActivation.cleanup = "zap";
+  # newer brew requires --force when --cleanup is passed non-interactively
+  homebrew.onActivation.extraFlags = [ "--force" ];
   homebrew.global.brewfile = true;
 
   homebrew.taps = [ "emqx/mqttx" ];
