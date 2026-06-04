@@ -18,11 +18,8 @@ map('n', 'gx', vim.diagnostic.open_float, "Show diagnostics under cursor")
 map("n", "<M-h>", "^", "Go to beginning of line")
 map("n", "<M-l>", "$", "Go to end of line")
 
--- Better window navigation
-map("n", "<C-h>", "<C-w><C-h>", "Navigate windows to the left")
-map("n", "<C-j>", "<C-w><C-j>", "Navigate windows down")
-map("n", "<C-k>", "<C-w><C-k>", "Navigate windows up")
-map("n", "<C-l>", "<C-w><C-l>", "Navigate windows to the right")
+-- <C-h/j/k/l> window/pane navigation is provided by vim-tmux-navigator
+-- (see plugins/tmux-nav.lua) so the same keys cross into tmux panes.
 
 -- Move with shift-arrows
 map("n", "<S-Left>", "<C-w><S-h>", "Move window to the left")

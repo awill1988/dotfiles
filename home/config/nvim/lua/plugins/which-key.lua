@@ -7,7 +7,7 @@ return {
 			wk.add({
 				{ "<leader>f", group = "file" },
 				{ "<leader>d", group = "delete/close" },
-				{ "<leader>q", group = "quit" },
+				{ "<leader>q", group = "quit/session" },
 				{ "<leader>s", group = "search" },
 				{ "<leader>l", group = "lsp" },
 				{ "<leader>u", group = "ui" },

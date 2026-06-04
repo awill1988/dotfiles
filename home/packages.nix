@@ -353,6 +353,10 @@ in
   programs.fzf.enableBashIntegration = true;
   programs.fzf.enableZshIntegration = true;
 
+  programs.zoxide.enable = true;
+  programs.zoxide.enableBashIntegration = true;
+  programs.zoxide.enableZshIntegration = true;
+
   programs.htop.enable = true;
   programs.htop.settings.show_program_path = true;
 
@@ -407,16 +411,34 @@ in
       set -g renumber-windows on
       setw -g xterm-keys on
       set -g history-limit 5000
-      set -g display-time 1000
+      set -g display-time 3000
       set -g set-titles on
       set -g mouse on
+      # keep failed panes visible with their exit status (clean exits still close).
+      # prefix-? opens the tmux message log so errors past the status flash stay
+      # readable.
+      setw -g remain-on-exit failed
+      bind ? show-messages
       set -g @continuum-restore 'on'
+      # restore the visible scrollback of every pane (shell prompts, last
+      # commands, claude output) so tmux server restarts come up populated
+      # rather than empty. saves a few tens of KB per pane.
+      set -g @resurrect-capture-pane-contents 'on'
+      # resurrect knows how to relaunch nvim with the matching session file
+      # written by persistence.nvim — keyed off cwd, so each project's nvim
+      # comes back with its prior buffers/splits.
+      set -g @resurrect-strategy-nvim 'session'
+      set -g @resurrect-strategy-vim 'session'
+      # tighter snapshot cadence so the gap between "last good state" and
+      # "tmux died" is bounded by 5 min instead of the default 15.
+      set -g @continuum-save-interval '5'
       # status bar theme: muted neutral palette for less visual noise
       set -g status-style "bg=colour236,fg=colour250"
       set -g window-status-style "bg=default,fg=colour245"
       set -g window-status-current-style "bg=colour239,fg=colour223,bold"
-      set -g window-status-format " #I:#W "
-      set -g window-status-current-format " #I:#W "
+      # #F surfaces pane flags (notably Z for zoom) so a stray <prefix>z is obvious
+      set -g window-status-format " #I:#W#F "
+      set -g window-status-current-format " #I:#W#F "
       # splits and navigation
       bind - split-window -v
       bind _ split-window -h
@@ -428,10 +450,27 @@ in
       bind -r J resize-pane -D 2
       bind -r K resize-pane -U 2
       bind -r L resize-pane -R 2
+      # vim-tmux-navigator: prefix-free C-h/j/k/l that crosses into nvim splits
+      is_vim="ps -o state= -o comm= -t '#{pane_tty}' | grep -iqE '^[^TXZ ]+ +(\\S+\\/)?g?(view|l?n?vim?x?|fzf)(diff)?$'"
+      bind-key -n 'C-h' if-shell "$is_vim" 'send-keys C-h' 'select-pane -L'
+      bind-key -n 'C-j' if-shell "$is_vim" 'send-keys C-j' 'select-pane -D'
+      bind-key -n 'C-k' if-shell "$is_vim" 'send-keys C-k' 'select-pane -U'
+      bind-key -n 'C-l' if-shell "$is_vim" 'send-keys C-l' 'select-pane -R'
+      bind-key -T copy-mode-vi 'C-h' select-pane -L
+      bind-key -T copy-mode-vi 'C-j' select-pane -D
+      bind-key -T copy-mode-vi 'C-k' select-pane -U
+      bind-key -T copy-mode-vi 'C-l' select-pane -R
       bind r source-file ~/.tmux.conf \; display-message "tmux reloaded"
       # quick exits (vim-like: prefix + z / Z)
       bind z confirm-before -p "kill-window? (y/n)" kill-window
       bind Z confirm-before -p "kill-session? (y/n)" kill-session
+      # alt-space (or prefix+Space) toggles the code picker pane (spawn
+      # 24-col left full-height pane, or kill the existing picker). scoping
+      # via $TMUX_PANE pins the lookup to the *calling* pane's window — without
+      # it, tmux's "current" window in run-shell is ambiguous and the toggle
+      # stacks pickers instead of closing them.
+      bind-key -n M-Space run-shell '${pkgs.tmux}/bin/tmux list-panes -t "$TMUX_PANE" -F "#{pane_id} #{pane_start_command}" | ${pkgs.gawk}/bin/awk "/--picker/{print \$1; exit}" | { read -r p || true; if [ -n "$p" ]; then ${pkgs.tmux}/bin/tmux kill-pane -t "$p"; else ${pkgs.tmux}/bin/tmux split-window -hbf -l 24 -t "$TMUX_PANE" "code --picker"; fi; }'
+      bind Space run-shell '${pkgs.tmux}/bin/tmux list-panes -t "$TMUX_PANE" -F "#{pane_id} #{pane_start_command}" | ${pkgs.gawk}/bin/awk "/--picker/{print \$1; exit}" | { read -r p || true; if [ -n "$p" ]; then ${pkgs.tmux}/bin/tmux kill-pane -t "$p"; else ${pkgs.tmux}/bin/tmux split-window -hbf -l 24 -t "$TMUX_PANE" "code --picker"; fi; }'
     '';
   };
 
@@ -486,29 +525,299 @@ in
     gh # github cli tool
     act # github action test
     (pkgs.writeShellScriptBin "code" ''
-      # tmux + neovim "IDE" launcher (vscode-like):
-      # - top-left: neovim with neo-tree file explorer
-      # - top-right: claude code assistant
-      # - bottom: zsh shell pane
+      # tmux + neovim "IDE" launcher and sidebar project picker.
+      # one binary, two modes:
+      #   code [path]            -> launcher: attach or create code-{basename}
+      #   code -f|--rebuild [p]  -> launcher: kill existing session for p, recreate
+      #   code --picker          -> sidebar picker loop (invoked by tmux pane)
+      # layout:
+      #   left (24 cols): code --picker (fzf over active sessions + zoxide)
+      #   top-right:      neovim with neo-tree
+      #   bottom-mid:     zsh
+      #   bottom-right:   claude
       set -euo pipefail
+
+      # all dependency paths baked in so tmux pane PATH doesn't matter.
+      zoxide_bin="${pkgs.zoxide}/bin/zoxide"
+      fzf_bin="${pkgs.fzf}/bin/fzf"
+      tmux_bin="${pkgs.tmux}/bin/tmux"
+      fd_bin="${pkgs.fd}/bin/fd"
+      shell_bin="${pkgs.zsh}/bin/zsh"
+      # prefer the user's ~/.local/bin/claude wrapper (sets CLAUDE_CONFIG_DIR
+      # and AWS_PROFILE based on cwd); fall back to the raw nix-store binary.
+      claude_bin="$HOME/.local/bin/claude"
+      [ -x "$claude_bin" ] || claude_bin="${pkgs.claude}/bin/claude"
+      nvim_bin="${pkgs.neovim}/bin/nvim"
+      self="$0"
+
+      run_picker() {
+        # row format (rendered with fzf --ansi):
+        #   <dim>parent</dim>/<color>icon</color> <bold>name</bold>\t<ref>
+        # parent = basename of dirname(path); when unknown, omitted with a leading space.
+        # icons: codicons terminal (sessions), devicons git (repos), FA folder (dirs).
+        local DIM=$'\e[2m' BOLD=$'\e[1m' R=$'\e[0m'
+        local CYAN=$'\e[36m' GREEN=$'\e[32m' YELLOW=$'\e[33m'
+        # plain Unicode shapes (Geometric Shapes block, present in every
+        # monospace font). ANSI color does the heavy lifting; shape reinforces.
+        # U+276F heavy chevron (session), U+25C6 black diamond (git), U+25C7
+        # white diamond (dir).
+        local ICON_SESSION ICON_GIT ICON_DIR
+        printf -v ICON_SESSION '\xe2\x9d\xaf'
+        printf -v ICON_GIT     '\xe2\x97\x86'
+        printf -v ICON_DIR     '\xe2\x97\x87'
+
+        emit() {
+          # args: ref icon icon_color path
+          local ref="$1" icon="$2" color="$3" path="$4"
+          local name parent
+          name="$(basename "$path")"
+          parent="$(basename "$(dirname "$path")")"
+          if [ -n "$parent" ] && [ "$parent" != "/" ]; then
+            printf '%s%s%s/%s%s%s %s%s%s\t%s\n' \
+              "$DIM" "$parent" "$R" \
+              "$color" "$icon" "$R" \
+              "$BOLD" "$name" "$R" \
+              "$ref"
+          else
+            printf '%s%s%s %s%s%s\t%s\n' \
+              "$color" "$icon" "$R" \
+              "$BOLD" "$name" "$R" \
+              "$ref"
+          fi
+        }
+
+        list_sources() {
+          # pass 1: active sessions (always shown first, regardless of zoxide).
+          # also collect basenames so we can suppress duplicate dir rows below.
+          local -a active_names=()
+          while IFS='|' read -r sess proj; do
+            [ -n "$sess" ] || continue
+            local name="''${sess#code-}"
+            active_names+=("$name")
+            if [ -n "$proj" ] && [ -d "$proj" ]; then
+              emit "session:$sess" "$ICON_SESSION" "$CYAN" "$proj"
+            else
+              # legacy session without @project-dir: synthesize a path-less row
+              # so the rest of the format machinery still works.
+              emit "session:$sess" "$ICON_SESSION" "$CYAN" "/$name"
+            fi
+          done < <(
+            "$tmux_bin" list-sessions -F '#{session_name}|#{@project-dir}' 2>/dev/null \
+              | grep '^code-'
+          )
+
+          is_active() {
+            local needle="$1" n
+            for n in "''${active_names[@]+"''${active_names[@]}"}"; do
+              [ "$n" = "$needle" ] && return 0
+            done
+            return 1
+          }
+
+          # pass 2: zoxide entries, skipping any whose basename is already an
+          # active session (dedup) and picking icon based on git presence.
+          local zoxide_count=0
+          while IFS= read -r d; do
+            [ -d "$d" ] || continue
+            d="''${d%/}"
+            local name; name="$(basename "$d")"
+            is_active "$name" && continue
+            if [ -d "$d/.git" ] || [ -f "$d/.git" ]; then
+              emit "dir:$d" "$ICON_GIT" "$GREEN" "$d"
+            else
+              emit "dir:$d" "$ICON_DIR" "$YELLOW" "$d"
+            fi
+            zoxide_count=$((zoxide_count + 1))
+          done < <("$zoxide_bin" query --list 2>/dev/null)
+
+          # fd fallback when zoxide is empty — only emits git repos.
+          if [ "$zoxide_count" -eq 0 ] && [ -d "$HOME/projects" ]; then
+            "$fd_bin" -t d -H --max-depth 3 . "$HOME/projects" 2>/dev/null \
+              | while IFS= read -r d; do
+                  d="''${d%/}"
+                  [ -d "$d/.git" ] || [ -f "$d/.git" ] || continue
+                  local name; name="$(basename "$d")"
+                  is_active "$name" && continue
+                  emit "dir:$d" "$ICON_GIT" "$GREEN" "$d"
+                done
+          fi
+        }
+
+        while true; do
+          # --highlight-line wraps the selection bg across the full row including
+          # the parent prefix; reverse on current-fg swaps fg/bg so the row reads
+          # as a single highlighted band. pointer is the heavy filled triangle
+          # so it doesn't get confused with the diamond row icons.
+          if ! selection=$(
+            list_sources \
+            | awk '!seen[$0]++' \
+            | "$fzf_bin" --ansi --reverse --no-info \
+                         --delimiter=$'\t' --with-nth=1 \
+                         --pointer='▶' \
+                         --highlight-line \
+                         --color='pointer:bright-magenta:bold,current-bg:-1,current-fg:-1:reverse' \
+                         --bind='double-click:accept' \
+                         --prompt='code › ' \
+                         --header='⏎ open · esc cancel' --header-first
+          ); then
+            # esc / no match — keep the picker visible so the user can retry
+            sleep 0.15
+            continue
+          fi
+
+          ref="''${selection#*$'\t'}"
+          case "$ref" in
+            session:*)
+              target="''${ref#session:}"
+              # round-trip through `code` so stale layouts get rebuilt. for
+              # legacy sessions without @project-dir, guess via zoxide; if no
+              # match, fall back to bare switch-client (no rebuild).
+              proj_dir=$("$tmux_bin" show-option -qv -t "$target" "@project-dir" 2>/dev/null || true)
+              if [ -z "''${proj_dir:-}" ] || [ ! -d "$proj_dir" ]; then
+                base="''${target#code-}"
+                proj_dir=$(
+                  "$zoxide_bin" query --list 2>/dev/null \
+                    | while IFS= read -r d; do
+                        [ -d "$d" ] && [ "$(basename "$d")" = "$base" ] && printf '%s\n' "$d" && break
+                      done | head -n1
+                )
+              fi
+              if [ -n "''${proj_dir:-}" ] && [ -d "$proj_dir" ]; then
+                # locate the destination's nvim pane (if any) so we can reset
+                # cwd in-place instead of killing the session — preserves the
+                # shell pane's history/in-flight command and claude's chat.
+                nvim_pane=$("$tmux_bin" list-panes -t "$target" \
+                  -F '#{pane_id} #{pane_current_command}' 2>/dev/null \
+                  | awk '$2=="nvim"{print $1; exit}')
+                if [ -n "$nvim_pane" ]; then
+                  "$tmux_bin" switch-client -t "$target" 2>/dev/null || true
+                  # Escape first to drop out of insert/visual modes safely; the
+                  # chained :cd | Neotree command runs as one user-typed line.
+                  "$tmux_bin" send-keys -t "$nvim_pane" Escape || true
+                  "$tmux_bin" send-keys -t "$nvim_pane" \
+                    ":cd $proj_dir | Neotree filesystem reveal_force_cwd" Enter || true
+                else
+                  # nvim gone — session has decayed, do a clean rebuild.
+                  "$self" --rebuild "$proj_dir" || true
+                fi
+              else
+                "$tmux_bin" switch-client -t "$target" 2>/dev/null || true
+              fi
+              exit 0
+              ;;
+            dir:*)
+              "$self" "''${ref#dir:}" || true
+              exit 0
+              ;;
+          esac
+        done
+      }
+
+      mode=launch
+      force=0
+      case "''${1:-}" in
+        --picker)            mode=picker; shift ;;
+        -f|--rebuild|--new)  force=1;     shift ;;
+      esac
+
+      if [ "$mode" = "picker" ]; then
+        run_picker
+        exit 0
+      fi
 
       target_path="''${1:-.}"
       resolved_path="$(realpath "$target_path")"
       session="code-$(basename "$resolved_path")"
-      shell_cmd="${pkgs.zsh}/bin/zsh"
 
-      if tmux has-session -t "$session" 2>/dev/null; then
-        exec tmux attach -t "$session"
+      # detached sessions default to 80x24, which makes absolute -l sizes
+      # scale wrongly when the real client attaches. seed dimensions from
+      # the controlling terminal so the layout lands at the right scale.
+      detect_size() {
+        # inside tmux, prefer the client (terminal) size — stty reports the
+        # calling pane's size, which is wrong when code runs from the narrow
+        # picker pane and we want the new session to match the full terminal.
+        if [ -n "''${TMUX:-}" ]; then
+          cols=$("$tmux_bin" display-message -p '#{client_width}' 2>/dev/null || true)
+          rows=$("$tmux_bin" display-message -p '#{client_height}' 2>/dev/null || true)
+        fi
+        if [ -z "''${cols:-}" ] || [ -z "''${rows:-}" ]; then
+          if size=$(stty size </dev/tty 2>/dev/null) && [ -n "$size" ]; then
+            rows="''${size% *}"; cols="''${size#* }"
+          fi
+        fi
+        : "''${cols:=$(tput cols 2>/dev/null || echo 0)}"
+        : "''${rows:=$(tput lines 2>/dev/null || echo 0)}"
+        [ "$cols" -ge 120 ] 2>/dev/null || cols=220
+        [ "$rows" -ge 30 ]  2>/dev/null || rows=55
+      }
+      detect_size
+
+      spawn_session() {
+        local log="/tmp/code-spawn-$session.log"
+        : >"$log"
+        # capture each new pane's id so subsequent splits target unambiguously.
+        # this dodges base-index / window-index assumptions and surfaces errors
+        # per step instead of silently chaining onto the wrong pane.
+        # 3-pane default layout. The picker is on-demand only — Alt-Space
+        # spawns it as a 4th pane, and the single-shot picker collapses it
+        # after a selection (or via Alt-Space again).
+        local nvim_pane shell_pane
+        {
+          nvim_pane=$("$tmux_bin" new-session -d -s "$session" -c "$resolved_path" \
+            -x "$cols" -y "$rows" \
+            -P -F '#{pane_id}' \
+            "$nvim_bin '+Neotree filesystem show position=left' .") \
+            || { echo "new-session failed" >&2; return 1; }
+
+          shell_pane=$("$tmux_bin" split-window -v -l 30% \
+            -t "$nvim_pane" -c "$resolved_path" \
+            -P -F '#{pane_id}' \
+            "$shell_bin") \
+            || echo "shell split failed" >&2
+
+          "$tmux_bin" split-window -h -l 50% \
+            -t "$shell_pane" -c "$resolved_path" \
+            "$claude_bin" \
+            || echo "claude split failed" >&2
+
+          "$tmux_bin" select-pane -t "$nvim_pane" || true
+
+          # record the project dir on the session so the picker can hand
+          # active sessions back to `code --rebuild` to reset cwd to root.
+          "$tmux_bin" set-option -t "$session" "@project-dir" "$resolved_path" \
+            >/dev/null 2>&1 || true
+        } 2>>"$log"
+        return 0
+      }
+
+      session_is_stale() {
+        # healthy session: nvim is one of the panes. anything else (no nvim,
+        # zero panes, etc.) means the session has decayed and should rebuild.
+        local panes
+        panes=$("$tmux_bin" list-panes -t "$session" -F '#{pane_current_command}' 2>/dev/null) || return 0
+        printf '%s\n' "$panes" | grep -q '^nvim$' || return 0
+        return 1
+      }
+
+      if "$tmux_bin" has-session -t "$session" 2>/dev/null; then
+        if [ "$force" -eq 1 ]; then
+          "$tmux_bin" kill-session -t "$session"
+        elif session_is_stale; then
+          echo "code: rebuilding stale '$session' (layout mismatch)" >&2
+          "$tmux_bin" kill-session -t "$session"
+        fi
       fi
 
-      # create session with layout in a single command chain
-      # split vertically first for full-width bottom pane, then horizontally on top
-      exec tmux new-session -s "$session" -c "$resolved_path" \
-        "nvim '+Neotree left reveal' ." \; \
-        split-window -v -p 30 -c "$resolved_path" "$shell_cmd" \; \
-        select-pane -t 0 \; \
-        split-window -h -p 50 -c "$resolved_path" "claude" \; \
-        select-pane -t 0
+      if [ -n "''${TMUX:-}" ]; then
+        "$tmux_bin" has-session -t "$session" 2>/dev/null || spawn_session
+        exec "$tmux_bin" switch-client -t "$session"
+      fi
+
+      if "$tmux_bin" has-session -t "$session" 2>/dev/null; then
+        exec "$tmux_bin" attach -t "$session"
+      fi
+      spawn_session
+      exec "$tmux_bin" attach -t "$session"
     '')
     grpcurl
     sqlite
@@ -590,7 +899,7 @@ in
 
     # cloud and infra
     cf2tf # convert cloudformation to terraform/opentofu
-    opentofu
+    pkgs-unstable.opentofu # tracks latest upstream (stable channel lags by ~one minor)
     k9s
     lazydocker # terminal ui for docker
     steampipe # select * from cloud
