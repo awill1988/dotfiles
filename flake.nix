@@ -98,8 +98,13 @@
           {
             nixpkgs = nixpkgsConfig;
             users.users.${primaryUser.username}.home = "/Users/${primaryUser.username}";
-            home-manager.useGlobalPkgs = true;
+            # useGlobalPkgs intentionally NOT set: stylix wires nixpkgs.config
+            # inside the home-manager scope, which collides with useGlobalPkgs
+            # and emits a deprecation warning. instead, give home-manager its
+            # own nixpkgs eval seeded with the same config + overlays as the
+            # darwin one so cf2tf, pkgs-unstable, etc. remain visible to HM.
             home-manager.users.${primaryUser.username} = {
+              nixpkgs = nixpkgsConfig;
               imports = attrValues self.homeManagerModules ++ [ mac-app-util.homeManagerModules.default ];
               home.stateVersion = homeManagerStateVersion;
               home.user-info = config.users.primaryUser;
@@ -130,8 +135,8 @@
               extraGroups = [ "wheel" ];
               shell = pkgs.zsh;
             };
-            home-manager.useGlobalPkgs = true;
             home-manager.users.${primaryUser.username} = {
+              nixpkgs = nixpkgsConfig;
               imports = attrValues self.homeManagerModules ++ [ mac-app-util.homeManagerModules.default ];
               home.stateVersion = homeManagerStateVersion;
               home.user-info = config.users.primaryUser;
