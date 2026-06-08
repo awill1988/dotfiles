@@ -466,8 +466,8 @@ in
       # #{session_id}:#{window_id} before exec so the lookup is pinned to the
       # window where the keystroke happened — $TMUX_PANE is unreliable in
       # run-shell context and was causing the toggle to stack pickers.
-      bind-key -n M-Space run-shell '${pkgs.tmux}/bin/tmux list-panes -t "#{session_id}:#{window_id}" -F "#{pane_id} #{pane_start_command}" | ${pkgs.gawk}/bin/awk "/--picker/{print \$1; exit}" | { read -r p || true; if [ -n "$p" ]; then ${pkgs.tmux}/bin/tmux kill-pane -t "$p"; else ${pkgs.tmux}/bin/tmux split-window -hbf -l 24 -t "#{session_id}:#{window_id}" "code --picker"; fi; }'
-      bind Space run-shell '${pkgs.tmux}/bin/tmux list-panes -t "#{session_id}:#{window_id}" -F "#{pane_id} #{pane_start_command}" | ${pkgs.gawk}/bin/awk "/--picker/{print \$1; exit}" | { read -r p || true; if [ -n "$p" ]; then ${pkgs.tmux}/bin/tmux kill-pane -t "$p"; else ${pkgs.tmux}/bin/tmux split-window -hbf -l 24 -t "#{session_id}:#{window_id}" "code --picker"; fi; }'
+      bind-key -n M-Space run-shell '${pkgs.tmux}/bin/tmux list-panes -t "#{session_name}:#{window_index}" -F "##{pane_id} ##{pane_start_command}" | ${pkgs.gawk}/bin/awk "/--picker/{print \$1; exit}" | { read -r p || true; if [ -n "$p" ]; then ${pkgs.tmux}/bin/tmux kill-pane -t "$p"; else ${pkgs.tmux}/bin/tmux split-window -hbf -l 24 -t "#{session_name}:#{window_index}" "code --picker"; fi; }'
+      bind Space run-shell '${pkgs.tmux}/bin/tmux list-panes -t "#{session_name}:#{window_index}" -F "##{pane_id} ##{pane_start_command}" | ${pkgs.gawk}/bin/awk "/--picker/{print \$1; exit}" | { read -r p || true; if [ -n "$p" ]; then ${pkgs.tmux}/bin/tmux kill-pane -t "$p"; else ${pkgs.tmux}/bin/tmux split-window -hbf -l 24 -t "#{session_name}:#{window_index}" "code --picker"; fi; }'
     '';
   };
 
@@ -724,7 +724,30 @@ in
 
       target_path="''${1:-.}"
       resolved_path="$(realpath "$target_path")"
-      session="code-$(basename "$resolved_path")"
+
+      # session name derivation. two failure modes to defend against:
+      #   1. tmux target syntax treats `.` and `:` as window/pane separators,
+      #      so `code-yourmood.ai` parses as session `code-yourmood`
+      #      window `ai`. sanitize anything outside [A-Za-z0-9_-] to `-`.
+      #   2. two checkouts with the same basename (e.g. ~/projects/arro/
+      #      arro-platform and ~/work/arro-platform) collide. if an existing
+      #      `code-*` session points at a different @project-dir, suffix the
+      #      name with a short hash of resolved_path to disambiguate.
+      sanitize_name() {
+        printf '%s' "$1" | tr -c 'A-Za-z0-9_-' '-' | sed 's/-\{2,\}/-/g; s/^-//; s/-$//'
+      }
+      path_hash() {
+        printf '%s' "$1" | shasum | cut -c1-6
+      }
+      base_name="$(sanitize_name "$(basename "$resolved_path")")"
+      [ -n "$base_name" ] || base_name="$(path_hash "$resolved_path")"
+      session="code-$base_name"
+      if "$tmux_bin" has-session -t "=$session" 2>/dev/null; then
+        existing_dir=$("$tmux_bin" show-option -qv -t "=$session" "@project-dir" 2>/dev/null || true)
+        if [ -n "$existing_dir" ] && [ "$existing_dir" != "$resolved_path" ]; then
+          session="code-$base_name-$(path_hash "$resolved_path")"
+        fi
+      fi
 
       # detached sessions default to 80x24, which makes absolute -l sizes
       # scale wrongly when the real client attaches. seed dimensions from
@@ -796,7 +819,7 @@ in
         return 1
       }
 
-      if "$tmux_bin" has-session -t "$session" 2>/dev/null; then
+      if "$tmux_bin" has-session -t "=$session" 2>/dev/null; then
         if [ "$force" -eq 1 ]; then
           "$tmux_bin" kill-session -t "$session"
         elif session_is_stale; then
@@ -806,11 +829,11 @@ in
       fi
 
       if [ -n "''${TMUX:-}" ]; then
-        "$tmux_bin" has-session -t "$session" 2>/dev/null || spawn_session
+        "$tmux_bin" has-session -t "=$session" 2>/dev/null || spawn_session
         exec "$tmux_bin" switch-client -t "$session"
       fi
 
-      if "$tmux_bin" has-session -t "$session" 2>/dev/null; then
+      if "$tmux_bin" has-session -t "=$session" 2>/dev/null; then
         exec "$tmux_bin" attach -t "$session"
       fi
       spawn_session
