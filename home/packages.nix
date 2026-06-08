@@ -212,14 +212,6 @@ in
             "https://mcp.atlassian.com/v1/mcp"
           ];
         };
-        expo = {
-          command = "npx";
-          args = [
-            "-y"
-            "mcp-remote"
-            "https://mcp.expo.dev/mcp"
-          ];
-        };
         linear = {
           command = "npx";
           args = [
