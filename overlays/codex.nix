@@ -1,25 +1,25 @@
 final: prev:
 let
-  version = "0.133.0";
+  version = "0.139.0";
 
   # platform-specific binary info
   # upstream switched linux artifacts from -gnu to -musl in the rust-v0.122.0+ releases
   platform_info = {
     aarch64-darwin = {
       suffix = "aarch64-apple-darwin";
-      hash = "sha256-E8eDYr7/gUt93hbtdWN2I2d3Zphp3eRL0jJnNQDfaFM=";
+      hash = "sha256-woNEJVhE2DpyjAhMLZ4h4Wi10hf2BJ06mjaCeQPxb9s=";
     };
     x86_64-darwin = {
       suffix = "x86_64-apple-darwin";
-      hash = "sha256-K5G9VPBSDcmUtcMidpKA+U8cIn/bNd1V+STqyOIke5E=";
+      hash = "sha256-yLUtdYiXf2zQVREvqg8+a57HZEc7wb6O+kTzyPaNFL8=";
     };
     x86_64-linux = {
       suffix = "x86_64-unknown-linux-musl";
-      hash = "sha256-0GAZq5w10oG3jcLrsq5VwruX6hG/f0Urr+OQ7dsANO8=";
+      hash = "sha256-Euv3DfQdyDEGGGKRKrXn6s3RErsX6M6bIJjLPZIYAIE=";
     };
     aarch64-linux = {
       suffix = "aarch64-unknown-linux-musl";
-      hash = "sha256-Jov+jPgVSUD+olbfdc1EHFSgxx5sjM1Fqz92/yi6FBM=";
+      hash = "sha256-K3QHZD4OdMUl2ENHye7OxLPSda8DghQqxCIWUIuwsqI=";
     };
   };
 
