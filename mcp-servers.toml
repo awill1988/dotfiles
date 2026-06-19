@@ -21,7 +21,8 @@ env = { GITHUB_MCP_PAT = "$GITHUB_MCP_PAT" }
 name = "aws"
 transport = "stdio"
 command = "uvx"
-args = ["awslabs.core-mcp-server@latest"]
+args = ["awslabs.aws-api-mcp-server@latest"]
+env = { READ_OPERATIONS_ONLY = "true", REQUIRE_MUTATION_CONSENT = "true", AWS_API_MCP_TELEMETRY = "false", AWS_API_MCP_ALLOW_UNRESTRICTED_LOCAL_FILE_ACCESS = "no-access" }
 bridge = { port = 4450 }
 gateway_register = true
 

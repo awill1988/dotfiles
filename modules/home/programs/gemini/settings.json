@@ -22,6 +22,11 @@
       "args": ["-y", "--package=icon-composer-mcp@1.1.0", "--call", "node \"$(realpath \"$(which icon-composer-mcp)\")\""]
     }
   },
+  "general": {
+    "enableAutoUpdate": false,
+    "enableNotifications": false,
+    "defaultApprovalMode": "default"
+  },
   "context": {
     "fileName": ["AGENTS.md", "CLAUDE.md", "CONTEXT.md", "GEMINI.md"]
   },
@@ -33,18 +38,25 @@
   "privacy": {
     "usageStatisticsEnabled": false
   },
+  "billing": {
+    "overageStrategy": "never"
+  },
   "security": {
+    "disableYoloMode": true,
+    "disableAlwaysAllow": true,
+    "enablePermanentToolApproval": false,
+    "autoAddToPolicyByDefault": false,
+    "environmentVariableRedaction": {
+      "enabled": true
+    },
     "auth": {
       "selectedType": "oauth-personal"
     }
   },
   "tools": {
     "allowed": [
-      "run_shell_command(curl)",
-      "run_shell_command(aws)",
-      "run_shell_command(gh)",
-      "run_shell_command(docker)",
       "run_shell_command(ls)",
+      "run_shell_command(rg)",
       "run_shell_command(cat)",
       "run_shell_command(head)",
       "run_shell_command(tail)",

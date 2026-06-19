@@ -1,25 +1,23 @@
 final: prev:
 let
-  version = "2.1.170";
-  gcs_bucket = "https://storage.googleapis.com/claude-code-dist-86c565f3-f756-42ad-8dfa-d59b1c096819/claude-code-releases";
+  version = "2.1.183";
 
-  # platform-specific binary info (native installer)
   platform_info = {
     aarch64-darwin = {
-      platform = "darwin-arm64";
-      sha256 = "e903646d8b7a31882a80ecd27569a27d8ac57b3708745f349709632c84117fdf";
+      artifact = "claude-darwin-arm64.tar.gz";
+      hash = "sha256-W3nX7APNmPioH3QyNo6js0y0Vq9jFj8yADzl8eYLyvk=";
     };
     x86_64-darwin = {
-      platform = "darwin-x64";
-      sha256 = "914f23a70bbed5d9ae567e3e04b86206ed9971b371bc9baca3f79c8885bfddb4";
+      artifact = "claude-darwin-x64.tar.gz";
+      hash = "sha256-wJj7ETrO/abM5t/eto9zUoazn0PQ/uFqI1fr6j+U+PA=";
     };
     x86_64-linux = {
-      platform = "linux-x64";
-      sha256 = "849e007277a0442ab27570d3e3d6d43787507946590e8dd1947e5a39b7081f9e";
+      artifact = "claude-linux-x64.tar.gz";
+      hash = "sha256-mmfbCbgsN7teMZ1HvBXC2vSC2XX0VnbJVIETT+qCcIQ=";
     };
     aarch64-linux = {
-      platform = "linux-arm64";
-      sha256 = "1bb9d032440a75532f7dd4cafbc687f220aaf16c63eba17e192dfbec2f04bd25";
+      artifact = "claude-linux-arm64.tar.gz";
+      hash = "sha256-CQRStHrhDzz/I90A5HOwNeEm6wnwyDFczknEXfsBVc0=";
     };
   };
 
@@ -28,8 +26,8 @@ let
   info = platform_info.${system} or (throw "unsupported system: ${system}");
 
   src = final.fetchurl {
-    url = "${gcs_bucket}/${version}/${info.platform}/claude";
-    sha256 = info.sha256;
+    url = "https://github.com/anthropics/claude-code/releases/download/v${version}/${info.artifact}";
+    hash = info.hash;
   };
 in
 {
@@ -50,7 +48,7 @@ in
       prev.zlib
     ];
 
-    dontUnpack = true;
+    sourceRoot = ".";
     dontConfigure = true;
     dontBuild = true;
     dontStrip = is_linux; # linux strip destroys embedded javascript

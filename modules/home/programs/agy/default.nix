@@ -35,6 +35,36 @@ let
     privacy = {
       enableTelemetry = false;
       interactionCollection = "off";
+      usageStatisticsEnabled = false;
+      telemetry = false;
+    };
+    permissions = {
+      allowedMcpTools = [
+        "contextforge.aws-call-aws"
+        "contextforge.aws-suggest-aws-commands"
+        "contextforge.aws-docs-read-documentation"
+        "contextforge.aws-docs-read-sections"
+        "contextforge.aws-docs-search-documentation"
+        "contextforge.aws-docs-recommend"
+      ];
+      allowedShellCommands = [
+        "aws configure list"
+        "aws sts get-caller-identity"
+        "aws s3 ls"
+        "cat"
+        "env"
+        "file"
+        "find"
+        "grep"
+        "head"
+        "ls"
+        "pwd"
+        "rg"
+        "tail"
+        "wc"
+        "which"
+        "whoami"
+      ];
     };
     mcpServers = {
       contextforge = {
@@ -58,6 +88,36 @@ let
     privacy = {
       enableTelemetry = false;
       interactionCollection = "off";
+      usageStatisticsEnabled = false;
+      telemetry = false;
+    };
+    permissions = {
+      allowedMcpTools = [
+        "contextforge.aws-call-aws"
+        "contextforge.aws-suggest-aws-commands"
+        "contextforge.aws-docs-read-documentation"
+        "contextforge.aws-docs-read-sections"
+        "contextforge.aws-docs-search-documentation"
+        "contextforge.aws-docs-recommend"
+      ];
+      allowedShellCommands = [
+        "aws configure list"
+        "aws sts get-caller-identity"
+        "aws s3 ls"
+        "cat"
+        "env"
+        "file"
+        "find"
+        "grep"
+        "head"
+        "ls"
+        "pwd"
+        "rg"
+        "tail"
+        "wc"
+        "which"
+        "whoami"
+      ];
     };
     mcpServers = {
       contextforge = {
@@ -76,6 +136,7 @@ let
     export AGY_TELEMETRY_ENABLED=false
     export ANTIGRAVITY_DATA_COLLECTION=opt-out
     export GOTELEMETRY=off
+    export AGY_CLI_DISABLE_TELEMETRY=true
 
     # Path-Based Identity Routing
     # Restriction zone: ~/projects/arro/* uses Claude-Secondary only.

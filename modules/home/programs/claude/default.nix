@@ -18,14 +18,12 @@ let
 
   # non-destructive exploratory commands to auto-approve
   allowed_bash_commands = [
-    "Bash(curl *)"
-    "Bash(aws *)"
-    "Bash(gh *)"
-    "Bash(docker *)"
     "Bash(ls *)"
+    "Bash(ls)"
     "Bash(cat *)"
     "Bash(head *)"
     "Bash(tail *)"
+    "Bash(rg *)"
     "Bash(grep *)"
     "Bash(find *)"
     "Bash(which *)"
@@ -36,6 +34,21 @@ let
     "Bash(env)"
     "Bash(whoami)"
     "Bash(pwd)"
+    "Bash(aws configure list*)"
+    "Bash(aws sts get-caller-identity*)"
+    "Bash(aws s3 ls*)"
+    "Bash(aws * describe-*)"
+    "Bash(aws * get-*)"
+    "Bash(aws * list-*)"
+  ];
+
+  allowed_aws_mcp_tools = [
+    "mcp__contextforge__aws-call-aws"
+    "mcp__contextforge__aws-suggest-aws-commands"
+    "mcp__contextforge__aws-docs-read-documentation"
+    "mcp__contextforge__aws-docs-read-sections"
+    "mcp__contextforge__aws-docs-search-documentation"
+    "mcp__contextforge__aws-docs-recommend"
   ];
 
   # fivetran mcp tools that mutate state - deny these for read-only access
@@ -74,9 +87,10 @@ let
       attribution = {
         commit = "";
         pr = "";
+        sessionUrl = "";
       };
       permissions = {
-        allow = allowed_bash_commands;
+        allow = allowed_bash_commands ++ allowed_aws_mcp_tools;
         deny = denied_mcp_tools;
       };
     }

@@ -9,6 +9,87 @@ let
   codex_config_dir = "${config.xdg.configHome}/codex";
   config_source = ./config.toml;
   agents_override_source = ./AGENTS.override.md;
+  default_rules = ''
+    prefix_rule(
+        pattern = ["aws", "configure", "list"],
+        decision = "allow",
+    )
+
+    prefix_rule(
+        pattern = ["aws", "sts", "get-caller-identity"],
+        decision = "allow",
+    )
+
+    prefix_rule(
+        pattern = ["aws", "s3", "ls"],
+        decision = "allow",
+    )
+
+    prefix_rule(
+        pattern = ["ls"],
+        decision = "allow",
+    )
+
+    prefix_rule(
+        pattern = ["cat"],
+        decision = "allow",
+    )
+
+    prefix_rule(
+        pattern = ["head"],
+        decision = "allow",
+    )
+
+    prefix_rule(
+        pattern = ["tail"],
+        decision = "allow",
+    )
+
+    prefix_rule(
+        pattern = ["rg"],
+        decision = "allow",
+    )
+
+    prefix_rule(
+        pattern = ["grep"],
+        decision = "allow",
+    )
+
+    prefix_rule(
+        pattern = ["find"],
+        decision = "allow",
+    )
+
+    prefix_rule(
+        pattern = ["which"],
+        decision = "allow",
+    )
+
+    prefix_rule(
+        pattern = ["file"],
+        decision = "allow",
+    )
+
+    prefix_rule(
+        pattern = ["wc"],
+        decision = "allow",
+    )
+
+    prefix_rule(
+        pattern = ["env"],
+        decision = "allow",
+    )
+
+    prefix_rule(
+        pattern = ["whoami"],
+        decision = "allow",
+    )
+
+    prefix_rule(
+        pattern = ["pwd"],
+        decision = "allow",
+    )
+  '';
 in
 {
   config = lib.mkIf cfg.enable {
@@ -17,6 +98,10 @@ in
 
     xdg.configFile."codex/AGENTS.override.md" = {
       source = agents_override_source;
+      force = true;
+    };
+    xdg.configFile."codex/rules/default.rules" = {
+      text = default_rules;
       force = true;
     };
 

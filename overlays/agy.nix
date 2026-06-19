@@ -2,32 +2,25 @@ final: prev:
 let
   inherit (prev) lib;
 
-  # Google Antigravity CLI (agy). Distributed as a single dynamically-linked
-  # binary named `antigravity` inside a per-platform tarball, served from a
-  # Google Cloud Storage bucket. Manifests live at
-  #   https://antigravity-cli-auto-updater-974169037036.us-central1.run.app/manifests/<platform>.json
-  # and point at the build-id-stamped URLs encoded below.
-  version = "1.0.2";
-  build_id = "6109799369277440";
-
-  base_url = "https://storage.googleapis.com/antigravity-public/antigravity-cli/${version}-${build_id}";
+  version = "1.0.10";
+  base_url = "https://github.com/google-antigravity/antigravity-cli/releases/download/${version}";
 
   platform_info = {
     aarch64-darwin = {
-      url = "${base_url}/darwin-arm/cli_mac_arm64.tar.gz";
-      hash = "sha256-jvFVBeZakXxKIdE5y+5qw5T7ubMSTzxtdGvSw0oqKNs=";
+      url = "${base_url}/agy_cli_mac_arm64.tar.gz";
+      hash = "sha256-yFe1/HA1RgNZ6OZK7kB2jm9SKDWLQnG8fe0Gw+a80mA=";
     };
     x86_64-darwin = {
-      url = "${base_url}/darwin-x64/cli_mac_x64.tar.gz";
-      hash = "sha256-ddjHsXkrrX76TwVA7Hy6MxCyS/5tfpwFEWkS+jOPLug=";
+      url = "${base_url}/agy_cli_mac_x64.tar.gz";
+      hash = "sha256-yA2NwlTFJ22NBo1YfjTbz4EEKoUWCU2tr+OZsxP/brg=";
     };
     x86_64-linux = {
-      url = "${base_url}/linux-x64/cli_linux_x64.tar.gz";
-      hash = "sha256-9sfKgNUJkzO/IpZ2RzvREeDapqDY23xTKt9lA7Dqrck=";
+      url = "${base_url}/agy_cli_linux_x64.tar.gz";
+      hash = "sha256-ZUfPmjcifyYAT6S4BUGLHflvVMV7lyPKfRCGTSYQuw8=";
     };
     aarch64-linux = {
-      url = "${base_url}/linux-arm/cli_linux_arm64.tar.gz";
-      hash = "sha256-ylqnAh/9ppSybxp5KsllsFPdLOQmzmIbdtk43zlnXfw=";
+      url = "${base_url}/agy_cli_linux_arm64.tar.gz";
+      hash = "sha256-RnT6vDaBIh5UyQ0VB3yal6JepxIiAB2r5EvxV26IhZM=";
     };
   };
 
@@ -44,8 +37,7 @@ in
     pname = "agy";
     inherit version src;
 
-    # The tarball expands to a single top-level file named `antigravity`,
-    # not a directory.
+    # The tarball expands to a single top-level file named `antigravity`, not a directory.
     sourceRoot = ".";
 
     nativeBuildInputs = lib.optionals prev.stdenv.isLinux [

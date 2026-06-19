@@ -103,8 +103,10 @@ let
           cacheable_tools:
             - "context7-query-docs"
             - "context7-resolve-library-id"
-            - "aws-prompt-understanding"
+            - "aws-suggest-aws-commands"
             - "aws-docs-read-documentation"
+            - "aws-docs-read-sections"
+            - "aws-docs-search-documentation"
             - "aws-docs-recommend"
             - "github-search-code"
             - "github-search-repositories"
@@ -136,8 +138,10 @@ let
             - "github-list-tags"
             - "github-list-releases"
             - "github-list-issue-types"
-            - "aws-prompt-understanding"
+            - "aws-suggest-aws-commands"
             - "aws-docs-read-documentation"
+            - "aws-docs-read-sections"
+            - "aws-docs-search-documentation"
             - "aws-docs-recommend"
           ttl: 600
           max_entries: 1000
@@ -174,7 +178,9 @@ let
   );
 
   postgres_mcp_py = pkgs.writeText "postgres-mcp.py" (builtins.readFile ./scripts/postgres_mcp.py);
-  snowflake_bridge_py = pkgs.writeText "snowflake-bridge.py" (builtins.readFile ./scripts/snowflake_bridge.py);
+  snowflake_bridge_py = pkgs.writeText "snowflake-bridge.py" (
+    builtins.readFile ./scripts/snowflake_bridge.py
+  );
 
   postgres_mcp_python = pkgs.python3.withPackages (ps: [
     ps.mcp
@@ -224,7 +230,18 @@ let
     name = "contextforge-bridge-supervisor";
     text =
       builtins.replaceStrings
-        [ "@BASH@" "@PATH@" "@HOME@" "@CACHE_DIR@" "@CONFIG_DIR@" "@HOST@" "@PORT@" "@PARSE_TOML_PY@" "@SNOWFLAKE_BRIDGE_PY@" "@GATEWAY_PYTHON@" ]
+        [
+          "@BASH@"
+          "@PATH@"
+          "@HOME@"
+          "@CACHE_DIR@"
+          "@CONFIG_DIR@"
+          "@HOST@"
+          "@PORT@"
+          "@PARSE_TOML_PY@"
+          "@SNOWFLAKE_BRIDGE_PY@"
+          "@GATEWAY_PYTHON@"
+        ]
         [
           "${pkgs.bash}/bin/bash"
           (lib.makeBinPath [
