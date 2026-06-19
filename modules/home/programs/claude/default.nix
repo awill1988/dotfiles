@@ -87,7 +87,7 @@ let
       attribution = {
         commit = "";
         pr = "";
-        sessionUrl = "";
+        sessionUrl = false;
       };
       permissions = {
         allow = allowed_bash_commands ++ allowed_aws_mcp_tools;
