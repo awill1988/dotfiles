@@ -53,11 +53,14 @@ in
     dontBuild = true;
     dontStrip = is_linux; # linux strip destroys embedded javascript
 
+    unpackPhase = ''
+      tar -xzf "$src"
+    '';
+
     installPhase = ''
       runHook preInstall
 
-      mkdir -p $out/bin
-      install -Dm755 $src $out/bin/claude
+      install -Dm755 claude $out/bin/claude
 
       runHook postInstall
     '';
