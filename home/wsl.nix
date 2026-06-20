@@ -129,8 +129,9 @@ in
       ${bashScript}
     '';
 
-    # pcscd packages for yubikey smart card operations
-    home.packages = lib.mkIf cfg.pcscd.enable [
+    home.packages = [
+      pkgs.wslu # provides wslview for Windows default applications
+    ] ++ lib.optionals cfg.pcscd.enable [
       pkgs.pcsclite
       pkgs.pcsc-tools
       pkgs.ccid
