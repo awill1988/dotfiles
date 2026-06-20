@@ -146,6 +146,50 @@ let
     exec "${base_package}/bin/claude" "$@"
   '';
 
+  # Settings are runtime state: Claude updates them through /config and /effort.
+  # Nix provides the seed; this command explicitly replaces runtime state when needed.
+  claude_settings_reset = pkgs.writeShellScriptBin "claude-settings-reset" ''
+    set -euo pipefail
+
+    usage() {
+      echo "usage: claude-settings-reset [primary|secondary|all]" >&2
+      exit 2
+    }
+
+    reset_settings() {
+      local source="$1"
+      local target="$2"
+      local backup
+
+      mkdir -p "$(dirname "$target")"
+
+      if [[ -e "$target" || -L "$target" ]]; then
+        backup="''${target}.backup-$(${pkgs.coreutils}/bin/date +%Y%m%d%H%M%S)"
+        ${pkgs.coreutils}/bin/cp -L --preserve=mode "$target" "$backup"
+        echo "backed up $target to $backup"
+      fi
+
+      ${pkgs.coreutils}/bin/install -m 600 "$source" "$target"
+      echo "reset $target"
+    }
+
+    case "''${1:-all}" in
+      primary)
+        reset_settings "${settings_json}" "${claude_home}/settings.json"
+        ;;
+      secondary)
+        reset_settings "${settings_json}" "${claude_secondary_home}/settings.json"
+        ;;
+      all)
+        reset_settings "${settings_json}" "${claude_home}/settings.json"
+        reset_settings "${settings_json}" "${claude_secondary_home}/settings.json"
+        ;;
+      *)
+        usage
+        ;;
+    esac
+  '';
+
   # mcp server option type
   mcp_server_type = lib.types.submodule {
     options = {
@@ -216,7 +260,10 @@ in
   };
 
   config = lib.mkIf cfg.enable {
-    home.packages = [ claude_wrapper ];
+    home.packages = [
+      claude_wrapper
+      claude_settings_reset
+    ];
 
     # symlink for native install method check (expects ~/.local/bin/claude)
     home.file.".local/bin/claude".source = "${claude_wrapper}/bin/claude";
@@ -227,11 +274,8 @@ in
       CLAUDE_STATE_DIR = lib.mkDefault claude_state;
     };
 
-    # primary config
-    xdg.configFile."claude/settings.json" = {
-      source = settings_json;
-      force = true;
-    };
+    # Primary settings are mutable runtime state. Activation seeds them from
+    # settings_json instead of creating a read-only Nix store symlink.
     xdg.configFile."claude/CLAUDE.md" = {
       source = claude_instructions_source;
       force = true;
@@ -239,11 +283,7 @@ in
     # .claude.json (with dot) is where Claude reads MCP servers from
     # .claude.json is mutable, so seed it via activation instead of symlink.
 
-    # secondary config
-    xdg.configFile."claude-secondary/settings.json" = {
-      source = settings_json;
-      force = true;
-    };
+    # Secondary settings follow the same mutable-runtime pattern as primary.
     xdg.configFile."claude-secondary/CLAUDE.md" = {
       source = claude_instructions_source;
       force = true;
@@ -255,6 +295,23 @@ in
     # seed it via activation instead of a read-only symlink.
 
     home.activation.ensureClaudeConfig = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+      seed_claude_settings() {
+        local source="$1"
+        local target="$2"
+
+        mkdir -p "$(dirname "$target")"
+
+        # Migrate the previous Home Manager symlink to a writable runtime file.
+        if [[ -L "$target" ]]; then
+          rm -f "$target"
+        fi
+
+        # Existing real files belong to Claude and must survive rebuilds.
+        if [[ ! -e "$target" ]]; then
+          install -m 600 "$source" "$target"
+        fi
+      }
+
       merge_claude_config() {
         local source="$1"
         local target="$2"
@@ -280,6 +337,8 @@ in
         fi
       }
 
+      seed_claude_settings "${settings_json}" "${claude_home}/settings.json"
+      seed_claude_settings "${settings_json}" "${claude_secondary_home}/settings.json"
       merge_claude_config "${primary_user_config}" "${claude_home}/.claude.json" 600
       merge_claude_config "${secondary_user_config}" "${claude_secondary_home}/.claude.json" 600
     '';
