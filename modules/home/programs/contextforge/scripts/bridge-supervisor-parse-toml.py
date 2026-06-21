@@ -10,11 +10,29 @@ config_path = sys.argv[1]
 with open(config_path, "rb") as f:
     data = tomllib.load(f)
 
+
+def current_platforms():
+    platforms = {"linux" if sys.platform.startswith("linux") else sys.platform}
+    if sys.platform.startswith("linux"):
+        try:
+            with open("/proc/version", encoding="utf-8") as version_file:
+                if "microsoft" in version_file.read().lower():
+                    platforms.add("wsl")
+        except OSError:
+            pass
+    return platforms
+
+
+available_platforms = current_platforms()
+
 for server in data.get("servers", []):
     if not isinstance(server, dict):
         continue
     transport = (server.get("transport") or "").lower()
     if transport != "stdio":
+        continue
+    platforms = server.get("platforms") or []
+    if platforms and not available_platforms.intersection(platforms):
         continue
     bridge = server.get("bridge") or {}
     port = bridge.get("port")

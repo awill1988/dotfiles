@@ -20,6 +20,17 @@ else
   echo "bridge supervisor: no $env_file found, bridges relying on env vars may fail"
 fi
 
+# source non-secret, host-specific configuration for the Windows development
+# bridge. Keeping this separate from mcpgw-bridge.env avoids coupling a normal
+# workspace path to secret management.
+windows_dev_env_file="@CONFIG_DIR@/windows-dev.env"
+if [[ -f "$windows_dev_env_file" ]]; then
+  set -a
+  # shellcheck disable=SC1090
+  . "$windows_dev_env_file"
+  set +a
+fi
+
 # wait for gateway health before starting bridges (darwin has no service
 # ordering, so the gateway may not be up yet at boot)
 gateway_url="http://@HOST@:@PORT@"

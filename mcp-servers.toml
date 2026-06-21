@@ -99,6 +99,17 @@ command = "drawio-mcp"
 bridge = { port = 4457 }
 gateway_register = true
 
+# WSL-only Windows development bridge. The workspace root is configured by the
+# programs.contextforge.windows_dev.workspace_root Home Manager option.
+
+[[servers]]
+name = "windows-dev"
+transport = "stdio"
+command = "windows-dev-mcp"
+platforms = ["wsl"]
+bridge = { port = 4458 }
+gateway_register = true
+
 # TODO: stdio servers pending bridge setup (ports 4459+, alpha-sorted)
 #
 # [[servers]]

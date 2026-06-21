@@ -27,6 +27,21 @@ def read_toml(path):
 pattern = re.compile(r"\$(\w+)|\${([^}]+)}")
 
 
+def current_platforms():
+    platforms = {"linux" if sys.platform.startswith("linux") else sys.platform}
+    if sys.platform.startswith("linux"):
+        try:
+            with open("/proc/version", encoding="utf-8") as version_file:
+                if "microsoft" in version_file.read().lower():
+                    platforms.add("wsl")
+        except OSError:
+            pass
+    return platforms
+
+
+available_platforms = current_platforms()
+
+
 def expand_value(value, missing):
     if isinstance(value, str):
         for match in pattern.findall(value):
@@ -58,6 +73,9 @@ if not isinstance(servers, list):
 inventory = []
 for item in servers:
     if not isinstance(item, dict):
+        continue
+    platforms = item.get("platforms") or []
+    if platforms and not available_platforms.intersection(platforms):
         continue
     name = item.get("name")
     if not name:

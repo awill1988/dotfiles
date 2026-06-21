@@ -81,6 +81,10 @@ bridge = { port = 4451 }
 gateway_register = true
 ```
 
+Use `platforms = ["wsl"]` for a server that can only run through WSL interop. It is omitted from bridge startup and gateway registration on other hosts.
+
+The WSL Windows development bridge reads its allowed root from `programs.contextforge.windows_dev.workspace_root`. It accepts an absolute Windows path or a WSL path; the WSL launcher converts the latter to a Windows UNC path. Home Manager writes the setting to `~/.config/contextforge/windows-dev.env` when the profile activates; it is not stored with bridge secrets.
+
 Field reference:
 
 | Field | Type | Default | Description |
@@ -92,6 +96,7 @@ Field reference:
 | `command` | string | — | stdio command (e.g. `uvx`, `npx`) |
 | `args` | list | `[]` | stdio command arguments |
 | `env` | table | `{}` | extra env vars for stdio servers |
+| `platforms` | list | all platforms | hosts that may start and register the server (`linux`, `darwin`, or `wsl`) |
 | `bridge.port` | int | — | HTTP bridge port (auto-derives URL as `http://127.0.0.1:{port}/mcp`) |
 | `bridge.url` | string | — | explicit bridge URL (overrides port-derived URL) |
 | `gateway_register` | bool | auto | register with gateway (true for http, bridge-dependent for stdio) |

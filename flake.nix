@@ -188,6 +188,7 @@
                 ext.wsl.usbipd.auto_attach = true;
                 ext.wsl.pcscd.enable = true;
                 home.sessionVariables.LD_LIBRARY_PATH = "/usr/lib/wsl/lib:$LD_LIBRARY_PATH";
+                programs.contextforge.windows_dev.workspace_root = "${config.home.homeDirectory}/projects/yourmood.ai/workshop";
 
                 # codex: skip tests on WSL to avoid flaky upstream suite
                 programs.codex.package = pkgs.codex.overrideAttrs (old: {
