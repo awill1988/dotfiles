@@ -454,14 +454,16 @@ in
       # quick exits (vim-like: prefix + z / Z)
       bind z confirm-before -p "kill-window? (y/n)" kill-window
       bind Z confirm-before -p "kill-session? (y/n)" kill-session
-      # alt-space (or prefix+space) toggles the code picker. the toggle logic
-      # lives in `code --toggle-picker` (single source of truth, shellchecked);
-      # the bind only resolves the target window and passes it as an argument.
-      # we pass #{session_name}:#{window_index}, never #{session_id}: a session
-      # id such as `$10` gets re-expanded by run-shell's sh -c as positional
-      # parameter $1 followed by `0`, collapsing the target to `0` ("can't find
-      # session: 0"). names and indices carry no $ or @, so they survive intact.
-      bind-key -n M-Space run-shell "code --toggle-picker '#{session_name}:#{window_index}'"
+      # prefix+space toggles the code picker. the no-prefix alt-space variant is
+      # intentionally omitted: on wsl/windows the win32 window manager claims
+      # alt-space for the window system menu, so the keystroke never reaches
+      # tmux. the toggle logic lives in `code --toggle-picker` (single source of
+      # truth, shellchecked); the bind only resolves the target window and passes
+      # it as an argument. we pass #{session_name}:#{window_index}, never
+      # #{session_id}: a session id such as `$10` gets re-expanded by run-shell's
+      # sh -c as positional parameter $1 followed by `0`, collapsing the target
+      # to `0` ("can't find session: 0"). names and indices carry no $ or @, so
+      # they survive intact.
       bind Space run-shell "code --toggle-picker '#{session_name}:#{window_index}'"
     '';
   };
@@ -813,9 +815,9 @@ in
           # capture each new pane's id so subsequent splits target unambiguously.
           # this dodges base-index / window-index assumptions and surfaces errors
           # per step instead of silently chaining onto the wrong pane.
-          # 3-pane default layout. The picker is on-demand only — Alt-Space
+          # 3-pane default layout. The picker is on-demand only — prefix+Space
           # spawns it as a 4th pane, and the single-shot picker collapses it
-          # after a selection (or via Alt-Space again).
+          # after a selection (or via prefix+Space again).
           local nvim_pane shell_pane
           {
             nvim_pane=$("$tmux_bin" new-session -d -s "$session" -c "$resolved_path" \
