@@ -225,30 +225,98 @@ function Start-Build {
   $build_id = [Guid]::NewGuid().ToString("N")
   $log_path = Join-Path $script:log_directory "$build_id.log"
   $status_path = Join-Path $script:log_directory "$build_id.status.json"
-  $command_path = Join-Path $script:log_directory "$build_id.cmd"
+  $worker_path = Join-Path $script:log_directory "$build_id.ps1"
+  $job_path = Join-Path $script:log_directory "$build_id.job.json"
   $started_at = [DateTime]::UtcNow.ToString("o")
-  $restore_argument = $(if ($restore) { "/restore" } else { "" })
 
+  $msbuild_arguments = [System.Collections.Generic.List[string]]::new()
+  $msbuild_arguments.Add($workspace.solution_path)
+  if ($restore) { $msbuild_arguments.Add("/restore") }
+  $msbuild_arguments.Add("/m")
+  $msbuild_arguments.Add("/nologo")
+  $msbuild_arguments.Add("/verbosity:minimal")
+  $msbuild_arguments.Add("/p:Configuration=$configuration")
+  $msbuild_arguments.Add("/p:Platform=$platform")
+
+  # the detached worker receives its job as data, never as shell text, so paths
+  # with spaces (e.g. C:\Users\Adam Williams) carry no quoting hazard
   [System.IO.File]::WriteAllText(
-    $status_path,
-    (@{ state = "running"; started_at = $started_at } | ConvertTo-Json -Compress),
+    $job_path,
+    ([ordered]@{
+      msbuild = $msbuild
+      msbuild_arguments = $msbuild_arguments
+      workspace_root = $workspace.workspace_root
+      log_path = $log_path
+      status_path = $status_path
+      started_at = $started_at
+    } | ConvertTo-Json -Compress),
     [System.Text.UTF8Encoding]::new($false)
   )
 
-  $command = @"
-@echo off
-setlocal
-chcp 65001 >nul
-pushd "$($workspace.workspace_root)"
-"$msbuild" "$($workspace.solution_path)" $restore_argument /m /nologo /verbosity:minimal /p:Configuration=$configuration /p:Platform=$platform > "$log_path" 2>&1
-set "exit_code=%ERRORLEVEL%"
-popd
-> "$status_path" echo {"state":"completed","exit_code":%exit_code%,"completed_at":"%DATE% %TIME%"}
-exit /b %exit_code%
-"@
-  [System.IO.File]::WriteAllText($command_path, $command, [System.Text.UTF8Encoding]::new($false))
+  # standalone worker: locates its own job file, runs msbuild with splatted
+  # arguments, streams every line to the log, then records a terminal status.
+  # literal here-string so $-tokens resolve inside the worker, not here.
+  $worker = @'
+$ErrorActionPreference = "Stop"
+$job_path = [System.IO.Path]::ChangeExtension($PSCommandPath, ".job.json")
+$job = Get-Content -LiteralPath $job_path -Raw | ConvertFrom-Json
+$exit_code = 1
+$writer = [System.IO.StreamWriter]::new($job.log_path, $false, [System.Text.UTF8Encoding]::new($false))
+try {
+  Push-Location -LiteralPath $job.workspace_root
+  try {
+    $msbuild_arguments = @($job.msbuild_arguments)
+    # native tools may write to stderr; that must not abort log capture, and we
+    # need the real process exit code rather than a thrown NativeCommandError
+    $ErrorActionPreference = "Continue"
+    & $job.msbuild @msbuild_arguments 2>&1 | ForEach-Object {
+      $writer.WriteLine($_.ToString())
+      $writer.Flush()
+    }
+    $exit_code = $LASTEXITCODE
+  }
+  finally {
+    $ErrorActionPreference = "Stop"
+    Pop-Location
+  }
+}
+catch {
+  $writer.WriteLine($_.Exception.Message)
+}
+finally {
+  $writer.Dispose()
+}
+[System.IO.File]::WriteAllText(
+  $job.status_path,
+  ([ordered]@{
+    state = "completed"
+    exit_code = $exit_code
+    started_at = $job.started_at
+    completed_at = [DateTime]::UtcNow.ToString("o")
+  } | ConvertTo-Json -Compress),
+  [System.Text.UTF8Encoding]::new($false)
+)
+exit $exit_code
+'@
+  [System.IO.File]::WriteAllText($worker_path, $worker, [System.Text.UTF8Encoding]::new($false))
 
-  $process = Start-Process -FilePath $env:ComSpec -ArgumentList @("/d", "/s", "/c", "`"$command_path`"") -WorkingDirectory $script:log_directory -PassThru -WindowStyle Hidden
+  # base64-encoded launch sidesteps every layer of shell quoting; the only datum
+  # is the worker path, and it travels inside the encoded script, not a CLI token
+  $launch_script = "& '$($worker_path.Replace("'", "''"))'"
+  $encoded_command = [System.Convert]::ToBase64String([System.Text.Encoding]::Unicode.GetBytes($launch_script))
+
+  $process = Start-Process -FilePath "powershell.exe" -ArgumentList @(
+    "-NoProfile"
+    "-NonInteractive"
+    "-ExecutionPolicy", "Bypass"
+    "-EncodedCommand", $encoded_command
+  ) -WorkingDirectory $script:log_directory -PassThru -WindowStyle Hidden
+
+  [System.IO.File]::WriteAllText(
+    $status_path,
+    (@{ state = "running"; started_at = $started_at; pid = $process.Id } | ConvertTo-Json -Compress),
+    [System.Text.UTF8Encoding]::new($false)
+  )
 
   return [ordered]@{
     build_id = $build_id
@@ -284,7 +352,24 @@ function Read-BuildLog {
   }
 
   $status = Get-Content -LiteralPath $status_path -Raw | ConvertFrom-Json
+  $state = [string]$status.state
   $exit_code = Get-ArgumentValue -arguments $status -name "exit_code" -default_value $null
+
+  # a build that is still marked running but whose process is gone died before
+  # it could record a completion status; surface that instead of running forever
+  if ($state -eq "running") {
+    $build_pid = Get-ArgumentValue -arguments $status -name "pid" -default_value $null
+    if ($null -ne $build_pid -and $null -eq (Get-Process -Id ([int]$build_pid) -ErrorAction SilentlyContinue)) {
+      # re-read once in case the build wrote its completion status as it exited
+      $status = Get-Content -LiteralPath $status_path -Raw | ConvertFrom-Json
+      $state = [string]$status.state
+      $exit_code = Get-ArgumentValue -arguments $status -name "exit_code" -default_value $null
+      if ($state -eq "running") {
+        $state = "failed"
+      }
+    }
+  }
+
   $total_length = $(if (Test-Path -LiteralPath $log_path -PathType Leaf) { (Get-Item -LiteralPath $log_path).Length } else { 0 })
   $safe_offset = [Math]::Min($offset, $total_length)
   $read_length = [int][Math]::Min($length, $total_length - $safe_offset)
@@ -306,7 +391,7 @@ function Read-BuildLog {
 
   return [ordered]@{
     build_id = $build_id
-    state = $status.state
+    state = $state
     exit_code = $exit_code
     offset = $safe_offset
     next_offset = $safe_offset + $read_length

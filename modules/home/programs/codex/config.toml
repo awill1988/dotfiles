@@ -7,11 +7,11 @@ project_doc_fallback_filenames = ["CLAUDE.md", "GEMINI.md"]
 
 [tools]
 websearch = true
+view_image = true
 
-features.web_search_request = true
-features.rmcp_client = true
-
-tools.view_image = true
+[features]
+rmcp_client = true
+apps = false
 
 [mcp_servers.contextforge]
 command = "mcpgw-wrapper"
