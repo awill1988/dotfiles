@@ -454,11 +454,14 @@ in
       bind-key -T copy-mode-vi 'C-j' select-pane -D
       bind-key -T copy-mode-vi 'C-k' select-pane -U
       bind-key -T copy-mode-vi 'C-l' select-pane -R
-      bind r source-file ~/.tmux.conf \; display-message "tmux reloaded"
+      # home-manager writes the config to the XDG path, not ~/.tmux.conf; point
+      # the reload bind at the real file so `prefix r` actually re-sources.
+      bind r source-file ~/.config/tmux/tmux.conf \; display-message "tmux reloaded"
       # quick exits (vim-like: prefix + z / Z)
       bind z confirm-before -p "kill-window? (y/n)" kill-window
       bind Z confirm-before -p "kill-session? (y/n)" kill-session
-      # prefix+space toggles the code picker. the no-prefix alt-space variant is
+      # prefix+e toggles the code picker (mnemonic: explorer, matching nvim's
+      # <leader>e neo-tree toggle). the no-prefix alt-space variant is
       # intentionally omitted: on wsl/windows the win32 window manager claims
       # alt-space for the window system menu, so the keystroke never reaches
       # tmux. the toggle logic lives in `code --toggle-picker` (single source of
@@ -468,7 +471,7 @@ in
       # sh -c as positional parameter $1 followed by `0`, collapsing the target
       # to `0` ("can't find session: 0"). names and indices carry no $ or @, so
       # they survive intact.
-      bind Space run-shell "code --toggle-picker '#{session_name}:#{window_index}'"
+      bind e run-shell "code --toggle-picker '#{session_name}:#{window_index}'"
     '';
   };
 
@@ -819,9 +822,9 @@ in
           # capture each new pane's id so subsequent splits target unambiguously.
           # this dodges base-index / window-index assumptions and surfaces errors
           # per step instead of silently chaining onto the wrong pane.
-          # 3-pane default layout. The picker is on-demand only — prefix+Space
+          # 3-pane default layout. The picker is on-demand only — prefix+e
           # spawns it as a 4th pane, and the single-shot picker collapses it
-          # after a selection (or via prefix+Space again).
+          # after a selection (or via prefix+e again).
           local nvim_pane shell_pane
           {
             nvim_pane=$("$tmux_bin" new-session -d -s "$session" -c "$resolved_path" \
