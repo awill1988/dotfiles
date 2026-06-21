@@ -184,6 +184,10 @@ in
   programs.mise = {
     enable = true;
     enableZshIntegration = true;
+    # stable 25.11 ships mise 2025.11.x; pull the newer build from unstable
+    # (the pkgs-unstable overlay exists for exactly this cherry-pick) so the
+    # fast-moving tool stays current without bumping the whole nixpkgs pin.
+    package = pkgs.pkgs-unstable.mise;
   };
   programs.codex.enable = true;
   programs.agy.enable = true;
