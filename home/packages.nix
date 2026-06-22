@@ -537,7 +537,6 @@ in
         fd
         zsh
         neovim
-        claude
         gawk
       ];
       text = ''
@@ -562,7 +561,10 @@ in
         fd_bin="fd"
         shell_bin="zsh"
         # prefer the user's ~/.local/bin/claude wrapper (sets CLAUDE_CONFIG_DIR
-        # and AWS_PROFILE based on cwd); fall back to the runtimeInput on PATH.
+        # and AWS_PROFILE based on cwd); fall back to the wrapper on PATH.
+        # claude is deliberately NOT in runtimeInputs: that would prepend the
+        # unwrapped binary to PATH and shadow the routing wrapper, breaking the
+        # secondary identity (it would read ~/.config/claude instead).
         claude_bin="$HOME/.local/bin/claude"
         [ -x "$claude_bin" ] || claude_bin="claude"
         nvim_bin="nvim"
