@@ -141,8 +141,9 @@ let
     # Path-Based Identity Routing
     # Restriction zone: ~/projects/arro/* uses Claude-Secondary only.
     arro_prefix="${home_dir}/projects/arro"
+    current_dir="$(pwd -P)"
 
-    if [[ "$PWD" == "$arro_prefix"* ]]; then
+    if [[ "$current_dir" == "$arro_prefix" || "$current_dir" == "$arro_prefix"/* ]]; then
       export AGY_CONFIG_DIR="${agy_restricted_home}"
       export AGY_PEERS="claude-secondary"
       export AGY_STATUS_LABEL="ARRO-RESTRICTED"

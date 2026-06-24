@@ -146,8 +146,9 @@ let
     unset ALL_PROXY all_proxy SOCKS_PROXY socks_proxy
 
     secondary_prefix="${cfg.secondary.pathPrefix}"
+    current_dir="$(pwd -P)"
 
-    if [[ -n "$secondary_prefix" && "$PWD" == "$secondary_prefix"* ]]; then
+    if [[ -n "$secondary_prefix" && ( "$current_dir" == "$secondary_prefix" || "$current_dir" == "$secondary_prefix"/* ) ]]; then
       export CLAUDE_CONFIG_DIR="${claude_secondary_home}"
       ${lib.optionalString (
         cfg.secondary.awsProfile != null
