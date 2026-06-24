@@ -10,6 +10,7 @@ let
   claude_secondary_home = "${config.xdg.configHome}/claude-secondary";
   claude_cache = "${config.xdg.cacheHome}/claude";
   claude_state = "${config.xdg.stateHome}/claude";
+  local_skills_dir = "${config.home.homeDirectory}/.local/share/agent-skills";
   claude_root_config = "${config.home.homeDirectory}/.claude.json";
   claude_instructions_source = ./CLAUDE.md;
 
@@ -120,6 +121,27 @@ let
   claude_wrapper = pkgs.writeShellScriptBin "claude" ''
     set -euo pipefail
 
+    sync_local_skills() {
+      local target_dir="$1/skills"
+      local source
+      local target
+
+      [[ -d "${local_skills_dir}" ]] || return 0
+      mkdir -p "$target_dir"
+
+      for source in "${local_skills_dir}"/*; do
+        [[ -f "$source/SKILL.md" ]] || continue
+        target="$target_dir/$(basename "$source")"
+
+        if [[ -e "$target" && ! -L "$target" ]]; then
+          echo "preserving unmanaged skill $target" >&2
+          continue
+        fi
+
+        ${pkgs.coreutils}/bin/ln -sfnT "$source" "$target"
+      done
+    }
+
     # bypass socks proxy for claude and mcp servers
     unset ALL_PROXY all_proxy SOCKS_PROXY socks_proxy
 
@@ -142,6 +164,8 @@ let
         cfg.primary.awsRegion != null
       ) ''export AWS_REGION="${cfg.primary.awsRegion}"''}
     fi
+
+    sync_local_skills "$CLAUDE_CONFIG_DIR"
 
     exec "${base_package}/bin/claude" "$@"
   '';

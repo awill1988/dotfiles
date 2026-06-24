@@ -7,6 +7,7 @@
 let
   cfg = config.programs.codex;
   codex_config_dir = "${config.xdg.configHome}/codex";
+  local_skills_dir = "${config.home.homeDirectory}/.local/share/agent-skills";
   config_source = ./config.toml;
   agents_override_source = ./AGENTS.override.md;
   default_rules = ''
@@ -90,11 +91,38 @@ let
         decision = "allow",
     )
   '';
+  codex_wrapper = pkgs.writeShellScriptBin "codex" ''
+    set -euo pipefail
+
+    target_dir="${codex_config_dir}/skills"
+
+    if [[ -d "${local_skills_dir}" ]]; then
+      mkdir -p "$target_dir"
+
+      for source in "${local_skills_dir}"/*; do
+        [[ -f "$source/SKILL.md" ]] || continue
+        target="$target_dir/$(basename "$source")"
+
+        if [[ -e "$target" && ! -L "$target" ]]; then
+          echo "preserving unmanaged skill $target" >&2
+          continue
+        fi
+
+        ${pkgs.coreutils}/bin/ln -sfnT "$source" "$target"
+      done
+    fi
+
+    exec "${cfg.package}/bin/codex" "$@"
+  '';
 in
 {
   config = lib.mkIf cfg.enable {
     programs.codex.package = lib.mkDefault pkgs.codex;
     home.sessionVariables.CODEX_HOME = lib.mkDefault codex_config_dir;
+
+    # Keep private skills outside the Nix store. This wrapper materializes them
+    # into Codex's native discovery directory at every invocation.
+    home.file.".local/bin/codex".source = "${codex_wrapper}/bin/codex";
 
     xdg.configFile."codex/AGENTS.override.md" = {
       source = agents_override_source;
