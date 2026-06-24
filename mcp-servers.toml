@@ -59,7 +59,19 @@ args = ["--store-path", "/Users/adam/Library/Group Containers/group.ai.yourmood.
 bridge = { port = 4454 }
 gateway_register = true
 
-# TODO: oauth servers — need contextforge oauth_config or mcp-remote bridge
+# customer.io uses mcp-remote for oauth. the bridge supervisor runs exactly one
+# mcp-remote process; all claude sessions share the authenticated connection via
+# the contextforge gateway. oauth must be completed once interactively before
+# the bridge can run headlessly (token cached in ~/.mcp-auth/mcp-remote-*/)
+[[servers]]
+name = "customerio"
+transport = "stdio"
+command = "npx"
+args = ["-y", "mcp-remote", "https://mcp.customer.io/mcp"]
+bridge = { port = 4455 }
+gateway_register = true
+
+# TODO: other oauth servers — need contextforge oauth_config or mcp-remote bridge
 # these require interactive browser auth on first use; register via gateway
 # oauth_config once atlassian/linear developer apps are configured.
 #

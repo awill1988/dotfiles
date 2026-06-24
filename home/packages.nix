@@ -234,14 +234,6 @@ in
             VANTA_ENV_FILE = "\${VANTA_ENV_FILE}";
           };
         };
-        customerio = {
-          command = "npx";
-          args = [
-            "-y"
-            "mcp-remote"
-            "https://mcp.customer.io/mcp"
-          ];
-        };
         figma = {
           command = "npx";
           args = [
