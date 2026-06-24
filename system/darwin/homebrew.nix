@@ -58,13 +58,10 @@ in
   homebrew.onActivation.extraFlags = [ "--force" ];
   homebrew.global.brewfile = true;
 
-  homebrew.taps = [ "emqx/mqttx" ];
-
   homebrew.brews = [
     "apktool"
     "bundletool"
     "cocoapods"
-    "emqx/mqttx/mqttx-cli"
     "imessage-exporter"
     "jadx"
     "ldns"

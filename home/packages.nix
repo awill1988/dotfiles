@@ -504,6 +504,7 @@ in
     wget
     curl
     socat
+    mqttx-cli # mqtt cli (replaces untrusted emqx/mqttx homebrew tap)
 
     # software development
     vim
