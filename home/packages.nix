@@ -191,6 +191,7 @@ in
   };
   programs.codex.enable = true;
   programs.agy.enable = true;
+  programs.agent-skills.enable = true;
   programs.contextforge.enable = true;
   programs.blender-mcp = {
     enable = true;

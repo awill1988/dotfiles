@@ -255,6 +255,22 @@
         "type": "gitlab"
       }
     },
+    "golang-skills": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1781928723,
+        "narHash": "sha256-znoXhXoN2GfTii8uRLsLxDxazAOjoknRalVjAMdyJD4=",
+        "owner": "cxuu",
+        "repo": "golang-skills",
+        "rev": "91f0c2eef559a3168f9d3c38f5f99936d472b508",
+        "type": "github"
+      },
+      "original": {
+        "owner": "cxuu",
+        "repo": "golang-skills",
+        "type": "github"
+      }
+    },
     "home-manager": {
       "inputs": {
         "nixpkgs": [
@@ -485,6 +501,7 @@
       "inputs": {
         "darwin": "darwin",
         "flake-utils": "flake-utils",
+        "golang-skills": "golang-skills",
         "home-manager": "home-manager",
         "mac-app-util": "mac-app-util",
         "nixpkgs": "nixpkgs_5",

@@ -18,6 +18,14 @@
     flake-utils.url = "github:numtide/flake-utils";
     mac-app-util.url = "github:hraban/mac-app-util";
 
+    # vendored agent skills (installed via the agent-skills module, not the
+    # claude code plugin marketplace); pinned in flake.lock, bumped with
+    # `nix flake update golang-skills`.
+    golang-skills = {
+      url = "github:cxuu/golang-skills";
+      flake = false;
+    };
+
     stylix = {
       url = "github:danth/stylix/release-25.11";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -224,6 +232,9 @@
         home-gpg = import ./home/gpg.nix;
         home-gemini = import ./modules/home/programs/gemini;
         home-agy = import ./modules/home/programs/agy;
+        home-agent-skills = import ./modules/home/programs/agent-skills {
+          golang_skills_src = inputs.golang-skills;
+        };
         home-claude = import ./modules/home/programs/claude;
         home-contextforge = import ./modules/home/programs/contextforge;
         home-packages = import ./home/packages.nix;
