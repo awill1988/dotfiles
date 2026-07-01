@@ -88,6 +88,21 @@ in
           # prefer GUI pinentry when DISPLAY/WAYLAND is available; fallback to curses otherwise
           pkgs.writeShellScriptBin "pinentry" ''
             set -e
+            # check if running inside WSL
+            if [[ -f /proc/version ]] && [[ "$(< /proc/version)" == *[Mm]icrosoft* ]]; then
+              # look for Windows pinentry.exe in common installation paths
+              for win_pinentry in \
+                "/mnt/c/Program Files/Git/usr/bin/pinentry.exe" \
+                "/mnt/c/Program Files (x86)/GnuPG/bin/pinentry.exe" \
+                "/mnt/c/Program Files/GnuPG/bin/pinentry.exe" \
+                "/mnt/c/Program Files (x86)/Gpg4win/bin/pinentry.exe" \
+                "/mnt/c/Program Files/Gpg4win/bin/pinentry.exe"; do
+                if [ -x "$win_pinentry" ]; then
+                  exec "$win_pinentry" "$@"
+                fi
+              done
+            fi
+
             if [ -n "''${DISPLAY:-}" ] || [ -n "''${WAYLAND_DISPLAY:-}" ]; then
               exec ${pkgs.pinentry-gtk2}/bin/pinentry-gtk-2 "$@"
             fi
