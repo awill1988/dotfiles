@@ -1,23 +1,23 @@
 final: prev:
 let
-  version = "2.1.179";
+  version = "2.1.197";
 
   platform_info = {
     aarch64-darwin = {
       artifact = "claude-darwin-arm64.tar.gz";
-      hash = "sha256-ATfY28ldOpk9x0WArUw706GHxSaIKvBdC11rBGL9r+M=";
+      hash = "sha256-9hZAL4fCeMnckpfnA6/RshFE9MSyjNRdHizNyJ6vngM=";
     };
     x86_64-darwin = {
       artifact = "claude-darwin-x64.tar.gz";
-      hash = "sha256-gM7l8bt3OqgXEXSBbtLNn0MN0WpVaNuOAlTWY2gkW7k=";
+      hash = "sha256-ACbeSUvgJPWzxCMKlfKOta10W9TBwAY1VnJ9VLEfdpk=";
     };
     x86_64-linux = {
       artifact = "claude-linux-x64.tar.gz";
-      hash = "sha256-qyMyVgdp8XF+whX0c30ZRF8lH7fM7i3gIHoSnsz1LiE=";
+      hash = "sha256-SZZzOxkUOkhOcNIdfs+FdiBzBgBtH1tfqXbuX2DGDf8=";
     };
     aarch64-linux = {
       artifact = "claude-linux-arm64.tar.gz";
-      hash = "sha256-JDnzWhUgxP+fuHSIk9tTy+sl6YzuOILOp9h3TKPpeLs=";
+      hash = "sha256-0/G3npylayo+t4Ydv3fZThu5ql4lrrpatbGIjIbJLKs=";
     };
   };
 
@@ -61,7 +61,8 @@ in {
 
     postFixup = ''
       wrapProgram $out/bin/claude \
-        --set CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC 1
+        --set CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC 1 \
+        --set DO_NOT_TRACK 1
     '';
 
     meta = with prev.lib; {

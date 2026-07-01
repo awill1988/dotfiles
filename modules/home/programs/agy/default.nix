@@ -134,9 +134,12 @@ let
 
     # Privacy Lockdown (Mandatory Dark Mode)
     export AGY_TELEMETRY_ENABLED=false
+    export ANTIGRAVITY_TELEMETRY_ENABLED=false
     export ANTIGRAVITY_DATA_COLLECTION=opt-out
     export GOTELEMETRY=off
     export AGY_CLI_DISABLE_TELEMETRY=true
+    export OTEL_SDK_DISABLED=true
+    export DO_NOT_TRACK=1
 
     # Path-Based Identity Routing
     # Restriction zone: ~/projects/arro/* uses Claude-Secondary only.

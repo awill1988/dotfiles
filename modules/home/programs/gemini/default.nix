@@ -77,6 +77,9 @@ let
     export GEMINI_TELEMETRY_ENABLED=false
     export GEMINI_TELEMETRY_TRACES_ENABLED=false
     export GEMINI_TELEMETRY_LOG_PROMPTS=false
+    export GEMINI_ANALYTICS_DISABLED=true
+    export OTEL_SDK_DISABLED=true
+    export DO_NOT_TRACK=1
 
     exec "${cfg.package}/bin/gemini" --policy "${gemini_home}/policies/aws-readonly.toml" "$@"
   '';

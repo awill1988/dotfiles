@@ -112,6 +112,12 @@ let
       done
     fi
 
+    # telemetry opt-outs; config.toml [analytics] enabled = false covers the
+    # structured analytics endpoint; these cover any otel/sdk pathways.
+    export CODEX_DISABLE_TELEMETRY=1
+    export OTEL_SDK_DISABLED=true
+    export DO_NOT_TRACK=1
+
     exec "${cfg.package}/bin/codex" "$@"
   '';
 in
