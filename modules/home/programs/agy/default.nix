@@ -11,122 +11,90 @@ let
   agy_restricted_home = "${config.xdg.configHome}/antigravity-restricted";
 
   # Unrestricted: Standard peer suite
-  primary_settings = builtins.toJSON {
+  primary_settings_src = pkgs.writeText "agy-settings-primary.json" (builtins.toJSON {
     agentEcosystem = {
       orchestrator = "agy";
       peers = [
-        {
-          name = "claude";
-          bin = "claude";
-          enabled = true;
-        }
-        {
-          name = "gemini";
-          bin = "gemini";
-          enabled = true;
-        }
-        {
-          name = "codex";
-          bin = "codex";
-          enabled = true;
-        }
+        { name = "claude"; bin = "claude"; enabled = true; }
+        { name = "gemini"; bin = "gemini"; enabled = true; }
+        { name = "codex"; bin = "codex"; enabled = true; }
       ];
     };
-    privacy = {
-      enableTelemetry = false;
-      interactionCollection = "off";
-      usageStatisticsEnabled = false;
-      telemetry = false;
-    };
+    privacy = { enableTelemetry = false; interactionCollection = "off"; usageStatisticsEnabled = false; telemetry = false; };
     permissions = {
       allowedMcpTools = [
-        "contextforge.aws-call-aws"
-        "contextforge.aws-suggest-aws-commands"
-        "contextforge.aws-docs-read-documentation"
-        "contextforge.aws-docs-read-sections"
-        "contextforge.aws-docs-search-documentation"
-        "contextforge.aws-docs-recommend"
+        "contextforge.aws-call-aws" "contextforge.aws-suggest-aws-commands" "contextforge.aws-docs-read-documentation"
+        "contextforge.aws-docs-read-sections" "contextforge.aws-docs-search-documentation" "contextforge.aws-docs-recommend"
       ];
       allowedShellCommands = [
-        "aws configure list"
-        "aws sts get-caller-identity"
-        "aws s3 ls"
-        "cat"
-        "env"
-        "file"
-        "find"
-        "grep"
-        "head"
-        "ls"
-        "pwd"
-        "rg"
-        "tail"
-        "wc"
-        "which"
-        "whoami"
+        "aws configure list" "aws sts get-caller-identity" "aws s3 ls" "cat" "env" "file" "find" "grep" "head" "ls" "pwd" "rg" "tail" "wc" "which" "whoami"
       ];
     };
-    mcpServers = {
-      contextforge = {
-        command = "mcpgw-wrapper";
-      };
-    };
-  };
+    mcpServers = { contextforge = { command = "mcpgw-wrapper"; }; };
+  });
 
   # Restricted (Arro): Claude Secondary ONLY
-  restricted_settings = builtins.toJSON {
+  restricted_settings_src = pkgs.writeText "agy-settings-restricted.json" (builtins.toJSON {
     agentEcosystem = {
       orchestrator = "agy";
-      peers = [
-        {
-          name = "claude-secondary";
-          bin = "claude";
-          enabled = true;
-        }
-      ];
+      peers = [{ name = "claude-secondary"; bin = "claude"; enabled = true; }];
     };
-    privacy = {
-      enableTelemetry = false;
-      interactionCollection = "off";
-      usageStatisticsEnabled = false;
-      telemetry = false;
-    };
+    privacy = { enableTelemetry = false; interactionCollection = "off"; usageStatisticsEnabled = false; telemetry = false; };
     permissions = {
       allowedMcpTools = [
-        "contextforge.aws-call-aws"
-        "contextforge.aws-suggest-aws-commands"
-        "contextforge.aws-docs-read-documentation"
-        "contextforge.aws-docs-read-sections"
-        "contextforge.aws-docs-search-documentation"
-        "contextforge.aws-docs-recommend"
+        "contextforge.aws-call-aws" "contextforge.aws-suggest-aws-commands" "contextforge.aws-docs-read-documentation"
+        "contextforge.aws-docs-read-sections" "contextforge.aws-docs-search-documentation" "contextforge.aws-docs-recommend"
       ];
       allowedShellCommands = [
-        "aws configure list"
-        "aws sts get-caller-identity"
-        "aws s3 ls"
-        "cat"
-        "env"
-        "file"
-        "find"
-        "grep"
-        "head"
-        "ls"
-        "pwd"
-        "rg"
-        "tail"
-        "wc"
-        "which"
-        "whoami"
+        "aws configure list" "aws sts get-caller-identity" "aws s3 ls" "cat" "env" "file" "find" "grep" "head" "ls" "pwd" "rg" "tail" "wc" "which" "whoami"
       ];
     };
-    mcpServers = {
-      contextforge = {
-        command = "mcpgw-wrapper";
-      };
-    };
-  };
+    mcpServers = { contextforge = { command = "mcpgw-wrapper"; }; };
+  });
 
   claude_instructions_source = ../claude/CLAUDE.md;
+
+  agy_settings_reset = pkgs.writeShellScriptBin "agy-settings-reset" ''
+    set -euo pipefail
+
+    usage() {
+      echo "usage: agy-settings-reset [primary|restricted|all]" >&2
+      exit 2
+    }
+
+    reset_settings() {
+      local source="$1"
+      local target="$2"
+      local backup
+
+      mkdir -p "$(dirname "$target")"
+
+      if [[ -e "$target" || -L "$target" ]]; then
+        backup="''${target}.backup-$(${pkgs.coreutils}/bin/date +%Y%m%d%H%M%S)"
+        ${pkgs.coreutils}/bin/cp -L --preserve=mode "$target" "$backup"
+        echo "backed up $target to $backup"
+      fi
+
+      ${pkgs.coreutils}/bin/install -m 600 "$source" "$target"
+      echo "reset $target"
+    }
+
+    case "''${1:-all}" in
+      primary)
+        reset_settings "${primary_settings_src}" "${agy_home}/settings.json"
+        ;;
+      restricted)
+        reset_settings "${restricted_settings_src}" "${agy_restricted_home}/settings.json"
+        ;;
+      all)
+        reset_settings "${primary_settings_src}" "${agy_home}/settings.json"
+        reset_settings "${restricted_settings_src}" "${agy_restricted_home}/settings.json"
+        ;;
+      *)
+        usage
+        ;;
+    esac
+  '';
 
   # The Identity-Routing Wrapper
   agy_wrapper = pkgs.writeShellScriptBin "agy" ''
@@ -170,13 +138,33 @@ in
   };
 
   config = lib.mkIf cfg.enable {
-    home.packages = [ agy_wrapper ];
+    home.packages = [ agy_wrapper agy_settings_reset ];
 
-    # Seed Dual Identities
-    xdg.configFile."antigravity/settings.json".text = primary_settings;
-    xdg.configFile."antigravity-restricted/settings.json".text = restricted_settings;
+    # Primary and restricted settings are mutable runtime state: AGY updates them
+    # through /config and peer toggles. Activation seeds them from the Nix store
+    # if absent, and migrates any pre-existing read-only symlink to a writable file.
+    home.activation.ensureAgyConfig = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+      seed_agy_settings() {
+        local source="$1"
+        local target="$2"
 
-    # Compatibility instructions are sourced from the Claude canonical file.
+        mkdir -p "$(dirname "$target")"
+
+        # Migrate the previous Home Manager symlink to a writable runtime file.
+        if [[ -L "$target" ]]; then
+          rm -f "$target"
+        fi
+
+        # Existing real files belong to AGY and must survive rebuilds.
+        if [[ ! -e "$target" ]]; then
+          install -m 600 "$source" "$target"
+        fi
+      }
+
+      seed_agy_settings "${primary_settings_src}" "${agy_home}/settings.json"
+      seed_agy_settings "${restricted_settings_src}" "${agy_restricted_home}/settings.json"
+    '';
+
     xdg.configFile."antigravity/AGY.md".source = claude_instructions_source;
     xdg.configFile."antigravity-restricted/AGY.md".source = claude_instructions_source;
 
