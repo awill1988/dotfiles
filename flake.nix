@@ -195,7 +195,21 @@
                 # ext.wsl.usbipd.distro_name = "Debian";
                 ext.wsl.usbipd.auto_attach = true;
                 ext.wsl.pcscd.enable = true;
-                home.sessionVariables.LD_LIBRARY_PATH = "/usr/lib/wsl/lib:$LD_LIBRARY_PATH";
+                home.sessionVariables = {
+                  LD_LIBRARY_PATH = "/usr/lib/wsl/lib:${pkgs.onnxruntime}/lib:${pkgs.openssl.out}/lib:$LD_LIBRARY_PATH";
+                  ORT_STRATEGY = "system";
+                  ORT_PREFER_DYNAMIC_LINK = "true";
+                  ORT_LIB_PATH = "${pkgs.onnxruntime}/lib";
+                  ORT_LIB_LOCATION = "${pkgs.onnxruntime}/lib";
+                  PROTOC = "${pkgs.protobuf}/bin/protoc";
+                };
+                home.file.".cargo/config.toml".text = ''
+                  [target.x86_64-unknown-linux-gnu]
+                  rustflags = [
+                    "-C", "link-arg=-Wl,-dynamic-linker=${pkgs.glibc.out}/lib/ld-linux-x86-64.so.2",
+                    "-C", "link-arg=-Wl,-rpath=${pkgs.glibc.out}/lib"
+                  ]
+                '';
                 programs.contextforge.windows_dev.workspace_root = "${config.home.homeDirectory}/projects/yourmood.ai/workshop";
 
                 # codex: skip tests on WSL to avoid flaky upstream suite

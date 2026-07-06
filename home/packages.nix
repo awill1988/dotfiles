@@ -886,6 +886,8 @@ in
     jsonnet
     qemu
     protobuf
+    openssl
+    onnxruntime
 
     # programming languages and runtimes
     # elixir / erlang (OTP)
