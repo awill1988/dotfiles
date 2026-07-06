@@ -901,7 +901,14 @@ in
     '')
 
     # rust
-    rustup
+    (rust-bin.stable.latest.default.override {
+      extensions = [
+        "rust-src"
+        "rust-analyzer"
+        "clippy"
+        "llvm-tools-preview"
+      ];
+    })
 
     # go
     go_1_25
