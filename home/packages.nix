@@ -270,6 +270,16 @@ in
             "https://mcp.sentry.dev/mcp"
           ];
         };
+        grafana = {
+          command = "uvx";
+          args = [ "mcp-grafana" ];
+          env = {
+            # public alb endpoint — grafana.monitoring.arrofinance.io →
+            # dashboards alb (us-west-2) via monitoring_dns.tf alias record.
+            GRAFANA_URL = "https://grafana.monitoring.arrofinance.io";
+            GRAFANA_SERVICE_ACCOUNT_TOKEN = "\${GRAFANA_SERVICE_ACCOUNT_TOKEN}";
+          };
+        };
       };
     };
   };
