@@ -22,6 +22,7 @@ class StdioJsonRpcBridge:
         self.pending_lock = asyncio.Lock()
         self.stdout_task = None
         self.stderr_task = None
+        self.in_flight = 0  # count of requests awaiting a response
 
     async def start(self) -> None:
         if self.proc and self.proc.returncode is None:
@@ -168,6 +169,7 @@ class StdioJsonRpcBridge:
             )
 
         try:
+            self.in_flight += 1
             return await asyncio.wait_for(future, timeout=self.response_timeout)
         except asyncio.TimeoutError:
             async with self.pending_lock:
@@ -186,6 +188,8 @@ class StdioJsonRpcBridge:
                 -32004,
                 str(exc),
             )
+        finally:
+            self.in_flight = max(0, self.in_flight - 1)
 
     async def notify(self, raw_body: str) -> None:
         await self.start()
@@ -228,6 +232,14 @@ def build_app(bridge: StdioJsonRpcBridge) -> FastAPI:
 
     @app.get("/healthz")
     async def healthz():
+        return PlainTextResponse("ok")
+
+    @app.get("/ready")
+    async def ready():
+        """503 while a query is in flight so the bridge supervisor skips
+        the liveness failure counter rather than killing an active query."""
+        if bridge.in_flight > 0:
+            return PlainTextResponse("busy", status_code=503)
         return PlainTextResponse("ok")
 
     return app

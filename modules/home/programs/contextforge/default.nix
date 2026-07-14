@@ -56,9 +56,9 @@ let
       "DB_POOL_TIMEOUT=10"
       "DB_POOL_RECYCLE=1800"
 
-      # tool invocation timeout — must exceed snowflake session timeout (10s)
-      # plus bridge overhead
-      "TOOL_TIMEOUT=30"
+      # tool invocation timeout — must exceed the bridge response-timeout (120s)
+      # plus http overhead. snowflake bridge is the slowest path.
+      "TOOL_TIMEOUT=130"
 
       "ENVIRONMENT=${cfg.environment}"
       "AUTH_REQUIRED=false"

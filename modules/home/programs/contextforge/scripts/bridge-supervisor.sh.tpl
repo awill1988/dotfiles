@@ -115,10 +115,10 @@ initial_backoff=3         # seconds
 max_backoff=300           # 5 minutes cap
 retry_cooldown=600        # 10 minutes before retrying a stopped bridge
 readiness_timeout=15      # seconds to wait for bridge readiness
-liveness_interval=15      # seconds between liveness checks per bridge
-liveness_timeout=10       # seconds to wait for liveness response
-liveness_restart_after=2  # consecutive failures before restarting (allows slow API calls)
-max_liveness_fails=8      # consecutive failures before backing off
+liveness_interval=30      # seconds between liveness checks per bridge
+liveness_timeout=20       # seconds to wait for liveness response
+liveness_restart_after=4  # consecutive failures before restarting (allows slow API calls)
+max_liveness_fails=12     # consecutive failures before backing off
 
 declare -A liveness_fails
 declare -A last_liveness
@@ -166,9 +166,11 @@ start_bridge() {
   echo "bridge supervisor: starting $name on port $port"
   local bridge_cmd
   if [[ "$name" == "snowflake" ]]; then
-    # wait slightly longer than the enforced 10s snowflake session timeout so
-    # the bridge returns the real error instead of a hanging accepted response.
-    bridge_cmd="@GATEWAY_PYTHON@ \"@SNOWFLAKE_BRIDGE_PY@\" --cmd \"$cmd\" --port $port --host 127.0.0.1 --response-timeout 15"
+    # response-timeout must exceed the longest expected query runtime. the
+    # supervisor liveness probe also uses this budget (ping blocks while a
+    # query is in flight), so 120s gives headroom for warehouse cold-starts
+    # and large scans while still returning a real error on hard hangs.
+    bridge_cmd="@GATEWAY_PYTHON@ \"@SNOWFLAKE_BRIDGE_PY@\" --cmd \"$cmd\" --port $port --host 127.0.0.1 --response-timeout 120"
   else
     bridge_cmd="@GATEWAY_PYTHON@ -m mcpgateway.translate --stdio \"$cmd\" --expose-streamable-http --port $port --host 127.0.0.1 --stateless --jsonResponse"
   fi
@@ -300,6 +302,16 @@ while true; do
 
       last_liveness[$name]="$now"
       port="${bridge_ports[$name]}"
+
+      # for snowflake: check /ready first (503 means busy with a query —
+      # treat as alive and skip this cycle rather than counting a failure).
+      if [[ "$name" == "snowflake" ]]; then
+        ready_status=$(curl -s -o /dev/null -w "%{http_code}" --max-time 3 "http://127.0.0.1:$port/ready" 2>/dev/null || echo "000")
+        if [[ "$ready_status" == "503" ]]; then
+          liveness_fails[$name]=0  # busy but alive — reset counter
+          continue
+        fi
+      fi
 
       if ! curl -sf --max-time "$liveness_timeout" -X POST \
           -H "Content-Type: application/json" \
