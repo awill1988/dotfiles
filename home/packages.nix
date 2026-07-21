@@ -235,13 +235,20 @@ in
             VANTA_ENV_FILE = "\${VANTA_ENV_FILE}";
           };
         };
+        # Figma's OAuth DCR endpoint is closed/waitlisted — mcp-remote's dynamic
+        # registration gets a 403 regardless of client identity. Use figma-developer-mcp
+        # (framelink.ai) instead: PAT-based, no OAuth needed.
+        # Set FIGMA_API_KEY to a personal access token from figma.com/settings.
         figma = {
           command = "npx";
           args = [
             "-y"
-            "mcp-remote"
-            "https://mcp.figma.com/mcp"
+            "figma-developer-mcp@latest"
+            "--stdio"
           ];
+          env = {
+            FIGMA_API_KEY = "\${FIGMA_API_KEY}";
+          };
         };
         google-docs = {
           command = "npx";
