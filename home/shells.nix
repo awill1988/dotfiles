@@ -104,8 +104,6 @@ in {
     wanip6 =
       "dig @resolver1.ipv6-sandbox.opendns.com AAAA myip.opendns.com +short -6";
 
-    git-prune-local =
-      "git fetch -p && git branch -vv | awk '/: gone]/{print $1}' | xargs git branch -D";
 
     # MLX Local LLM serving and lazy env setup for Apple Silicon M5
     mlx-serve-r1 = "source ~/.local/share/mlx-env/bin/activate && mlx_lm.server --model mlx-community/DeepSeek-R1-Distill-Qwen-32B-4bit --port 8082";
@@ -292,6 +290,44 @@ in {
     }
 
     autoload -U promptinit; promptinit
+
+    # Prune local branches whose remote tracking ref is gone (merged PRs).
+    # Defaults to dry-run mode; pass --no-dry-run to actually delete.
+    function git-prune-local() {
+      local dry_run=true
+
+      for arg in "$@"; do
+        case "$arg" in
+          --dry-run)    dry_run=true ;;
+          --no-dry-run) dry_run=false ;;
+          *)
+            echo "usage: git-prune-local [--dry-run|--no-dry-run]"
+            return 1
+            ;;
+        esac
+      done
+
+      git fetch --prune
+
+      local branches
+      branches="$(git branch -vv | awk '/: gone]/{print $1}')"
+
+      if [[ -z "$branches" ]]; then
+        echo "no stale local branches found"
+        return 0
+      fi
+
+      if [[ "$dry_run" == true ]]; then
+        echo "[dry-run] branches that would be deleted:"
+        echo "$branches"
+        echo ""
+        echo "run with --no-dry-run to delete"
+      else
+        echo "deleting stale local branches:"
+        echo "$branches"
+        echo "$branches" | xargs git branch -D
+      fi
+    }
   '';
 
   # Ensure crypto directories exist with proper permissions before shells run.
