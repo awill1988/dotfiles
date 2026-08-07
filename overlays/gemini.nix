@@ -1,9 +1,9 @@
 final: prev:
 let
-  version = "0.53.0";
+  version = "0.54.4";
   src = prev.fetchzip {
     url = "https://github.com/google-gemini/gemini-cli/releases/download/v${version}/gemini-cli-bundle.zip";
-    hash = "sha256-KjB9EKRZYOi3yIPeFfo3oekH6teXPTcAy17Vmkj9Vn8=";
+    hash = "sha256-UA6j3PSoUeBN0YgDkuYd4ckO1va+0z/zkg7MPu5zWt4=";
     stripRoot = false;
   };
   nodejs = prev.nodejs_latest;

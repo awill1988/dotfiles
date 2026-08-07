@@ -1,23 +1,23 @@
 final: prev:
 let
-  version = "2.1.220";
+  version = "2.1.224";
 
   platform_info = {
     aarch64-darwin = {
       artifact = "claude-darwin-arm64.tar.gz";
-      hash = "sha256-HIldPXqXzB69RXovZLogISR23oJGjko/wUK+7uJw5V4=";
+      hash = "sha256-egIoyVuKXVrAiMA8/jgQ+s2d6JND3EqJLcechBrsFBY=";
     };
     x86_64-darwin = {
       artifact = "claude-darwin-x64.tar.gz";
-      hash = "sha256-PJByI58F/dTKagKljYkvLM8EYP9+XJSpyI1l6zOD2hY=";
+      hash = "sha256-0bV25HfbJi1FcFsaHzVCxP44Abl2KnxloSUHKcFZT3g=";
     };
     x86_64-linux = {
       artifact = "claude-linux-x64.tar.gz";
-      hash = "sha256-5p5/cteEwkO8w3eleK2f+OZa4U2mcvu/nyunv0fsp+w=";
+      hash = "sha256-ddb2S80tFrrQglqOjHRnAlE7N1xHSEo3PwsFf/SZGOc=";
     };
     aarch64-linux = {
       artifact = "claude-linux-arm64.tar.gz";
-      hash = "sha256-pPLpNiGxUhcx0fEyyD+CZjhEA6sp4UmG1n47SoBb9FQ=";
+      hash = "sha256-b3IYjTWTERtKjm1ziEQgnOQvlCdfnVmB8xI9RipmwVc=";
     };
   };
 
