@@ -531,6 +531,8 @@ in
     cmake
     pkg-config
     jq # command line json processor
+    just # command runner
+    sops # secrets file editor/decrypter
     shellcheck
     shfmt # shell parser and formatter
     vale
