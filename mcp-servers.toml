@@ -52,12 +52,21 @@ bridge = { port = 4453 }
 gateway_register = true
 
 [[servers]]
-name = "mercury"
+name = "yourmood-ai-mercury"
 transport = "stdio"
-command = "/Users/adam/Library/Developer/Xcode/DerivedData/Workshop-czbstkoxwbdhiddnipimylrdjoqo/Build/Products/Debug/Mercury.app/Contents/MacOS/MCPBridge"
-args = ["--store-path", "/Users/adam/Library/Group Containers/group.ai.yourmood.workshop/Library/Application Support/default.store"]
+command = "/Users/adam/Library/Developer/Xcode/DerivedData/Workshop-eitcafffbqbnhheyyxfdldfqsjlr/Build/Products/Debug/MCPBridge"
+env = { DYLD_FRAMEWORK_PATH = "/Users/adam/Library/Developer/Xcode/DerivedData/Workshop-eitcafffbqbnhheyyxfdldfqsjlr/Build/Products/Debug" }
 platforms = ["darwin"]
 bridge = { port = 4454 }
+gateway_register = true
+
+[[servers]]
+name = "yourmood-ai-gyst"
+transport = "stdio"
+command = "/Users/adam/Library/Developer/Xcode/DerivedData/Workshop-eitcafffbqbnhheyyxfdldfqsjlr/Build/Products/Debug/MCPBridge"
+env = { DYLD_FRAMEWORK_PATH = "/Users/adam/Library/Developer/Xcode/DerivedData/Workshop-eitcafffbqbnhheyyxfdldfqsjlr/Build/Products/Debug" }
+platforms = ["darwin"]
+bridge = { port = 4455 }
 gateway_register = true
 
 

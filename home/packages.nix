@@ -538,6 +538,7 @@ in
     vale
     gh # github cli tool
     act # github action test
+    maestro # mobile ui automation (ios/android simulator testing)
     (pkgs.writeShellApplication {
       name = "code";
       # runtimeInputs are prepended to PATH so bare binary names resolve to the
