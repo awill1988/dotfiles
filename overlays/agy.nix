@@ -40,9 +40,7 @@ in
     # The tarball expands to a single top-level file named `antigravity`, not a directory.
     sourceRoot = ".";
 
-    nativeBuildInputs = lib.optionals prev.stdenv.isLinux [
-      prev.autoPatchelfHook
-    ];
+    nativeBuildInputs = lib.optionals prev.stdenv.isLinux [ prev.autoPatchelfHook ];
 
     buildInputs = lib.optionals prev.stdenv.isLinux [
       prev.stdenv.cc.cc.lib

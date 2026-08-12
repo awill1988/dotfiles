@@ -45,8 +45,5 @@ in
         };
       pkg = mkGemini { };
     in
-    pkg
-    // {
-      override = args: mkGemini ({ } // args);
-    };
+    pkg // { override = args: mkGemini ({ } // args); };
 }

@@ -131,7 +131,8 @@ in
 
     home.packages = [
       pkgs.wslu # provides wslview for Windows default applications
-    ] ++ lib.optionals cfg.pcscd.enable [
+    ]
+    ++ lib.optionals cfg.pcscd.enable [
       pkgs.pcsclite
       pkgs.pcsc-tools
       pkgs.ccid

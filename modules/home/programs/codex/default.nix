@@ -129,6 +129,7 @@ in
     # Keep private skills outside the Nix store. This wrapper materializes them
     # into Codex's native discovery directory at every invocation.
     home.file.".local/bin/codex".source = "${codex_wrapper}/bin/codex";
+    home.file.".local/bin/codex-code-mode-host".source = "${cfg.package}/bin/codex-code-mode-host";
 
     xdg.configFile."codex/AGENTS.override.md" = {
       source = agents_override_source;
@@ -159,10 +160,12 @@ in
         fi
         if ! grep -q 'code_mode_host' "$config_target"; then
           if grep -q '^\[features\]' "$config_target"; then
-            ${pkgs.gnused}/bin/sed -i '/^\[features\]/a code_mode_host = false' "$config_target"
+            ${pkgs.gnused}/bin/sed -i '/^\[features\]/a code_mode_host = true' "$config_target"
           else
-            echo -e "\n[features]\ncode_mode_host = false" >> "$config_target"
+            echo -e "\n[features]\ncode_mode_host = true" >> "$config_target"
           fi
+        else
+          ${pkgs.gnused}/bin/sed -i 's/^code_mode_host = false/code_mode_host = true/' "$config_target"
         fi
       fi
     '';

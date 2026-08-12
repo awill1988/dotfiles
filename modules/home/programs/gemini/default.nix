@@ -91,9 +91,7 @@ in
       type = lib.types.package;
       default =
         if config.modules.dev.node.enable then
-          pkgs.gemini.override {
-            nodejs = config.modules.dev.node.package;
-          }
+          pkgs.gemini.override { nodejs = config.modules.dev.node.package; }
         else
           pkgs.gemini;
       description = "Gemini CLI package to install.";

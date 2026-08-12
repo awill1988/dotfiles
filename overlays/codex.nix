@@ -8,18 +8,22 @@ let
     aarch64-darwin = {
       suffix = "aarch64-apple-darwin";
       hash = "sha256-dZhLgfkqcbDA9LO1ytgOXFcXfk2Mi0seE9twOyDcQ1g=";
+      hostHash = "sha256-Vs2/YYe/kUEI07f+7qWjT/uhXlwWK+3OaeBi7pLd+14=";
     };
     x86_64-darwin = {
       suffix = "x86_64-apple-darwin";
       hash = "sha256-NueC9x2BZMw3wricZJSPIYDpovhFayfmYNp1vGtVdOI=";
+      hostHash = "sha256-f3q8r3hSKRQ3wOaQIULqdtJqbrjaaYpBWcYDQTrBuJ0=";
     };
     x86_64-linux = {
       suffix = "x86_64-unknown-linux-musl";
       hash = "sha256-Akbi53ODTgfw+1JJ7W660S5FkeYI+Me7l91qlpBUTDY=";
+      hostHash = "sha256-zF15eYHiptngjgbKj2OB6aJ34E//bI6+oPvCe89WvRk=";
     };
     aarch64-linux = {
       suffix = "aarch64-unknown-linux-musl";
       hash = "sha256-62d8gPZmsauLSx0IO2bo1hSxKB2WC7b5/Yypj1izi5A=";
+      hostHash = "sha256-/aRWNRp24Eswsfsa92VDqejI3z8MVndhoIlbdJRM4V0=";
     };
   };
 
@@ -31,22 +35,32 @@ let
     hash = info.hash;
   };
 
+  # Host binary for Code Mode execution
+  hostSrc = final.fetchurl {
+    url = "https://github.com/openai/codex/releases/download/rust-v${version}/codex-code-mode-host-${info.suffix}.tar.gz";
+    hash = info.hostHash or "";
+  };
+
 in
 {
   codex = final.stdenv.mkDerivation {
     pname = "codex";
-    inherit version src;
+    inherit version;
 
+    srcs = [
+      src
+      hostSrc
+    ];
     sourceRoot = ".";
     dontConfigure = true;
     dontBuild = true;
 
-    # linux artifacts are statically linked musl binaries; macos uses mach-o.
-    # neither needs autoPatchelfHook or runtime buildInputs.
-
     installPhase = ''
       runHook preInstall
       install -Dm755 codex-${info.suffix} $out/bin/codex
+      if [ -f codex-code-mode-host-${info.suffix} ]; then
+        install -Dm755 codex-code-mode-host-${info.suffix} $out/bin/codex-code-mode-host
+      fi
       runHook postInstall
     '';
 

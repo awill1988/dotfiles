@@ -48,8 +48,6 @@ let
 in
 {
   hunyuan3d-2 = server.overrideAttrs (_: {
-    passthru = {
-      inherit src version;
-    };
+    passthru = { inherit src version; };
   });
 }

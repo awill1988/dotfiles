@@ -26,21 +26,22 @@ let
   info = platform_info.${system} or (throw "unsupported system: ${system}");
 
   src = final.fetchurl {
-    url =
-      "https://github.com/anthropics/claude-code/releases/download/v${version}/${info.artifact}";
+    url = "https://github.com/anthropics/claude-code/releases/download/v${version}/${info.artifact}";
     hash = info.hash;
   };
-in {
+in
+{
   claude = final.stdenv.mkDerivation {
     pname = "claude";
     inherit version src;
 
-    nativeBuildInputs = [ prev.makeWrapper ]
-      ++ prev.lib.optionals is_linux [ prev.autoPatchelfHook ];
+    nativeBuildInputs = [ prev.makeWrapper ] ++ prev.lib.optionals is_linux [ prev.autoPatchelfHook ];
 
     # runtime deps for autoPatchelfHook (linux only)
-    buildInputs =
-      prev.lib.optionals is_linux [ prev.stdenv.cc.cc.lib prev.zlib ];
+    buildInputs = prev.lib.optionals is_linux [
+      prev.stdenv.cc.cc.lib
+      prev.zlib
+    ];
 
     sourceRoot = ".";
     dontConfigure = true;
@@ -70,8 +71,12 @@ in {
       homepage = "https://github.com/anthropics/claude-code";
       license = licenses.unfree;
       mainProgram = "claude";
-      platforms =
-        [ "aarch64-darwin" "x86_64-darwin" "x86_64-linux" "aarch64-linux" ];
+      platforms = [
+        "aarch64-darwin"
+        "x86_64-darwin"
+        "x86_64-linux"
+        "aarch64-linux"
+      ];
       maintainers = [ ];
     };
   };

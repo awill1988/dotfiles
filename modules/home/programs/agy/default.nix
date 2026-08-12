@@ -11,48 +11,80 @@ let
   agy_restricted_home = "${config.xdg.configHome}/antigravity-restricted";
 
   # Unrestricted: Standard peer suite
-  primary_settings_src = pkgs.writeText "agy-settings-primary.json" (builtins.toJSON {
-    agentEcosystem = {
-      orchestrator = "agy";
-      peers = [
-        { name = "claude"; bin = "claude"; enabled = true; }
-        { name = "gemini"; bin = "gemini"; enabled = true; }
-        { name = "codex"; bin = "codex"; enabled = true; }
-      ];
-    };
-    privacy = { enableTelemetry = false; interactionCollection = "off"; usageStatisticsEnabled = false; telemetry = false; };
-    permissions = {
-      allowAllPathCommands = true;
-      allowReadTools = true;
-      allowedMcpTools = [
-        "*"
-      ];
-      allowedShellCommands = [
-        "*"
-      ];
-    };
-    mcpServers = { contextforge = { command = "mcpgw-wrapper"; }; };
-  });
+  primary_settings_src = pkgs.writeText "agy-settings-primary.json" (
+    builtins.toJSON {
+      agentEcosystem = {
+        orchestrator = "agy";
+        peers = [
+          {
+            name = "claude";
+            bin = "claude";
+            enabled = true;
+          }
+          {
+            name = "gemini";
+            bin = "gemini";
+            enabled = true;
+          }
+          {
+            name = "codex";
+            bin = "codex";
+            enabled = true;
+          }
+        ];
+      };
+      privacy = {
+        enableTelemetry = false;
+        interactionCollection = "off";
+        usageStatisticsEnabled = false;
+        telemetry = false;
+      };
+      permissions = {
+        allowAllPathCommands = true;
+        allowReadTools = true;
+        allowedMcpTools = [ "*" ];
+        allowedShellCommands = [ "*" ];
+      };
+      mcpServers = {
+        contextforge = {
+          command = "mcpgw-wrapper";
+        };
+      };
+    }
+  );
 
   # Restricted (Arro): Claude Secondary ONLY
-  restricted_settings_src = pkgs.writeText "agy-settings-restricted.json" (builtins.toJSON {
-    agentEcosystem = {
-      orchestrator = "agy";
-      peers = [{ name = "claude-secondary"; bin = "claude"; enabled = true; }];
-    };
-    privacy = { enableTelemetry = false; interactionCollection = "off"; usageStatisticsEnabled = false; telemetry = false; };
-    permissions = {
-      allowAllPathCommands = true;
-      allowReadTools = true;
-      allowedMcpTools = [
-        "*"
-      ];
-      allowedShellCommands = [
-        "*"
-      ];
-    };
-    mcpServers = { contextforge = { command = "mcpgw-wrapper"; }; };
-  });
+  restricted_settings_src = pkgs.writeText "agy-settings-restricted.json" (
+    builtins.toJSON {
+      agentEcosystem = {
+        orchestrator = "agy";
+        peers = [
+          {
+            name = "claude-secondary";
+            bin = "claude";
+            enabled = true;
+          }
+        ];
+      };
+      privacy = {
+        enableTelemetry = false;
+        interactionCollection = "off";
+        usageStatisticsEnabled = false;
+        telemetry = false;
+      };
+      permissions = {
+        allowAllPathCommands = true;
+        allowReadTools = true;
+        allowedMcpTools = [ "*" ];
+        allowedShellCommands = [ "*" ];
+      };
+      mcpServers = {
+        contextforge = {
+          command = "mcpgw-wrapper";
+        };
+      };
+    }
+  );
 
   claude_instructions_source = ../claude/CLAUDE.md;
 
@@ -140,7 +172,10 @@ in
   };
 
   config = lib.mkIf cfg.enable {
-    home.packages = [ agy_wrapper agy_settings_reset ];
+    home.packages = [
+      agy_wrapper
+      agy_settings_reset
+    ];
 
     # Primary and restricted settings are mutable runtime state: AGY updates them
     # through /config and peer toggles. Activation seeds them from the Nix store

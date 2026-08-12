@@ -3,16 +3,46 @@ let
   # Curated themes. Add more by browsing
   # ${pkgs.base16-schemes}/share/themes/*.yaml.
   themes = {
-    catppuccin-mocha  = { file = "catppuccin-mocha.yaml";   polarity = "dark";  };
-    catppuccin-latte  = { file = "catppuccin-latte.yaml";   polarity = "light"; };
-    gruvbox-dark      = { file = "gruvbox-dark-medium.yaml"; polarity = "dark"; };
-    gruvbox-light     = { file = "gruvbox-light-medium.yaml"; polarity = "light"; };
-    rose-pine         = { file = "rose-pine.yaml";          polarity = "dark";  };
-    rose-pine-dawn    = { file = "rose-pine-dawn.yaml";     polarity = "light"; };
-    tokyo-night-storm = { file = "tokyo-night-storm.yaml";  polarity = "dark";  };
-    everforest        = { file = "everforest.yaml";         polarity = "dark";  };
-    nord              = { file = "nord.yaml";               polarity = "dark";  };
-    dracula           = { file = "dracula.yaml";            polarity = "dark";  };
+    catppuccin-mocha = {
+      file = "catppuccin-mocha.yaml";
+      polarity = "dark";
+    };
+    catppuccin-latte = {
+      file = "catppuccin-latte.yaml";
+      polarity = "light";
+    };
+    gruvbox-dark = {
+      file = "gruvbox-dark-medium.yaml";
+      polarity = "dark";
+    };
+    gruvbox-light = {
+      file = "gruvbox-light-medium.yaml";
+      polarity = "light";
+    };
+    rose-pine = {
+      file = "rose-pine.yaml";
+      polarity = "dark";
+    };
+    rose-pine-dawn = {
+      file = "rose-pine-dawn.yaml";
+      polarity = "light";
+    };
+    tokyo-night-storm = {
+      file = "tokyo-night-storm.yaml";
+      polarity = "dark";
+    };
+    everforest = {
+      file = "everforest.yaml";
+      polarity = "dark";
+    };
+    nord = {
+      file = "nord.yaml";
+      polarity = "dark";
+    };
+    dracula = {
+      file = "dracula.yaml";
+      polarity = "dark";
+    };
   };
 
   # Active theme name. To switch, edit home/active-theme.nix (a one-line

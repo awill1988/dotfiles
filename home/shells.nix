@@ -1,6 +1,13 @@
-{ config, pkgs, lib, ... }:
-let inherit (config.home) user-info;
-in {
+{
+  config,
+  pkgs,
+  lib,
+  ...
+}:
+let
+  inherit (config.home) user-info;
+in
+{
 
   home.sessionVariables = {
     # XDG locations
@@ -10,8 +17,7 @@ in {
 
     # Secrets / crypto
     PASSWORD_STORE_DIR = "${config.xdg.dataHome}/password-store";
-    KEY_ID =
-      if user-info.git.signingKey == null then "" else user-info.git.signingKey;
+    KEY_ID = if user-info.git.signingKey == null then "" else user-info.git.signingKey;
 
     LC_CTYPE = "en_US.UTF-8";
     LEDGER_COLOR = "true";
@@ -38,10 +44,7 @@ in {
     GOPATH = "$HOME/go";
 
     # Android SDK Environment Variables
-    ANDROID_HOME = if pkgs.stdenv.isDarwin then
-      "$HOME/Library/Android/sdk"
-    else
-      "$HOME/Android/Sdk";
+    ANDROID_HOME = if pkgs.stdenv.isDarwin then "$HOME/Library/Android/sdk" else "$HOME/Android/Sdk";
     ANDROID_JAVA_HOME = "${pkgs.jdk.home}";
     ALLOW_NINJA_ENV = "true";
     USE_CCACHE = 1;
@@ -67,8 +70,7 @@ in {
     # Prefer nix-provided tools (e.g., gnupg) ahead of system binaries to avoid version skew.
     # nix-provided tools come first (via $PATH which includes the nix profile),
     # then cargo-install binaries are appended so they never shadow nix proxies.
-    PATH =
-      "$LOCAL_BIN:$PYENV_HOME/shims:$PYENV_HOME/bin:$ELIXIR_PATH:$GOPATH/bin:$RBENV_ROOT/plugins/ruby-build/bin:$HOME/google-cloud-sdk/bin:$ANDROID_HOME/emulator:$ANDROID_HOME/platform-tools:$PATH:$CARGO_HOME/bin";
+    PATH = "$LOCAL_BIN:$PYENV_HOME/shims:$PYENV_HOME/bin:$ELIXIR_PATH:$GOPATH/bin:$RBENV_ROOT/plugins/ruby-build/bin:$HOME/google-cloud-sdk/bin:$ANDROID_HOME/emulator:$ANDROID_HOME/platform-tools:$PATH:$CARGO_HOME/bin";
   };
 
   xdg.configFile = {
@@ -78,7 +80,8 @@ in {
           email = "${user-info.git.email}"
       '';
     };
-  } // lib.optionalAttrs (!builtins.isNull user-info.git.emailSecondary) {
+  }
+  // lib.optionalAttrs (!builtins.isNull user-info.git.emailSecondary) {
     "git/secondary.gitconfig" = {
       text = ''
         [user]
@@ -101,17 +104,15 @@ in {
     # whatsmyip HTTP service. https://unix.stackexchange.com/a/81699
     wanip = "dig @resolver4.opendns.com myip.opendns.com +short";
     wanip4 = "dig @resolver4.opendns.com myip.opendns.com +short -4";
-    wanip6 =
-      "dig @resolver1.ipv6-sandbox.opendns.com AAAA myip.opendns.com +short -6";
-
+    wanip6 = "dig @resolver1.ipv6-sandbox.opendns.com AAAA myip.opendns.com +short -6";
 
     # MLX Local LLM serving and lazy env setup for Apple Silicon M5
     mlx-serve-r1 = "source ~/.local/share/mlx-env/bin/activate && mlx_lm.server --model mlx-community/DeepSeek-R1-Distill-Qwen-32B-4bit --port 8082";
     mlx-serve-qwen = "source ~/.local/share/mlx-env/bin/activate && mlx_lm.server --model mlx-community/Qwen2.5-Coder-32B-Instruct-4bit --port 8082";
     mlx-setup-env = "source ~/.local/share/mlx-env/bin/activate && python3 -c 'import mlx_lm; print(\"Pre-loading DeepSeek-R1...\"); mlx_lm.load(\"mlx-community/DeepSeek-R1-Distill-Qwen-32B-4bit\"); print(\"Pre-loading Qwen-2.5-Coder...\"); mlx_lm.load(\"mlx-community/Qwen2.5-Coder-32B-Instruct-4bit\")'";
-  } // lib.optionalAttrs pkgs.stdenv.isDarwin {
-    lightswitch =
-      "osascript -e  'tell application \"System Events\" to tell appearance preferences to set dark mode to not dark mode'";
+  }
+  // lib.optionalAttrs pkgs.stdenv.isDarwin {
+    lightswitch = "osascript -e  'tell application \"System Events\" to tell appearance preferences to set dark mode to not dark mode'";
     restartaudio = "sudo killall coreaudiod";
   };
 
@@ -140,18 +141,23 @@ in {
     autoload -Uz compinit && compinit
     compinit
   '';
-  programs.zsh.cdpath = [ "." "~" ];
+  programs.zsh.cdpath = [
+    "."
+    "~"
+  ];
   # Use absolute XDG path to avoid deprecation warning about relative dotDir
   programs.zsh.dotDir = "${config.xdg.configHome}/zsh";
-  programs.zsh.plugins = [{
-    name = "git-extra-commands";
-    src = pkgs.fetchFromGitHub {
-      owner = "unixorn";
-      repo = "git-extra-commands";
-      rev = "4d39286f349a7f50171829f06da77c5097b41f9d";
-      sha256 = "sha256-Dr9fOhVKrd3+t7dMBHX5PCRCwkeblAc9t2F/vvWiHc0=";
-    };
-  }];
+  programs.zsh.plugins = [
+    {
+      name = "git-extra-commands";
+      src = pkgs.fetchFromGitHub {
+        owner = "unixorn";
+        repo = "git-extra-commands";
+        rev = "4d39286f349a7f50171829f06da77c5097b41f9d";
+        sha256 = "sha256-Dr9fOhVKrd3+t7dMBHX5PCRCwkeblAc9t2F/vvWiHc0=";
+      };
+    }
+  ];
   programs.zsh.history = {
     size = 50000;
     save = 500000;
@@ -331,22 +337,20 @@ in {
   '';
 
   # Ensure crypto directories exist with proper permissions before shells run.
-  home.activation.ensureCryptoDirs =
-    lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-      set -euo pipefail
-      mkdir -p "${config.xdg.dataHome}/gnupg" "${config.xdg.dataHome}/password-store" "${config.xdg.configHome}/gpg"
-      chmod 700 "${config.xdg.dataHome}/gnupg" "${config.xdg.dataHome}/password-store" "${config.xdg.configHome}/gpg"
-    '';
+  home.activation.ensureCryptoDirs = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+    set -euo pipefail
+    mkdir -p "${config.xdg.dataHome}/gnupg" "${config.xdg.dataHome}/password-store" "${config.xdg.configHome}/gpg"
+    chmod 700 "${config.xdg.dataHome}/gnupg" "${config.xdg.dataHome}/password-store" "${config.xdg.configHome}/gpg"
+  '';
 
   # Lazy-seed the local python virtual environment for MLX on Apple Silicon.
-  home.activation.setupLocalMlx =
-    lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-      set -euo pipefail
-      MLX_ENV="$HOME/.local/share/mlx-env"
-      if [[ ! -d "$MLX_ENV" ]]; then
-        echo "seeding local mlx-lm virtual environment..."
-        ${pkgs.python3}/bin/python3 -m venv "$MLX_ENV"
-        "$MLX_ENV/bin/pip" install -U mlx-lm
-      fi
-    '';
+  home.activation.setupLocalMlx = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+    set -euo pipefail
+    MLX_ENV="$HOME/.local/share/mlx-env"
+    if [[ ! -d "$MLX_ENV" ]]; then
+      echo "seeding local mlx-lm virtual environment..."
+      ${pkgs.python3}/bin/python3 -m venv "$MLX_ENV"
+      "$MLX_ENV/bin/pip" install -U mlx-lm
+    fi
+  '';
 }

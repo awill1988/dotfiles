@@ -163,9 +163,7 @@ in
       Service = {
         Type = "simple";
         ExecStart = lib.concatStringsSep " " server_program_args;
-        Environment = [
-          "HY3DGEN_MODELS=${cache_dir}"
-        ];
+        Environment = [ "HY3DGEN_MODELS=${cache_dir}" ];
         Restart = "on-failure";
         RestartSec = 5;
       };

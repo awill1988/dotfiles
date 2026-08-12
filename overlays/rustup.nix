@@ -66,7 +66,10 @@ in
     meta = with final.lib; {
       description = "Rust toolchain manager (prebuilt binary)";
       homepage = "https://rustup.rs";
-      license = with licenses; [ asl20 mit ];
+      license = with licenses; [
+        asl20
+        mit
+      ];
       mainProgram = "rustup";
       platforms = builtins.attrNames platform_info;
       maintainers = [ ];

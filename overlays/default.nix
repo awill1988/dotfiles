@@ -11,9 +11,7 @@
   hunyuan3d-2 = import ./hunyuan3d-2.nix;
   mtkclient = import ./mtkclient.nix;
   libsecret = final: prev: {
-    libsecret = prev.libsecret.override {
-      withIntrospection = false;
-    };
+    libsecret = prev.libsecret.override { withIntrospection = false; };
   };
   erlang-no-wx =
     final: prev:

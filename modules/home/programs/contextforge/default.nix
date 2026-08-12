@@ -213,13 +213,19 @@ let
     destination = "/bin/contextforge-postgres-mcp";
   };
 
-  windows_dev_mcp_ps1 = pkgs.writeText "windows-dev-mcp.ps1" (builtins.readFile ./scripts/windows-dev-mcp.ps1);
+  windows_dev_mcp_ps1 = pkgs.writeText "windows-dev-mcp.ps1" (
+    builtins.readFile ./scripts/windows-dev-mcp.ps1
+  );
 
   windows_dev_mcp = pkgs.writeTextFile {
     name = "windows-dev-mcp";
     text =
       builtins.replaceStrings
-        [ "@BASH@" "@CONFIG_DIR@" "@WINDOWS_DEV_MCP_SCRIPT@" ]
+        [
+          "@BASH@"
+          "@CONFIG_DIR@"
+          "@WINDOWS_DEV_MCP_SCRIPT@"
+        ]
         [ "${pkgs.bash}/bin/bash" config_dir "${windows_dev_mcp_ps1}" ]
         (builtins.readFile ./scripts/windows-dev-mcp.sh.tpl);
     executable = true;
@@ -233,12 +239,17 @@ let
     name = "contextforge-gateway";
     text =
       builtins.replaceStrings
-        [ "@BASH@" "@PATH@" "@PLUGINS_DIR@" "@CONFIG_DIR@" "@DATA_DIR@" "@MCPGATEWAY_BIN@" ]
+        [
+          "@BASH@"
+          "@PATH@"
+          "@PLUGINS_DIR@"
+          "@CONFIG_DIR@"
+          "@DATA_DIR@"
+          "@MCPGATEWAY_BIN@"
+        ]
         [
           "${pkgs.bash}/bin/bash"
-          (lib.makeBinPath [
-            pkgs.coreutils
-          ])
+          (lib.makeBinPath [ pkgs.coreutils ])
           "${plugins_dir}"
           config_dir
           data_dir
@@ -374,12 +385,17 @@ let
     name = "mcpgw-wrapper";
     text =
       builtins.replaceStrings
-        [ "@BASH@" "@PATH@" "@DATA_DIR@" "@GATEWAY_HOST@" "@GATEWAY_PORT@" "@GATEWAY_PYTHON@" ]
+        [
+          "@BASH@"
+          "@PATH@"
+          "@DATA_DIR@"
+          "@GATEWAY_HOST@"
+          "@GATEWAY_PORT@"
+          "@GATEWAY_PYTHON@"
+        ]
         [
           "${pkgs.bash}/bin/bash"
-          (lib.makeBinPath [
-            pkgs.coreutils
-          ])
+          (lib.makeBinPath [ pkgs.coreutils ])
           data_dir
           cfg.host
           (toString cfg.port)
@@ -582,9 +598,7 @@ in
           StandardOutPath = log_path;
           StandardErrorPath = log_path;
           EnvironmentVariables = {
-            PATH = lib.makeBinPath [
-              pkgs.coreutils
-            ];
+            PATH = lib.makeBinPath [ pkgs.coreutils ];
           };
         };
       }
@@ -600,13 +614,7 @@ in
         ExecStart = "${gateway_script}";
         Restart = "always";
         RestartSec = 5;
-        Environment = [
-          "PATH=${
-            lib.makeBinPath [
-              pkgs.coreutils
-            ]
-          }"
-        ];
+        Environment = [ "PATH=${lib.makeBinPath [ pkgs.coreutils ]}" ];
       };
       Install = {
         WantedBy = [ "default.target" ];

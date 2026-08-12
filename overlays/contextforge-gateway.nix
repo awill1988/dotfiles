@@ -13,9 +13,7 @@ let
     workspaceRoot = ../modules/home/programs/contextforge/pyproject;
   };
 
-  overlay = workspace.mkPyprojectOverlay {
-    sourcePreference = "wheel";
-  };
+  overlay = workspace.mkPyprojectOverlay { sourcePreference = "wheel"; };
 
   python = final.python3;
 
@@ -26,20 +24,18 @@ let
   # mcp client's post-init state and suppressing tools/list.
   wrapper_patch = final': prev': {
     mcp-contextforge-gateway = prev'.mcp-contextforge-gateway.overrideAttrs (old: {
-      postInstall =
-        (old.postInstall or "")
-        + ''
-          wrapper_py=$out/${python.sitePackages}/mcpgateway/wrapper.py
-          old_block=$(printf '%s\n%s' \
-            '                text = raw.decode("utf-8", errors="replace")' \
-            '                try:')
-          new_block=$(printf '%s\n%s\n%s\n%s' \
-            '                text = raw.decode("utf-8", errors="replace")' \
-            '                if not text.strip():' \
-            '                    return' \
-            '                try:')
-          substituteInPlace "$wrapper_py" --replace-fail "$old_block" "$new_block"
-        '';
+      postInstall = (old.postInstall or "") + ''
+        wrapper_py=$out/${python.sitePackages}/mcpgateway/wrapper.py
+        old_block=$(printf '%s\n%s' \
+          '                text = raw.decode("utf-8", errors="replace")' \
+          '                try:')
+        new_block=$(printf '%s\n%s\n%s\n%s' \
+          '                text = raw.decode("utf-8", errors="replace")' \
+          '                if not text.strip():' \
+          '                    return' \
+          '                try:')
+        substituteInPlace "$wrapper_py" --replace-fail "$old_block" "$new_block"
+      '';
     });
   };
 

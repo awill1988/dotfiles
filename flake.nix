@@ -278,7 +278,19 @@
           inherit (inputs) uv2nix pyproject-nix pyproject-build-systems;
         };
       };
-      formatter = forAllSystems (system: (import inputs.nixpkgs { inherit system; }).nixfmt-rfc-style);
+      formatter = forAllSystems (
+        system:
+        let
+          pkgs = import inputs.nixpkgs { inherit system; };
+        in
+        pkgs.writeShellScriptBin "nixfmt" ''
+          if [ $# -eq 0 ]; then
+            exec ${pkgs.nixfmt-rfc-style}/bin/nixfmt $(${pkgs.git}/bin/git ls-files '*.nix')
+          else
+            exec ${pkgs.nixfmt-rfc-style}/bin/nixfmt "$@"
+          fi
+        ''
+      );
 
       packages = forAllSystems (
         system:

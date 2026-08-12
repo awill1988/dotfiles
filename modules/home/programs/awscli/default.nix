@@ -95,10 +95,11 @@ in
   };
 
   config = mkIf cfg.enable {
-    home.packages =
-      [ cfg.package ]
-      ++ optionals cfg.awsVault.enable [ pkgs.aws-vault ]
-      ++ optionals cfg.sessionManagerPlugin [ pkgs.ssm-session-manager-plugin ];
+    home.packages = [
+      cfg.package
+    ]
+    ++ optionals cfg.awsVault.enable [ pkgs.aws-vault ]
+    ++ optionals cfg.sessionManagerPlugin [ pkgs.ssm-session-manager-plugin ];
 
     home.sessionVariables = mapAttrs (n: v: toString v) (
       filterAttrs (n: v: v != [ ] && v != null) {
