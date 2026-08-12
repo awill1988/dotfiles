@@ -12,6 +12,7 @@ view_image = true
 [features]
 rmcp_client = true
 apps = false
+code_mode_host = false
 
 [mcp_servers.contextforge]
 command = "mcpgw-wrapper"

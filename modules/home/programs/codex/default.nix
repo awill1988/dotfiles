@@ -153,8 +153,17 @@ in
 
       if [[ ! -e "$config_target" ]]; then
         install -m 600 "${config_source}" "$config_target"
-      elif grep -q '^model = "gpt-5\.4"$' "$config_target"; then
-        ${pkgs.gnused}/bin/sed -i 's/^model = "gpt-5\.4"$/model = "gpt-5.5"/' "$config_target"
+      else
+        if grep -q '^model = "gpt-5\.4"$' "$config_target"; then
+          ${pkgs.gnused}/bin/sed -i 's/^model = "gpt-5\.4"$/model = "gpt-5.5"/' "$config_target"
+        fi
+        if ! grep -q 'code_mode_host' "$config_target"; then
+          if grep -q '^\[features\]' "$config_target"; then
+            ${pkgs.gnused}/bin/sed -i '/^\[features\]/a code_mode_host = false' "$config_target"
+          else
+            echo -e "\n[features]\ncode_mode_host = false" >> "$config_target"
+          fi
+        fi
       fi
     '';
   };

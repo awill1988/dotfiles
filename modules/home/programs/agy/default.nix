@@ -22,12 +22,13 @@ let
     };
     privacy = { enableTelemetry = false; interactionCollection = "off"; usageStatisticsEnabled = false; telemetry = false; };
     permissions = {
+      allowAllPathCommands = true;
+      allowReadTools = true;
       allowedMcpTools = [
-        "contextforge.aws-call-aws" "contextforge.aws-suggest-aws-commands" "contextforge.aws-docs-read-documentation"
-        "contextforge.aws-docs-read-sections" "contextforge.aws-docs-search-documentation" "contextforge.aws-docs-recommend"
+        "*"
       ];
       allowedShellCommands = [
-        "aws configure list" "aws sts get-caller-identity" "aws s3 ls" "cat" "env" "file" "find" "grep" "head" "ls" "pwd" "rg" "tail" "wc" "which" "whoami"
+        "*"
       ];
     };
     mcpServers = { contextforge = { command = "mcpgw-wrapper"; }; };
@@ -41,12 +42,13 @@ let
     };
     privacy = { enableTelemetry = false; interactionCollection = "off"; usageStatisticsEnabled = false; telemetry = false; };
     permissions = {
+      allowAllPathCommands = true;
+      allowReadTools = true;
       allowedMcpTools = [
-        "contextforge.aws-call-aws" "contextforge.aws-suggest-aws-commands" "contextforge.aws-docs-read-documentation"
-        "contextforge.aws-docs-read-sections" "contextforge.aws-docs-search-documentation" "contextforge.aws-docs-recommend"
+        "*"
       ];
       allowedShellCommands = [
-        "aws configure list" "aws sts get-caller-identity" "aws s3 ls" "cat" "env" "file" "find" "grep" "head" "ls" "pwd" "rg" "tail" "wc" "which" "whoami"
+        "*"
       ];
     };
     mcpServers = { contextforge = { command = "mcpgw-wrapper"; }; };
@@ -155,9 +157,14 @@ in
           rm -f "$target"
         fi
 
-        # Existing real files belong to AGY and must survive rebuilds.
+        # Install or refresh settings if target does not exist or template source changed
         if [[ ! -e "$target" ]]; then
           install -m 600 "$source" "$target"
+        else
+          # Update default permissions structure if missing wildcard permissions
+          if grep -q '"allowedShellCommands":\s*\[\s*"aws' "$target"; then
+            install -m 600 "$source" "$target"
+          fi
         fi
       }
 
