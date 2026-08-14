@@ -1,37 +1,48 @@
 [profile awill]
-sso_start_url=https://awill.awsapps.com/start
-sso_region=us-east-1
-sso_account_id=463509296941
-sso_role_name=AWSAdministratorAccess
+sso_start_url = https://awill.awsapps.com/start
+sso_region = us-east-1
+sso_account_id = 463509296941
+sso_role_name = AWSAdministratorAccess
 
 [profile reinadonia]
-role_arn=arn:aws:iam::915541334192:role/Administrator
-include_profile=master
+role_arn = arn:aws:iam::915541334192:role/Administrator
+include_profile = master
 
 [profile master]
-source_profile=awill
+source_profile = awill
 
 [profile admin]
-source_profile=awill
-role_arn=arn:aws:iam::463509296941:role/Master-Role
-credential_process=aws-vault exec --no-session --json default
+source_profile = awill
+role_arn = arn:aws:iam::463509296941:role/Master-Role
+credential_process = aws-vault exec --no-session --json default
+
+[sso-session arro]
+sso_start_url = https://ssoins-7907c95e99b5d1e9.portal.us-west-2.app.aws
+sso_region = us-west-2
+sso_registration_scopes = sso:account:access
 
 [profile arro]
+sso_session = arro
+sso_account_id = 706464551878
+sso_role_name = administrator
 region = us-west-2
 
 [profile arro-staging]
-credential_process=aws-vault exec --json arro
+sso_session = arro
+sso_account_id = 706464551878
+sso_role_name = administrator
+region = us-west-2
 
 [profile arro-production]
-role_arn=arn:aws:iam::920511256258:role/OrganizationAccountAccessRole
+role_arn = arn:aws:iam::920511256258:role/OrganizationAccountAccessRole
 source_profile = arro-staging
 
 [profile arro-learning-staging]
-role_arn=arn:aws:iam::440971295147:role/OrganizationAccountAccessRole
+role_arn = arn:aws:iam::440971295147:role/OrganizationAccountAccessRole
 source_profile = arro-staging
 
 [profile arro-learning-production]
-role_arn=arn:aws:iam::339712880231:role/OrganizationAccountAccessRole
+role_arn = arn:aws:iam::339712880231:role/OrganizationAccountAccessRole
 source_profile = arro-staging
 
 [profile arro-ci]
@@ -43,21 +54,21 @@ role_arn = arn:aws:iam::257027486306:role/OrganizationAccountAccessRole
 source_profile = arro-staging
 
 [profile arro-admin-dev]
-role_arn=arn:aws:iam::866464440882:role/OrganizationAccountAccessRole
+role_arn = arn:aws:iam::866464440882:role/OrganizationAccountAccessRole
 source_profile = arro-staging
 
 [profile arro-srinivasan]
-role_arn=arn:aws:iam::365430818945:role/OrganizationAccountAccessRole
+role_arn = arn:aws:iam::365430818945:role/OrganizationAccountAccessRole
 source_profile = arro-staging
 
 [profile arro-gilbert]
-role_arn=arn:aws:iam::331818260250:role/OrganizationAccountAccessRole
+role_arn = arn:aws:iam::331818260250:role/OrganizationAccountAccessRole
 source_profile = arro-staging
 
 [profile arro-data-engineering]
-role_arn=arn:aws:iam::781436988682:role/OrganizationAccountAccessRole
+role_arn = arn:aws:iam::781436988682:role/OrganizationAccountAccessRole
 source_profile = arro-staging
 
 [profile arro-observability]
-role_arn=arn:aws:iam::957066180642:role/OrganizationAccountAccessRole
+role_arn = arn:aws:iam::957066180642:role/OrganizationAccountAccessRole
 source_profile = arro-staging
