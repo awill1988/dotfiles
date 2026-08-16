@@ -17,7 +17,7 @@ role_arn = arn:aws:iam::463509296941:role/Master-Role
 credential_process = aws-vault exec --no-session --json default
 
 [sso-session arro]
-sso_start_url = https://ssoins-7907c95e99b5d1e9.portal.us-west-2.app.aws
+sso_start_url = https://d-9267468932.awsapps.com/start
 sso_region = us-west-2
 sso_registration_scopes = sso:account:access
 

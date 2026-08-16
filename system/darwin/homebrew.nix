@@ -76,6 +76,7 @@ in
     "android-studio"
     "dbeaver-community"
     "macfuse"
+    "tuist"
   ]
   ++ optionals install_karabiner_via_homebrew [ "karabiner-elements" ];
 }
