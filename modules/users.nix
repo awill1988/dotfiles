@@ -3,41 +3,18 @@ let
   inherit (lib) mkOption types;
 in
 {
+  imports = [ ./developer/profiles.nix ];
+
   options.users.primaryUser = {
     username = mkOption {
       type = with types; nullOr str;
       default = null;
+      description = "Operating system primary username";
     };
     fullName = mkOption {
       type = with types; nullOr str;
       default = null;
-    };
-    git = {
-      github = mkOption {
-        type = with types; nullOr str;
-        default = null;
-      };
-      signingKey = mkOption {
-        type = with types; nullOr str;
-        default = null;
-      };
-      signingFormat = mkOption {
-        type =
-          with types;
-          nullOr (enum [
-            "openpgp"
-            "ssh"
-          ]);
-        default = null;
-      };
-      email = mkOption {
-        type = with types; nullOr str;
-        default = null;
-      };
-      emailSecondary = mkOption {
-        type = with types; nullOr str;
-        default = null;
-      };
+      description = "Primary user display full name";
     };
   };
 }

@@ -164,17 +164,29 @@
           ];
         };
 
-        macbook-arm = darwinSystem {
+        macbook-personal = darwinSystem {
           system = "aarch64-darwin";
           modules = nixDarwinCommonModules ++ [
             ./system/darwin/host-mac.nix
-            { users.primaryUser = primaryUserInfo; }
+            {
+              users.primaryUser = {
+                username = primaryUserInfo.hosts.macbook-personal.username;
+                fullName = primaryUserInfo.baseline.identity.fullName;
+              };
+              developer = {
+                hostName = "macbook-personal";
+                baseline = primaryUserInfo.baseline;
+                hosts = primaryUserInfo.hosts;
+                profiles = primaryUserInfo.profiles;
+                folderOverrides = primaryUserInfo.folderOverrides;
+              };
+            }
           ];
         };
       };
 
       homeConfigurations = {
-        debianWsl = home-manager.lib.homeManagerConfiguration {
+        wsl-debian-personal = home-manager.lib.homeManagerConfiguration {
           pkgs = import inputs.nixpkgs {
             system = "x86_64-linux";
             inherit (nixpkgsConfig) config overlays;
@@ -184,10 +196,20 @@
             ++ singleton (
               { config, pkgs, ... }:
               {
-                home.username = config.home.user-info.username;
-                home.homeDirectory = "/home/${config.home.username}";
+                home.username = primaryUserInfo.hosts.wsl-debian-personal.username;
+                home.homeDirectory = primaryUserInfo.hosts.wsl-debian-personal.homeDirectory;
                 home.stateVersion = homeManagerStateVersion;
-                home.user-info = primaryUserInfo;
+                home.user-info = {
+                  username = primaryUserInfo.hosts.wsl-debian-personal.username;
+                  fullName = primaryUserInfo.baseline.identity.fullName;
+                };
+                developer = {
+                  hostName = "wsl-debian-personal";
+                  baseline = primaryUserInfo.baseline;
+                  hosts = primaryUserInfo.hosts;
+                  profiles = primaryUserInfo.profiles;
+                  folderOverrides = primaryUserInfo.folderOverrides;
+                };
                 ext.wsl.enable = true;
                 ext.wsl.usbipd.enable = true;
                 # auto-detect smart card reader and distro
@@ -235,27 +257,52 @@
         home-theme = import ./home/theme.nix;
         home-stylix = inputs.stylix.homeModules.stylix;
         home-wsl = import ./home/wsl.nix;
-        home-git = import ./home/git.nix;
-        home-git-ignores = import ./home/git-ignores.nix;
-        home-gpg = import ./home/gpg.nix;
-        home-gemini = import ./modules/home/programs/gemini;
-        home-agy = import ./modules/home/programs/agy;
-        home-agent-skills = import ./modules/home/programs/agent-skills {
+
+        # AI Agents & MCP Ecosystem
+        home-agent-claude = import ./modules/home/agents/core/claude;
+        home-agent-codex = import ./modules/home/agents/core/codex;
+        home-agent-gemini = import ./modules/home/agents/core/gemini;
+        home-agent-agy = import ./modules/home/agents/core/agy;
+        home-agent-prompts = import ./modules/home/agents/orchestration/agent-prompts;
+        home-agent-skills = import ./modules/home/agents/orchestration/agent-skills {
           golang_skills_src = inputs.golang-skills;
         };
-        home-claude = import ./modules/home/programs/claude;
-        home-contextforge = import ./modules/home/programs/contextforge;
-        home-packages = import ./home/packages.nix;
-        home-shells = import ./home/shells.nix;
-        home-terminal = import ./home/terminal.nix;
-        home-awscli = import ./modules/home/programs/awscli;
-        home-blender-mcp = import ./modules/home/programs/blender-mcp;
-        home-drive-mcp = import ./modules/home/programs/drive-mcp;
-        home-codex = import ./modules/home/programs/codex;
-        home-hunyuan3d = import ./modules/home/programs/hunyuan3d;
-        home-karabiner = import ./modules/home/programs/karabiner;
-        home-node = import ./modules/home/programs/node;
-        home-nvim = import ./home/nvim.nix;
+        home-agent-tools = import ./modules/home/agents/agent-tools;
+        home-agent-local-ai = import ./modules/home/agents/local-ai;
+
+        # Editors
+        home-editor-neovim = import ./modules/home/editor/neovim;
+        home-editor-code = import ./modules/home/editor/code;
+
+        # Security & Identity
+        home-security-gpg = import ./modules/home/security/gpg;
+        home-security-ssh = import ./modules/home/security/ssh;
+        home-security-smartcard = import ./modules/home/security/smartcard;
+        home-security-credentials = import ./modules/home/security/credentials;
+        home-security-audit = import ./modules/home/security/audit;
+
+        # Languages
+        home-lang-rust = import ./modules/home/languages/rust;
+        home-lang-go = import ./modules/home/languages/go;
+        home-lang-python = import ./modules/home/languages/python;
+        home-lang-node = import ./modules/home/languages/node;
+        home-lang-elixir = import ./modules/home/languages/elixir;
+        home-lang-ruby = import ./modules/home/languages/ruby;
+        home-lang-java = import ./modules/home/languages/java;
+
+        # Terminal, Cloud, VCS, Hardware
+        home-terminal-tmux = import ./modules/home/terminal/tmux;
+        home-terminal-shell = import ./modules/home/terminal/shell;
+        home-terminal-navigation = import ./modules/home/terminal/navigation;
+        home-cloud-aws = import ./modules/home/cloud/aws;
+        home-cloud-infra = import ./modules/home/cloud/infra;
+        home-cloud-containers = import ./modules/home/cloud/containers;
+        home-vcs-git = import ./modules/home/vcs/git;
+        home-hardware-karabiner = import ./modules/home/hardware/karabiner;
+
+        # Developer Profile Engine
+        home-developer-profiles = import ./modules/home/developer/profiles.nix;
+
         home-user-info =
           { lib, ... }:
           {

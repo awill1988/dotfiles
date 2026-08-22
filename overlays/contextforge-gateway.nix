@@ -10,7 +10,7 @@ let
   inherit (final) lib;
 
   workspace = uv2nix.lib.workspace.loadWorkspace {
-    workspaceRoot = ../modules/home/programs/contextforge/pyproject;
+    workspaceRoot = ../modules/home/agents/agent-tools/contextforge/pyproject;
   };
 
   overlay = workspace.mkPyprojectOverlay { sourcePreference = "wheel"; };

@@ -167,7 +167,7 @@ let
       query_manager: true
   '';
 
-  mcp_servers_source = ../../../../mcp-servers.toml;
+  mcp_servers_source = ../../../../../mcp-servers.toml;
 
   # --- python helper derivations ---
 
