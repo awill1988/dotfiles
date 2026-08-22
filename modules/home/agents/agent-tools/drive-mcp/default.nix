@@ -24,7 +24,11 @@ let
 in
 {
   options.programs.drive-mcp = {
-    enable = lib.mkEnableOption "drive-mcp stdio bridge for Google Drive MCP";
+    enable = lib.mkOption {
+      type = lib.types.bool;
+      default = true;
+      description = "Enable drive-mcp stdio bridge for Google Drive MCP";
+    };
 
     pythonPackage = lib.mkOption {
       type = lib.types.package;

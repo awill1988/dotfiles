@@ -422,7 +422,11 @@ let
 in
 {
   options.programs.contextforge = {
-    enable = lib.mkEnableOption "ContextForge MCP gateway";
+    enable = lib.mkOption {
+      type = lib.types.bool;
+      default = true;
+      description = "Enable ContextForge MCP gateway";
+    };
 
     host = lib.mkOption {
       type = lib.types.str;

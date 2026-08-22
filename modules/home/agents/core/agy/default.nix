@@ -163,7 +163,11 @@ let
 in
 {
   options.programs.agy = {
-    enable = lib.mkEnableOption "Antigravity CLI (agy)";
+    enable = lib.mkOption {
+      type = lib.types.bool;
+      default = true;
+      description = "Enable Antigravity CLI (agy)";
+    };
     package = lib.mkOption {
       type = lib.types.package;
       default = pkgs.agy;

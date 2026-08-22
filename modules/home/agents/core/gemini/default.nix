@@ -86,7 +86,11 @@ let
 in
 {
   options.programs.gemini = {
-    enable = lib.mkEnableOption "Gemini CLI";
+    enable = lib.mkOption {
+      type = lib.types.bool;
+      default = true;
+      description = "Enable Gemini CLI";
+    };
     package = lib.mkOption {
       type = lib.types.package;
       default =

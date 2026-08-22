@@ -11,7 +11,11 @@ let
 in
 {
   options.programs.awscli-custom = {
-    enable = mkEnableOption "awscli - manage your AWS services";
+    enable = mkOption {
+      type = types.bool;
+      default = true;
+      description = "Enable awscli - manage your AWS services";
+    };
 
     package = mkOption {
       type = types.package;
@@ -45,7 +49,11 @@ in
     };
 
     awsVault = {
-      enable = mkEnableOption "aws-vault - store and access AWS credentials in dev environments";
+      enable = mkOption {
+        type = types.bool;
+        default = true;
+        description = "Enable aws-vault - store and access AWS credentials in dev environments";
+      };
 
       backend = mkOption {
         type = types.nullOr types.str;

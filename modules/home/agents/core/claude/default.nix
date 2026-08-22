@@ -28,7 +28,11 @@ let
 in
 {
   options.programs.claude = {
-    enable = lib.mkEnableOption "Claude Code CLI";
+    enable = lib.mkOption {
+      type = lib.types.bool;
+      default = true;
+      description = "Enable Claude Code CLI";
+    };
     package = lib.mkOption {
       type = lib.types.package;
       default = base_package;

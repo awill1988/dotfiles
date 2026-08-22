@@ -116,7 +116,11 @@ let
 in
 {
   options.programs.karabiner-elements = {
-    enable = lib.mkEnableOption "Karabiner-Elements";
+    enable = lib.mkOption {
+      type = lib.types.bool;
+      default = true;
+      description = "Enable Karabiner-Elements";
+    };
     install_method = lib.mkOption {
       type = lib.types.enum [
         "nix"

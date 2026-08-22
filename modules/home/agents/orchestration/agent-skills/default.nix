@@ -20,7 +20,11 @@ let
 in
 {
   options.programs.agent-skills = {
-    enable = lib.mkEnableOption "vendored agent skills in ~/.local/share/agent-skills";
+    enable = lib.mkOption {
+      type = lib.types.bool;
+      default = true;
+      description = "Enable vendored agent skills in ~/.local/share/agent-skills";
+    };
 
     exclude = lib.mkOption {
       type = lib.types.listOf lib.types.str;

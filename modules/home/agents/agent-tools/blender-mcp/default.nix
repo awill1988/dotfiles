@@ -35,7 +35,11 @@ let
 in
 {
   options.programs.blender-mcp = {
-    enable = lib.mkEnableOption "blender-mcp standalone stdio MCP server";
+    enable = lib.mkOption {
+      type = lib.types.bool;
+      default = true;
+      description = "Enable blender-mcp standalone stdio MCP server";
+    };
 
     package = lib.mkOption {
       type = lib.types.package;
