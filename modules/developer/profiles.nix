@@ -103,6 +103,11 @@ let
           default = true;
           description = "Enable Claude configuration";
         };
+        configDir = mkOption {
+          type = types.nullOr types.str;
+          default = null;
+          description = "Explicit custom config directory path for Claude (e.g. ~/.config/claude-secondary)";
+        };
         mcpServers = mkOption {
           type = types.attrsOf mcp_server_type;
           default = { };
@@ -125,6 +130,11 @@ let
           default = true;
           description = "Enable Gemini configuration";
         };
+        configDir = mkOption {
+          type = types.nullOr types.str;
+          default = null;
+          description = "Explicit custom config directory path for Gemini";
+        };
         settings = mkOption {
           type = types.attrs;
           default = { };
@@ -137,6 +147,11 @@ let
           default = true;
           description = "Enable Codex configuration";
         };
+        configDir = mkOption {
+          type = types.nullOr types.str;
+          default = null;
+          description = "Explicit custom config directory path for Codex";
+        };
         config = mkOption {
           type = types.attrs;
           default = { };
@@ -148,6 +163,11 @@ let
           type = types.bool;
           default = true;
           description = "Enable AGY configuration";
+        };
+        configDir = mkOption {
+          type = types.nullOr types.str;
+          default = null;
+          description = "Explicit custom config directory path for AGY";
         };
         settings = mkOption {
           type = types.attrs;

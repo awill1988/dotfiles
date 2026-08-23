@@ -50,6 +50,7 @@
         region = "us-west-2";
       };
       agents.claude = {
+        configDir = "~/.config/claude-secondary";
         excludeMcpServers = [ "blender" ];
         mcpServers = {
           atlassian = {

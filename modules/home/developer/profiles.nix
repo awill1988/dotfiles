@@ -105,13 +105,53 @@ let
       fi
 
       export DEVELOPER_PROFILE="$active_profile"
-      export CLAUDE_CONFIG_DIR="${config.xdg.configHome}/profiles/$active_profile/claude"
-      export GEMINI_CONFIG_DIR="${config.xdg.configHome}/profiles/$active_profile/gemini"
-      export CODEX_CONFIG_DIR="${config.xdg.configHome}/profiles/$active_profile/codex"
-      export AGY_CONFIG_DIR="${config.xdg.configHome}/profiles/$active_profile/antigravity"
 
       ${concatMapStringsSep "\n" (p: ''
         if [ "$active_profile" = "${p.name}" ]; then
+          ${
+            if p.agents.claude.configDir != null then
+              ''
+                export CLAUDE_CONFIG_DIR="$(eval echo "${p.agents.claude.configDir}")"
+              ''
+            else
+              ''
+                export CLAUDE_CONFIG_DIR="${config.xdg.configHome}/profiles/${p.name}/claude"
+              ''
+          }
+
+          ${
+            if p.agents.gemini.configDir != null then
+              ''
+                export GEMINI_CONFIG_DIR="$(eval echo "${p.agents.gemini.configDir}")"
+              ''
+            else
+              ''
+                export GEMINI_CONFIG_DIR="${config.xdg.configHome}/profiles/${p.name}/gemini"
+              ''
+          }
+
+          ${
+            if p.agents.codex.configDir != null then
+              ''
+                export CODEX_CONFIG_DIR="$(eval echo "${p.agents.codex.configDir}")"
+              ''
+            else
+              ''
+                export CODEX_CONFIG_DIR="${config.xdg.configHome}/profiles/${p.name}/codex"
+              ''
+          }
+
+          ${
+            if p.agents.agy.configDir != null then
+              ''
+                export AGY_CONFIG_DIR="$(eval echo "${p.agents.agy.configDir}")"
+              ''
+            else
+              ''
+                export AGY_CONFIG_DIR="${config.xdg.configHome}/profiles/${p.name}/antigravity"
+              ''
+          }
+
           ${optionalString (p.aws.profile != null) ''export AWS_PROFILE="${p.aws.profile}"''}
           ${optionalString (p.aws.region != null) ''export AWS_REGION="${p.aws.region}"''}
           ${optionalString (p.aws.roleArn != null) ''export AWS_ROLE_ARN="${p.aws.roleArn}"''}
@@ -139,19 +179,34 @@ in
       set -euo pipefail
       ${concatMapStringsSep "\n" (p: ''
         profile_dir="${config.xdg.configHome}/profiles/${p.name}"
-        mkdir -p "$profile_dir/claude" "$profile_dir/gemini" "$profile_dir/codex" "$profile_dir/antigravity" "$profile_dir/git"
+        mkdir -p "$profile_dir/gemini" "$profile_dir/codex" "$profile_dir/antigravity" "$profile_dir/git"
 
-        if [ ! -f "$profile_dir/claude/settings.json" ]; then
-          install -m 600 "${mkClaudeSettings p}" "$profile_dir/claude/settings.json"
+        ${
+          if p.agents.claude.configDir != null then
+            ''
+              target_claude_dir="$(eval echo "${p.agents.claude.configDir}")"
+              mkdir -p "$target_claude_dir"
+              ln -sfT "$target_claude_dir" "$profile_dir/claude"
+              claude_dest_dir="$target_claude_dir"
+            ''
+          else
+            ''
+              mkdir -p "$profile_dir/claude"
+              claude_dest_dir="$profile_dir/claude"
+            ''
+        }
+
+        if [ ! -f "$claude_dest_dir/settings.json" ]; then
+          install -m 600 "${mkClaudeSettings p}" "$claude_dest_dir/settings.json"
         fi
 
-        if [ ! -f "$profile_dir/claude/.claude.json" ]; then
-          install -m 600 "${mkClaudeUserConfig p}" "$profile_dir/claude/.claude.json"
+        if [ ! -f "$claude_dest_dir/.claude.json" ]; then
+          install -m 600 "${mkClaudeUserConfig p}" "$claude_dest_dir/.claude.json"
         else
           ${pkgs.jq}/bin/jq -s '.[0] + {mcpServers: .[1].mcpServers}' \
-            "$profile_dir/claude/.claude.json" "${mkClaudeUserConfig p}" > "$profile_dir/claude/.claude.json.tmp"
-          chmod 600 "$profile_dir/claude/.claude.json.tmp"
-          mv "$profile_dir/claude/.claude.json.tmp" "$profile_dir/claude/.claude.json"
+            "$claude_dest_dir/.claude.json" "${mkClaudeUserConfig p}" > "$claude_dest_dir/.claude.json.tmp"
+          chmod 600 "$claude_dest_dir/.claude.json.tmp"
+          mv "$claude_dest_dir/.claude.json.tmp" "$claude_dest_dir/.claude.json"
         fi
 
         cat <<'EOF' > "$profile_dir/git/config"
