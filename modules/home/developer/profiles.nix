@@ -206,6 +206,9 @@ in
   imports = [ ../../developer/profiles.nix ];
 
   config = mkIf (cfg.profiles != { }) {
+    programs.claude.enable = true;
+    programs.gemini.enable = true;
+    programs.agy.enable = true;
     developer.profileRouter = profile-router;
     home.packages = [ profile-router ];
 
@@ -218,13 +221,19 @@ in
         ${
           if p.agents.claude.configDir != null then
             ''
-              target_claude_dir="$(eval echo "${p.agents.claude.configDir}")"
+              target_claude_dir="${builtins.replaceStrings [ "~" ] [ "$HOME" ] p.agents.claude.configDir}"
               mkdir -p "$target_claude_dir"
+              if [ -d "$profile_dir/claude" ] && [ ! -L "$profile_dir/claude" ]; then
+                rm -rf "$profile_dir/claude"
+              fi
               ln -sfT "$target_claude_dir" "$profile_dir/claude"
               claude_dest_dir="$target_claude_dir"
             ''
           else
             ''
+              if [ -L "$profile_dir/claude" ]; then
+                rm -f "$profile_dir/claude"
+              fi
               mkdir -p "$profile_dir/claude"
               claude_dest_dir="$profile_dir/claude"
             ''

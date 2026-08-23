@@ -34,11 +34,11 @@ in
         # 1. Seed canonical AGENTS.md
         install -m 600 -C "${instructions_source}" "$profile_dir/AGENTS.md"
 
-        # 2. Create relative symlinks for tool-specific instruction files
-        ln -sfT "../AGENTS.md" "$profile_dir/claude/CLAUDE.md"
-        ln -sfT "../AGENTS.md" "$profile_dir/gemini/GEMINI.md"
-        ln -sfT "../AGENTS.md" "$profile_dir/antigravity/AGY.md"
-        ln -sfT "../AGENTS.md" "$profile_dir/codex/AGENTS.override.md"
+        # 2. Create symlinks for tool-specific instruction files
+        ln -sf "$profile_dir/AGENTS.md" "$profile_dir/claude/CLAUDE.md"
+        ln -sf "$profile_dir/AGENTS.md" "$profile_dir/gemini/GEMINI.md"
+        ln -sf "$profile_dir/AGENTS.md" "$profile_dir/antigravity/AGY.md"
+        ln -sf "$profile_dir/AGENTS.md" "$profile_dir/codex/AGENTS.override.md"
       '') profilesList}
     '';
   };

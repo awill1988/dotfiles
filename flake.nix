@@ -135,8 +135,11 @@
           in
           {
             nixpkgs = nixpkgsConfig;
+            home-manager.useGlobalPkgs = true;
+            home-manager.useUserPackages = true;
             users.users.${primaryUser.username} = {
-              home = "/home/${primaryUser.username}";
+              home =
+                if pkgs.stdenv.isDarwin then "/Users/${primaryUser.username}" else "/home/${primaryUser.username}";
               isNormalUser = true;
               isSystemUser = false;
               initialPassword = "helloworld";
