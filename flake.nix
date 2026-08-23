@@ -180,6 +180,17 @@
                 profiles = primaryUserInfo.profiles;
                 folderOverrides = primaryUserInfo.folderOverrides;
               };
+              home-manager.sharedModules = [
+                {
+                  developer = {
+                    hostName = "macbook-personal";
+                    baseline = primaryUserInfo.baseline;
+                    hosts = primaryUserInfo.hosts;
+                    profiles = primaryUserInfo.profiles;
+                    folderOverrides = primaryUserInfo.folderOverrides;
+                  };
+                }
+              ];
             }
           ];
         };

@@ -71,18 +71,26 @@ let
     decision = "allow"
     priority = 800
   '';
-  gemini_wrapper = pkgs.writeShellScriptBin "gemini" ''
-    set -euo pipefail
+  gemini_wrapper = pkgs.writeShellApplication {
+    name = "gemini";
+    runtimeInputs = with pkgs; [ coreutils ];
+    text = ''
+      export GEMINI_TELEMETRY_ENABLED=false
+      export GEMINI_TELEMETRY_TRACES_ENABLED=false
+      export GEMINI_TELEMETRY_LOG_PROMPTS=false
+      export GEMINI_ANALYTICS_DISABLED=true
+      export OTEL_SDK_DISABLED=true
+      export DO_NOT_TRACK=1
 
-    export GEMINI_TELEMETRY_ENABLED=false
-    export GEMINI_TELEMETRY_TRACES_ENABLED=false
-    export GEMINI_TELEMETRY_LOG_PROMPTS=false
-    export GEMINI_ANALYTICS_DISABLED=true
-    export OTEL_SDK_DISABLED=true
-    export DO_NOT_TRACK=1
-
-    exec "${cfg.package}/bin/gemini" --policy "${gemini_home}/policies/aws-readonly.toml" "$@"
-  '';
+      if command -v profile-router >/dev/null 2>&1; then
+        exec profile-router "${cfg.package}/bin/gemini" --policy "${gemini_home}/policies/aws-readonly.toml" "$@"
+      elif [ -x "$HOME/.nix-profile/bin/profile-router" ]; then
+        exec "$HOME/.nix-profile/bin/profile-router" "${cfg.package}/bin/gemini" --policy "${gemini_home}/policies/aws-readonly.toml" "$@"
+      else
+        exec "${cfg.package}/bin/gemini" --policy "${gemini_home}/policies/aws-readonly.toml" "$@"
+      fi
+    '';
+  };
 in
 {
   options.programs.gemini = {

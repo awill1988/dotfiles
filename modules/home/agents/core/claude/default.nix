@@ -12,19 +12,27 @@ let
 
   base_package = pkgs.claude-code;
 
-  # wrapper delegates profile resolution to profile-router
-  claude_wrapper = pkgs.writeShellScriptBin "claude" ''
-    set -euo pipefail
+  # wrapper delegates profile resolution directly to profile-router
+  claude_wrapper = pkgs.writeShellApplication {
+    name = "claude";
+    runtimeInputs = with pkgs; [
+      coreutils
+    ];
+    text = ''
+      # bypass socks proxy for claude and mcp servers
+      unset ALL_PROXY all_proxy SOCKS_PROXY socks_proxy
 
-    # bypass socks proxy for claude and mcp servers
-    unset ALL_PROXY all_proxy SOCKS_PROXY socks_proxy
-
-    if command -v profile-router >/dev/null 2>&1; then
-      exec profile-router "${base_package}/bin/claude" "$@"
-    else
-      exec "${base_package}/bin/claude" "$@"
-    fi
-  '';
+      if command -v profile-router >/dev/null 2>&1; then
+        exec profile-router "${base_package}/bin/claude" "$@"
+      elif [ -x "$HOME/.nix-profile/bin/profile-router" ]; then
+        exec "$HOME/.nix-profile/bin/profile-router" "${base_package}/bin/claude" "$@"
+      elif [ -x "/etc/profiles/per-user/$USER/bin/profile-router" ]; then
+        exec "/etc/profiles/per-user/$USER/bin/profile-router" "${base_package}/bin/claude" "$@"
+      else
+        exec "${base_package}/bin/claude" "$@"
+      fi
+    '';
+  };
 in
 {
   options.programs.claude = {

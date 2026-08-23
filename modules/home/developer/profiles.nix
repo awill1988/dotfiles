@@ -82,26 +82,33 @@ let
     ];
     text = ''
       cwd="$(pwd -P)"
-      active_profile="${if primaryProfile != null then primaryProfile.name else "personal"}"
+      active_profile=""
 
-      ${concatMapStringsSep "\n" (p: ''
-        ${concatMapStringsSep "\n" (prefix: ''
-          expanded_prefix="$(eval echo "${prefix}")"
-          if [[ "$cwd" == "$expanded_prefix"* ]]; then
-            active_profile="${p.name}"
-          fi
-        '') p.pathPrefixes}
-      '') resolvedProfiles}
-
+      # 1. Match folderOverrides (highest priority)
       ${concatMapStringsSep "\n" (overridePath: ''
-        expanded_override="$(eval echo "${overridePath}")"
-        if [[ "$cwd" == "$expanded_override"* ]]; then
+        expanded_override="${builtins.replaceStrings [ "~" ] [ "$HOME" ] overridePath}"
+        if [[ "$cwd" == "$expanded_override" || "$cwd" == "$expanded_override"/* ]]; then
           active_profile="${cfg.folderOverrides.${overridePath}.inherits or primaryProfile.name}"
         fi
       '') (attrNames cfg.folderOverrides)}
 
-      if [ -n "''${DEVELOPER_PROFILE:-}" ]; then
-        active_profile="$DEVELOPER_PROFILE"
+      # 2. Match pathPrefixes (directory match wins over environment defaults)
+      if [ -z "$active_profile" ]; then
+        ${concatMapStringsSep "\n" (p: ''
+          ${concatMapStringsSep "\n" (prefix: ''
+            expanded_prefix="${builtins.replaceStrings [ "~" ] [ "$HOME" ] prefix}"
+            if [[ "$cwd" == "$expanded_prefix" || "$cwd" == "$expanded_prefix"/* ]]; then
+              active_profile="${p.name}"
+            fi
+          '') p.pathPrefixes}
+        '') resolvedProfiles}
+      fi
+
+      # 3. Fall back to environment variable or primary profile default
+      if [ -z "$active_profile" ]; then
+        active_profile="''${DEVELOPER_PROFILE:-${
+          if primaryProfile != null then primaryProfile.name else "personal"
+        }}"
       fi
 
       export DEVELOPER_PROFILE="$active_profile"
@@ -111,53 +118,79 @@ let
           ${
             if p.agents.claude.configDir != null then
               ''
-                export CLAUDE_CONFIG_DIR="$(eval echo "${p.agents.claude.configDir}")"
+                CLAUDE_CONFIG_DIR="${builtins.replaceStrings [ "~" ] [ "$HOME" ] p.agents.claude.configDir}"
+                export CLAUDE_CONFIG_DIR
               ''
             else
               ''
-                export CLAUDE_CONFIG_DIR="${config.xdg.configHome}/profiles/${p.name}/claude"
+                CLAUDE_CONFIG_DIR="${config.xdg.configHome}/profiles/${p.name}/claude"
+                export CLAUDE_CONFIG_DIR
               ''
           }
 
           ${
             if p.agents.gemini.configDir != null then
               ''
-                export GEMINI_CONFIG_DIR="$(eval echo "${p.agents.gemini.configDir}")"
+                GEMINI_CONFIG_DIR="${builtins.replaceStrings [ "~" ] [ "$HOME" ] p.agents.gemini.configDir}"
+                export GEMINI_CONFIG_DIR
               ''
             else
               ''
-                export GEMINI_CONFIG_DIR="${config.xdg.configHome}/profiles/${p.name}/gemini"
+                GEMINI_CONFIG_DIR="${config.xdg.configHome}/profiles/${p.name}/gemini"
+                export GEMINI_CONFIG_DIR
               ''
           }
 
           ${
             if p.agents.codex.configDir != null then
               ''
-                export CODEX_CONFIG_DIR="$(eval echo "${p.agents.codex.configDir}")"
+                CODEX_CONFIG_DIR="${builtins.replaceStrings [ "~" ] [ "$HOME" ] p.agents.codex.configDir}"
+                export CODEX_CONFIG_DIR
               ''
             else
               ''
-                export CODEX_CONFIG_DIR="${config.xdg.configHome}/profiles/${p.name}/codex"
+                CODEX_CONFIG_DIR="${config.xdg.configHome}/profiles/${p.name}/codex"
+                export CODEX_CONFIG_DIR
               ''
           }
 
           ${
             if p.agents.agy.configDir != null then
               ''
-                export AGY_CONFIG_DIR="$(eval echo "${p.agents.agy.configDir}")"
+                AGY_CONFIG_DIR="${builtins.replaceStrings [ "~" ] [ "$HOME" ] p.agents.agy.configDir}"
+                export AGY_CONFIG_DIR
               ''
             else
               ''
-                export AGY_CONFIG_DIR="${config.xdg.configHome}/profiles/${p.name}/antigravity"
+                AGY_CONFIG_DIR="${config.xdg.configHome}/profiles/${p.name}/antigravity"
+                export AGY_CONFIG_DIR
               ''
           }
 
-          ${optionalString (p.aws.profile != null) ''export AWS_PROFILE="${p.aws.profile}"''}
-          ${optionalString (p.aws.region != null) ''export AWS_REGION="${p.aws.region}"''}
-          ${optionalString (p.aws.roleArn != null) ''export AWS_ROLE_ARN="${p.aws.roleArn}"''}
-          ${optionalString (p.identity.email != null) ''export GIT_AUTHOR_EMAIL="${p.identity.email}"''}
-          ${optionalString (p.identity.email != null) ''export GIT_COMMITTER_EMAIL="${p.identity.email}"''}
-          ${concatMapStringsSep "\n" (k: "export ${k}=\"${p.env.${k}}\"") (attrNames p.env)}
+          ${optionalString (p.aws.profile != null) ''
+            AWS_PROFILE="${p.aws.profile}"
+            export AWS_PROFILE
+          ''}
+          ${optionalString (p.aws.region != null) ''
+            AWS_REGION="${p.aws.region}"
+            export AWS_REGION
+          ''}
+          ${optionalString (p.aws.roleArn != null) ''
+            AWS_ROLE_ARN="${p.aws.roleArn}"
+            export AWS_ROLE_ARN
+          ''}
+          ${optionalString (p.identity.email != null) ''
+            GIT_AUTHOR_EMAIL="${p.identity.email}"
+            export GIT_AUTHOR_EMAIL
+          ''}
+          ${optionalString (p.identity.email != null) ''
+            GIT_COMMITTER_EMAIL="${p.identity.email}"
+            export GIT_COMMITTER_EMAIL
+          ''}
+          ${concatMapStringsSep "\n" (k: ''
+            ${k}="${p.env.${k}}"
+            export ${k}
+          '') (attrNames p.env)}
         fi
       '') resolvedProfiles}
 

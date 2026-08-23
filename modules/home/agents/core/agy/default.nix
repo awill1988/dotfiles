@@ -143,22 +143,13 @@ let
     export OTEL_SDK_DISABLED=true
     export DO_NOT_TRACK=1
 
-    # Path-Based Identity Routing
-    # Restriction zone: ~/projects/arro/* uses Claude-Secondary only.
-    arro_prefix="${home_dir}/projects/arro"
-    current_dir="$(pwd -P)"
-
-    if [[ "$current_dir" == "$arro_prefix" || "$current_dir" == "$arro_prefix"/* ]]; then
-      export AGY_CONFIG_DIR="${agy_restricted_home}"
-      export AGY_PEERS="claude-secondary"
-      export AGY_STATUS_LABEL="ARRO-RESTRICTED"
-      export CLAUDE_CONFIG_DIR="${config.xdg.configHome}/claude-secondary"
+    if command -v profile-router >/dev/null 2>&1; then
+      exec profile-router "${cfg.package}/bin/agy" "$@"
+    elif [ -x "$HOME/.nix-profile/bin/profile-router" ]; then
+      exec "$HOME/.nix-profile/bin/profile-router" "${cfg.package}/bin/agy" "$@"
     else
-      export AGY_CONFIG_DIR="${agy_home}"
-      export AGY_PEERS="claude,gemini,codex"
+      exec "${cfg.package}/bin/agy" "$@"
     fi
-
-    exec "${cfg.package}/bin/agy" "$@"
   '';
 in
 {
