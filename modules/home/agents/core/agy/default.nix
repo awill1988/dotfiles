@@ -143,13 +143,20 @@ let
     export OTEL_SDK_DISABLED=true
     export DO_NOT_TRACK=1
 
-    if command -v profile-router >/dev/null 2>&1; then
-      exec profile-router "${cfg.package}/bin/agy" "$@"
-    elif [ -x "$HOME/.nix-profile/bin/profile-router" ]; then
-      exec "$HOME/.nix-profile/bin/profile-router" "${cfg.package}/bin/agy" "$@"
-    else
-      exec "${cfg.package}/bin/agy" "$@"
-    fi
+    ${
+      if config.developer.profileRouter != null then
+        ''
+          exec "${config.developer.profileRouter}/bin/profile-router" "${cfg.package}/bin/agy" "$@"
+        ''
+      else
+        ''
+          if command -v profile-router >/dev/null 2>&1; then
+            exec profile-router "${cfg.package}/bin/agy" "$@"
+          else
+            exec "${cfg.package}/bin/agy" "$@"
+          fi
+        ''
+    }
   '';
 in
 {

@@ -206,6 +206,7 @@ in
   imports = [ ../../developer/profiles.nix ];
 
   config = mkIf (cfg.profiles != { }) {
+    developer.profileRouter = profile-router;
     home.packages = [ profile-router ];
 
     home.activation.ensureProfileDirs = lib.hm.dag.entryAfter [ "writeBoundary" ] ''

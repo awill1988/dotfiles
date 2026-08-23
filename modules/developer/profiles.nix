@@ -267,6 +267,12 @@ let
 in
 {
   options.developer = {
+    profileRouter = mkOption {
+      type = types.nullOr types.package;
+      default = null;
+      description = "Constructed profile-router package derivation.";
+    };
+
     hostName = mkOption {
       type = types.str;
       default = "macbook-arm";
