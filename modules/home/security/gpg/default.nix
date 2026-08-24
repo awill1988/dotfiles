@@ -7,13 +7,13 @@
 with lib;
 let
   cfg = config.modules.security.gpg;
-  profilesList = attrValues config.developer.profiles;
-  primaries = filter (p: p.isPrimary) profilesList;
+  resolvedProfilesList = attrValues config.developer.resolvedProfiles;
+  primaries = filter (p: p.isPrimary) resolvedProfilesList;
   primaryProfile =
     if primaries != [ ] then
       head primaries
-    else if profilesList != [ ] then
-      head profilesList
+    else if resolvedProfilesList != [ ] then
+      head resolvedProfilesList
     else
       null;
   signingKey = if primaryProfile != null then primaryProfile.identity.signingKey else null;

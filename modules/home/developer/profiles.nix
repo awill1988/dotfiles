@@ -19,6 +19,18 @@ let
     else
       null;
 
+  mergeNonNull =
+    lhs: rhs:
+    if isAttrs lhs && isAttrs rhs then
+      lhs
+      // (mapAttrs (
+        name: rhsVal: if hasAttr name lhs then mergeNonNull lhs.${name} rhsVal else rhsVal
+      ) rhs)
+    else if rhs != null then
+      rhs
+    else
+      lhs;
+
   # Recursive resolution helper merging baseline -> profile -> hostOverrides
   resolveProfile =
     p:
@@ -28,10 +40,10 @@ let
           resolveProfile cfg.profiles.${p.inherits}
         else
           baseline;
-      mergedWithParent = recursiveUpdate parent p;
+      mergedWithParent = mergeNonNull parent p;
       hostOverride = cfg.hosts.${cfg.hostName}.profileOverrides.${p.name} or { };
     in
-    recursiveUpdate mergedWithParent hostOverride;
+    mergeNonNull mergedWithParent hostOverride;
 
   # List of fully resolved profiles
   resolvedProfiles = map resolveProfile profilesList;
@@ -210,6 +222,7 @@ in
     programs.gemini.enable = true;
     programs.agy.enable = true;
     developer.profileRouter = profile-router;
+    developer.resolvedProfiles = listToAttrs (map (p: nameValuePair p.name p) resolvedProfiles);
     home.packages = [ profile-router ];
 
     home.activation.ensureProfileDirs = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
@@ -252,11 +265,22 @@ in
           mv "$claude_dest_dir/.claude.json.tmp" "$claude_dest_dir/.claude.json"
         fi
 
-        cat <<'EOF' > "$profile_dir/git/config"
+        cat <<EOF > "$profile_dir/git/config"
         [user]
           ${optionalString (p.identity.fullName != null) ''name = "${p.identity.fullName}"''}
           ${optionalString (p.identity.email != null) ''email = "${p.identity.email}"''}
           ${optionalString (p.identity.signingKey != null) ''signingKey = "${p.identity.signingKey}"''}
+        ${optionalString (p.identity.signingKey != null && p.identity.signingFormat != null) ''
+          [commit]
+            gpgSign = true
+          [gpg]
+            format = "${p.identity.signingFormat}"
+        ''}
+        ${optionalString (p.identity.signingFormat == "ssh") ''
+          [gpg "ssh"]
+            program = "git-ssh-sign"
+            allowedSignersFile = "${config.xdg.configHome}/git/allowed_signers"
+        ''}
         EOF
       '') resolvedProfiles}
     '';

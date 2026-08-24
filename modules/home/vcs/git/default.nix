@@ -7,13 +7,14 @@
 with lib;
 let
   cfg = config.modules.vcs.git;
-  profilesList = attrValues config.developer.profiles;
-  primaries = filter (p: p.isPrimary) profilesList;
+  resolvedProfiles = config.developer.resolvedProfiles;
+  resolvedProfilesList = attrValues resolvedProfiles;
+  primaries = filter (p: p.isPrimary) resolvedProfilesList;
   primaryProfile =
     if primaries != [ ] then
       head primaries
-    else if profilesList != [ ] then
-      head profilesList
+    else if resolvedProfilesList != [ ] then
+      head resolvedProfilesList
     else
       null;
 
@@ -30,21 +31,26 @@ let
     set -euo pipefail
 
     is_sign=false
+    prev_arg=""
+    orig_key=""
+    skip_next=false
+
     for arg in "$@"; do
       if [ "$arg" = "sign" ] && [ "$prev_arg" = "-Y" ]; then
         is_sign=true
-        break
+      fi
+      if [ "$skip_next" = "true" ]; then
+        orig_key="$arg"
+        skip_next=false
+      fi
+      if [ "$arg" = "-f" ]; then
+        skip_next=true
       fi
       prev_arg="$arg"
     done
 
     if [ "$is_sign" = "false" ]; then
       exec ${ssh-keygen} "$@"
-    fi
-
-    yubikey_line=""
-    if agent_keys="$(${ssh-add} -L 2>/dev/null)"; then
-      yubikey_line="$(echo "$agent_keys" | grep -E 'openpgp:|cardno:' | head -n1 || true)"
     fi
 
     sign_key=""
@@ -54,11 +60,30 @@ let
     }
     trap cleanup EXIT
 
-    if [ -n "$yubikey_line" ]; then
-      tmp_pubkey="$(mktemp /tmp/git-ssh-sign-XXXXXX.pub)"
-      echo "$yubikey_line" > "$tmp_pubkey"
-      sign_key="$tmp_pubkey"
-    else
+    if [ -n "$orig_key" ] && [ -f "$orig_key" ]; then
+      sign_key="$orig_key"
+    elif [ -n "$orig_key" ]; then
+      if gpg_key="$(${pkgs.gnupg}/bin/gpg --export-ssh-key "$orig_key" 2>/dev/null || true)"; then
+        if [ -n "$gpg_key" ]; then
+          tmp_pubkey="$(mktemp /tmp/git-ssh-sign-XXXXXX.pub)"
+          echo "$gpg_key" > "$tmp_pubkey"
+          sign_key="$tmp_pubkey"
+        fi
+      fi
+    fi
+
+    if [ -z "$sign_key" ]; then
+      if agent_keys="$(${ssh-add} -L 2>/dev/null || true)"; then
+        yubikey_line="$(echo "$agent_keys" | grep -E 'openpgp:|cardno:' | head -n1 || true)"
+        if [ -n "$yubikey_line" ]; then
+          tmp_pubkey="$(mktemp /tmp/git-ssh-sign-XXXXXX.pub)"
+          echo "$yubikey_line" > "$tmp_pubkey"
+          sign_key="$tmp_pubkey"
+        fi
+      fi
+    fi
+
+    if [ -z "$sign_key" ]; then
       for candidate in "$HOME/.ssh/id_ed25519.pub" "$HOME/.ssh/id_rsa.pub"; do
         if [ -f "$candidate" ]; then
           sign_key="$candidate"
@@ -68,7 +93,7 @@ let
     fi
 
     if [ -z "$sign_key" ]; then
-      echo "error: no ssh signing key found (no yubikey, no ~/.ssh/id_ed25519.pub)" >&2
+      echo "error: no ssh signing key found (no valid GPG key export, no yubikey, no ~/.ssh/id_ed25519.pub)" >&2
       exit 1
     fi
 
@@ -98,7 +123,7 @@ let
           path = "${config.xdg.configHome}/profiles/${p.name}/git/config";
         };
       }) p.pathPrefixes
-    ) profilesList
+    ) resolvedProfilesList
   );
 in
 {
@@ -268,6 +293,7 @@ in
     };
 
     home.packages = with pkgs; [
+      git-ssh-sign
       gh
       act
       maestro
@@ -292,7 +318,7 @@ in
             signers="''${signers}${p.identity.email} $file_key
           "
           fi
-        '') profilesList}
+        '') resolvedProfilesList}
 
         if [ -n "$signers" ]; then
           printf '%s' "$signers" > "$allowed_signers_file"

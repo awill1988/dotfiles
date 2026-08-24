@@ -7,13 +7,13 @@
 with lib;
 let
   cfg = config.modules.terminal.shell;
-  profilesList = attrValues config.developer.profiles;
-  primaries = filter (p: p.isPrimary) profilesList;
+  resolvedProfilesList = attrValues config.developer.resolvedProfiles;
+  primaries = filter (p: p.isPrimary) resolvedProfilesList;
   primaryProfile =
     if primaries != [ ] then
       head primaries
-    else if profilesList != [ ] then
-      head profilesList
+    else if resolvedProfilesList != [ ] then
+      head resolvedProfilesList
     else
       null;
   font_family = config.ext.fonts.monospace_family;

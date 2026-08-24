@@ -307,5 +307,11 @@ in
       default = { };
       description = "Per-folder overrides extending profiles or baseline.";
     };
+
+    resolvedProfiles = mkOption {
+      type = types.attrsOf types.anything;
+      default = { };
+      description = "Fully resolved profile matrix after applying inheritance and host overrides.";
+    };
   };
 }
