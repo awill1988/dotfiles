@@ -141,6 +141,10 @@ in
           export GPG_TTY="$(${pkgs.coreutils}/bin/tty)"
           export SSH_AUTH_SOCK="''${SSH_AUTH_SOCK:-$(${pkgs.gnupg}/bin/gpgconf --list-dirs agent-ssh-socket)}"
 
+          if command -v theme-switch >/dev/null 2>&1; then
+            theme-switch sync-host --quiet 2>/dev/null || true
+          fi
+
           if command -v ${pkgs.pass}/bin/pass >/dev/null 2>&1; then
             if [ ! -f "''${PASSWORD_STORE_DIR}/.gpg-id" ] && [ -n "''${KEY_ID:-}" ]; then
               mkdir -p "''${PASSWORD_STORE_DIR}"

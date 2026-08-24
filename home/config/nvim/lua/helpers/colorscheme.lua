@@ -15,6 +15,10 @@ local function get_if_available(name, opts)
 	return "default"
 end
 
+-- Set background polarity matching Stylix / environment baseline
+local polarity = os.getenv("NVIM_THEME_POLARITY") or "dark"
+vim.opt.background = polarity
+
 -- Colorscheme is driven by stylix (home/theme.nix). The plugin specs in
 -- plugins/themes.lua still ship the implementations; stylix activates the
 -- one matching the active base16 scheme. The fallback below only fires if

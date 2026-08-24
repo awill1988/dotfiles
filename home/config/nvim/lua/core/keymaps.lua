@@ -47,13 +47,14 @@ map("n", "<S-h>", ":bprevious<CR>")
 map("v", "<", "<gv")
 map("v", ">", ">gv")
 
--- Switch between light and dark modes
+-- Switch between light and dark modes (system-wide & local)
 map("n", "<leader>ut", function()
 	if vim.o.background == "dark" then
 		vim.o.background = "light"
 	else
 		vim.o.background = "dark"
 	end
+	vim.fn.jobstart({ "theme-switch", "toggle-mode" })
 end, "Toggle between light and dark themes")
 
 -- Clear after search
