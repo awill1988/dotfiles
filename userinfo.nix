@@ -54,19 +54,17 @@
         excludeMcpServers = [ "blender" ];
         mcpServers = {
           atlassian = {
-            command = "npx";
+            command = "mcp-remote-wrapper";
             args = [
-              "-y"
-              "mcp-remote"
               "https://mcp.atlassian.com/v1/mcp"
+              "43012"
             ];
           };
           linear = {
-            command = "npx";
+            command = "mcp-remote-wrapper";
             args = [
-              "-y"
-              "mcp-remote"
               "https://mcp.linear.app/mcp"
+              "43013"
             ];
           };
           vanta = {
@@ -102,19 +100,17 @@
             };
           };
           posthog = {
-            command = "npx";
+            command = "mcp-remote-wrapper";
             args = [
-              "-y"
-              "mcp-remote@latest"
               "https://mcp.posthog.com/mcp"
+              "43014"
             ];
           };
           sentry = {
-            command = "npx";
+            command = "mcp-remote-wrapper";
             args = [
-              "-y"
-              "mcp-remote"
               "https://mcp.sentry.dev/mcp"
+              "43015"
             ];
           };
           grafana = {

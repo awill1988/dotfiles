@@ -13,6 +13,7 @@ in
     ./contextforge
     ./blender-mcp
     ./drive-mcp
+    ./mcp-remote-wrapper
   ];
 
   options.modules.agents.agent-tools = {
