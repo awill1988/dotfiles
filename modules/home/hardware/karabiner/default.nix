@@ -118,7 +118,7 @@ in
   options.programs.karabiner-elements = {
     enable = lib.mkOption {
       type = lib.types.bool;
-      default = true;
+      default = false;
       description = "Enable Karabiner-Elements";
     };
     install_method = lib.mkOption {

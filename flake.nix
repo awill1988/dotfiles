@@ -116,6 +116,7 @@
               imports = attrValues self.homeManagerModules ++ [ mac-app-util.homeManagerModules.default ];
               home.stateVersion = homeManagerStateVersion;
               home.user-info = config.users.primaryUser;
+              programs.karabiner-elements.enable = true;
             };
           }
         )
