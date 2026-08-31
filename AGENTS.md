@@ -9,7 +9,7 @@
 ## No AI Attribution
 
 - Never attribute work to any AI system in commits, pull requests, code comments, release notes, changelogs, or contributor metadata
-- Never add AI-related footers or signatures such as `Co-Authored-By`, `Generated-By`, or `Assisted-By`
+- Never add AI-related footers or signatures such as `Co-Authored-By`, `Generated-By`, `Assisted-By`, or `🤖 Reviewed with Claude Code` (or `Reviewed with Claude Code`) in commits, PR descriptions, issue comments, code reviews, or metadata
 - Before creating or editing commit or PR text, verify it contains no AI attribution
 
 ## SQL Tool Usage
