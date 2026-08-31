@@ -26,6 +26,7 @@ in
       steampipe
       grpcurl
       sqlite
+      mariadb.client
       postgresql
       jsonnet
       qemu

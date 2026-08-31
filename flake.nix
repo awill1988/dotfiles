@@ -253,7 +253,7 @@
         };
       };
 
-      defaultPackage.x86_64-linux = self.homeConfigurations.debianWsl.activationPackage;
+      defaultPackage.x86_64-linux = self.homeConfigurations.wsl-debian-personal.activationPackage;
 
       darwinModules = {
         common = import ./system/common.nix;
