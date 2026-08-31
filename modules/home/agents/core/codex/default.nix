@@ -122,52 +122,65 @@ let
   '';
 in
 {
-  config = lib.mkIf cfg.enable {
-    programs.codex.package = lib.mkDefault pkgs.codex;
-    home.sessionVariables.CODEX_HOME = lib.mkDefault codex_config_dir;
+  config = lib.mkMerge [
+    {
+      programs.codex.enable = lib.mkDefault true;
+    }
+    (lib.mkIf cfg.enable {
+      programs.codex.package = lib.mkDefault pkgs.codex;
+      home.sessionVariables.CODEX_HOME = lib.mkDefault codex_config_dir;
 
-    # Keep private skills outside the Nix store. This wrapper materializes them
-    # into Codex's native discovery directory at every invocation.
-    home.file.".local/bin/codex".source = "${codex_wrapper}/bin/codex";
-    home.file.".local/bin/codex-code-mode-host".source = "${cfg.package}/bin/codex-code-mode-host";
+      # Keep private skills outside the Nix store. This wrapper materializes them
+      # into Codex's native discovery directory at every invocation.
+      home.file.".local/bin/codex".source = "${codex_wrapper}/bin/codex";
+      home.file.".local/bin/codex-code-mode-host".source = "${cfg.package}/bin/codex-code-mode-host";
 
-    xdg.configFile."codex/AGENTS.override.md" = {
-      source = agents_override_source;
-      force = true;
-    };
-    xdg.configFile."codex/rules/default.rules" = {
-      text = default_rules;
-      force = true;
-    };
+      xdg.configFile."codex/AGENTS.override.md" = {
+        source = agents_override_source;
+        force = true;
+      };
+      xdg.configFile."codex/rules/default.rules" = {
+        text = default_rules;
+        force = true;
+      };
 
-    home.activation.ensureCodexConfig = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-      set -euo pipefail
+      home.activation.ensureCodexConfig = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+        set -euo pipefail
 
-      config_target="${codex_config_dir}/config.toml"
+        config_target="${codex_config_dir}/config.toml"
 
-      mkdir -p "${codex_config_dir}"
+        mkdir -p "${codex_config_dir}"
 
-      # Replace the read-only nix store symlink with a writable file Codex can update in place.
-      if [[ -L "$config_target" ]]; then
-        rm -f "$config_target"
-      fi
-
-      if [[ ! -e "$config_target" ]]; then
-        install -m 600 "${config_source}" "$config_target"
-      else
-        if grep -q '^model = "gpt-5\.4"$' "$config_target"; then
-          ${pkgs.gnused}/bin/sed -i 's/^model = "gpt-5\.4"$/model = "gpt-5.5"/' "$config_target"
+        # Replace the read-only nix store symlink with a writable file Codex can update in place.
+        if [[ -L "$config_target" ]]; then
+          rm -f "$config_target"
         fi
-        if ! grep -q 'code_mode_host' "$config_target"; then
-          if grep -q '^\[features\]' "$config_target"; then
-            ${pkgs.gnused}/bin/sed -i '/^\[features\]/a code_mode_host = true' "$config_target"
-          else
-            echo -e "\n[features]\ncode_mode_host = true" >> "$config_target"
-          fi
+
+        if [[ ! -e "$config_target" ]]; then
+          install -m 600 "${config_source}" "$config_target"
         else
-          ${pkgs.gnused}/bin/sed -i 's/^code_mode_host = false/code_mode_host = true/' "$config_target"
+          if grep -q '^model = "gpt-5\.4"$' "$config_target"; then
+            ${pkgs.gnused}/bin/sed -i 's/^model = "gpt-5\.4"$/model = "gpt-5.5"/' "$config_target"
+          fi
+          if ! grep -q 'code_mode_host' "$config_target"; then
+            if grep -q '^\[features\]' "$config_target"; then
+              ${pkgs.gnused}/bin/sed -i '/^\[features\]/a code_mode_host = true' "$config_target"
+            else
+              echo -e "\n[features]\ncode_mode_host = true" >> "$config_target"
+            fi
+          else
+            ${pkgs.gnused}/bin/sed -i 's/^code_mode_host = false/code_mode_host = true/' "$config_target"
+          fi
+
+          for feature in apps plugins remote_plugin; do
+            if grep -q "^$feature[[:space:]]*=" "$config_target"; then
+              ${pkgs.gnused}/bin/sed -i "s/^$feature[[:space:]]*=.*/$feature = false/" "$config_target"
+            else
+              ${pkgs.gnused}/bin/sed -i "/^\[features\]/a $feature = false" "$config_target"
+            fi
+          done
         fi
-      fi
-    '';
-  };
+      '';
+    })
+  ];
 }

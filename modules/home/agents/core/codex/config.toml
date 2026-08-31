@@ -12,6 +12,8 @@ view_image = true
 [features]
 rmcp_client = true
 apps = false
+plugins = false
+remote_plugin = false
 code_mode_host = true
 
 [mcp_servers.contextforge]

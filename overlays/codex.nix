@@ -18,7 +18,7 @@ let
     x86_64-linux = {
       suffix = "x86_64-unknown-linux-musl";
       hash = "sha256-Akbi53ODTgfw+1JJ7W660S5FkeYI+Me7l91qlpBUTDY=";
-      hostHash = "sha256-zF15eYHiptngjgbKj2OB6aJ34E//bI6+oPvCe89WvRk=";
+      hostHash = "sha256-AUat+qyDY+yfzbWJX3Yk21suhheig4h5OLf7l6HdQ1Y=";
     };
     aarch64-linux = {
       suffix = "aarch64-unknown-linux-musl";
