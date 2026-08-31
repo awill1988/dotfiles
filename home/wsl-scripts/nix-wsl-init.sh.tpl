@@ -103,6 +103,45 @@ fi
 log_dbg "Determined Windows profile (WSL path): $win_profile_wsl"
 
 
+# --- manage host .wslconfig ---
+if [ "@WSLCONFIG_ENABLE@" = "true" ]; then
+  wsl_config_file="$win_profile_wsl/.wslconfig"
+  log_dbg "Updating .wslconfig at $wsl_config_file"
+  @PYTHON3_BIN@ - "$wsl_config_file" "@WSL_MEMORY@" "@WSL_PROCESSORS@" "@WSL_AUTOMEMORYRECLAIM@" "@WSL_SPARSEVHD@" << 'EOF' 2>/dev/null || true
+import sys, configparser, os
+
+path = sys.argv[1]
+memory = sys.argv[2]
+processors = sys.argv[3]
+auto_reclaim = sys.argv[4]
+sparse_vhd = sys.argv[5]
+
+config = configparser.ConfigParser(strict=False)
+config.optionxform = str
+
+if os.path.exists(path):
+    config.read(path)
+
+if 'wsl2' not in config:
+    config['wsl2'] = {}
+config['wsl2']['memory'] = memory
+config['wsl2']['processors'] = processors
+config['wsl2']['autoMemoryReclaim'] = auto_reclaim
+config['wsl2']['sparseVhd'] = sparse_vhd
+config['wsl2']['firewall'] = config['wsl2'].get('firewall', 'false')
+config['wsl2']['networkingMode'] = config['wsl2'].get('networkingMode', 'mirrored')
+
+if 'experimental' not in config:
+    config['experimental'] = {}
+config['experimental']['autoMemoryReclaim'] = 'gradual'
+
+with open(path, 'w') as f:
+    config.write(f, space_around_delimiters=False)
+EOF
+  echo "wsl: host .wslconfig updated with performance settings"
+fi
+
+
 # --- install nerd fonts into windows per-user fonts directory ---
 fonts_dest="$win_profile_wsl/AppData/Local/Microsoft/Windows/Fonts"
 mkdir -p "$fonts_dest"
@@ -164,6 +203,7 @@ chmod 0644 "$ps_entrypoint" || true
 # copy supporting powershell modules using stable filenames
 ps_logon_dest="$win_temp_dir/wsl-on-logon.ps1"
 ps_task_dest="$win_temp_dir/setup-wsl-on-logon-task.ps1"
+ps_config_dest="$win_temp_dir/setup-wsl-config.ps1"
 
 if [ -f "@PS_LOGON_SCRIPT@" ]; then
   log_dbg "Copying wsl-on-logon script to $ps_logon_dest"
@@ -181,6 +221,14 @@ else
   log_dbg "Supporting PS file not found: @PS_TASK_SETUP_SCRIPT@"
 fi
 
+if [ -f "@PS_CONFIG_SCRIPT@" ]; then
+  log_dbg "Copying config setup script to $ps_config_dest"
+  cp "@PS_CONFIG_SCRIPT@" "$ps_config_dest"
+  chmod 0644 "$ps_config_dest" || true
+else
+  log_dbg "Supporting PS file not found: @PS_CONFIG_SCRIPT@"
+fi
+
 # run powershell entrypoint with proper version
 task_cmd="$ps_cmd"
 log_dbg "Executing PowerShell entrypoint: $task_cmd -File $ps_entrypoint_win"
@@ -191,7 +239,13 @@ ps_init_rc=0
   -UsbipdBusId "@USBIPD_BUSID@" \
   -UsbipdAutoAttach "@USBIPD_AUTO_ATTACH@" \
   -WslDistroName "@WSL_DISTRO_NAME@" \
-  -WslWaitSeconds "@WSL_WAIT_SECONDS@" || ps_init_rc=$?
+  -WslWaitSeconds "@WSL_WAIT_SECONDS@" \
+  -WslConfigEnable "@WSLCONFIG_ENABLE@" \
+  -Memory "@WSL_MEMORY@" \
+  -Processors "@WSL_PROCESSORS@" \
+  -AutoMemoryReclaim "@WSL_AUTOMEMORYRECLAIM@" \
+  -SparseVhd "@WSL_SPARSEVHD@" \
+  -DefenderExclusionsEnable "@DEFENDER_EXCLUSIONS_ENABLE@" || ps_init_rc=$?
 
 if [ $ps_init_rc -ne 0 ]; then
   log_dbg "powershell init script failed with exit code: $ps_init_rc"

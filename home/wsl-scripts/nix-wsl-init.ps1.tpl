@@ -1,6 +1,6 @@
 # nix-wsl-init.ps1
 # entrypoint powershell script that orchestrates wsl initialization tasks
-# this script sets up the consolidated wsl logon scheduled task
+# this script sets up defender exclusions and the consolidated wsl logon scheduled task
 
 param(
   [Parameter(Mandatory=$true)]
@@ -19,7 +19,10 @@ param(
   [string]$WslDistroName = "",
 
   [Parameter(Mandatory=$false)]
-  [int]$WslWaitSeconds = 30
+  [int]$WslWaitSeconds = 30,
+
+  [Parameter(Mandatory=$false)]
+  [string]$DefenderExclusionsEnable = "true"
 )
 
 $ErrorActionPreference = 'Stop'
@@ -27,7 +30,22 @@ $ErrorActionPreference = 'Stop'
 # get script directory for loading sub-scripts
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 
-# create persistent directory and copy the consolidated logon script
+# 1. setup defender exclusions
+$wslConfigScript = Join-Path $scriptDir "setup-wsl-config.ps1"
+if (Test-Path $wslConfigScript) {
+  try {
+    $cfgParams = @{
+      WinProfilePath = $WinProfilePath
+      DefenderExclusionsEnable = $DefenderExclusionsEnable
+    }
+    $cfgOutput = & $wslConfigScript @cfgParams 2>&1
+    Write-Host "$cfgOutput"
+  } catch {
+    Write-Host "wsl-config setup failed: $_"
+  }
+}
+
+# 2. create persistent directory and copy the consolidated logon script
 $logonScriptDir = Join-Path $WinProfilePath "AppData\Local\WslOnLogon"
 if (-not (Test-Path $logonScriptDir)) {
   New-Item -Path $logonScriptDir -ItemType Directory -Force | Out-Null
@@ -39,7 +57,7 @@ if (Test-Path $logonScriptSrc) {
   Copy-Item -Path $logonScriptSrc -Destination $logonScriptDest -Force
 }
 
-# setup the scheduled task
+# 3. setup the scheduled task
 $taskSetupScript = Join-Path $scriptDir "setup-wsl-on-logon-task.ps1"
 if (Test-Path $taskSetupScript) {
   try {

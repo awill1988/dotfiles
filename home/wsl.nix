@@ -13,11 +13,13 @@ let
   psEntrypointTemplate = builtins.readFile ./wsl-scripts/nix-wsl-init.ps1.tpl;
   psLogonScriptTemplate = builtins.readFile ./wsl-scripts/wsl-on-logon.ps1.tpl;
   psTaskSetupScriptTemplate = builtins.readFile ./wsl-scripts/setup-wsl-on-logon-task.ps1.tpl;
+  psConfigScriptTemplate = builtins.readFile ./wsl-scripts/setup-wsl-config.ps1.tpl;
 
   # create derivations for powershell scripts
   psEntrypoint = pkgs.writeText "nix-wsl-init.ps1" psEntrypointTemplate;
   psLogonScript = pkgs.writeText "wsl-on-logon.ps1" psLogonScriptTemplate;
   psTaskSetupScript = pkgs.writeText "setup-wsl-on-logon-task.ps1" psTaskSetupScriptTemplate;
+  psConfigScript = pkgs.writeText "setup-wsl-config.ps1" psConfigScriptTemplate;
 
   # pcscd systemd unit (Type=simple, runs in foreground)
   pcscd_systemd_unit = pkgs.writeText "pcscd-wsl.service" ''
@@ -64,9 +66,11 @@ let
         [
           "@FONT_PACKAGE_PATH@"
           "@FIND_BIN@"
+          "@PYTHON3_BIN@"
           "@PS_ENTRYPOINT@"
           "@PS_LOGON_SCRIPT@"
           "@PS_TASK_SETUP_SCRIPT@"
+          "@PS_CONFIG_SCRIPT@"
           "@USBIPD_ENABLED@"
           "@USBIPD_BUSID@"
           "@USBIPD_AUTO_ATTACH@"
@@ -74,13 +78,21 @@ let
           "@WSL_WAIT_SECONDS@"
           "@PCSCD_ENABLED@"
           "@PCSCD_SYSTEMD_UNIT@"
+          "@WSLCONFIG_ENABLE@"
+          "@WSL_MEMORY@"
+          "@WSL_PROCESSORS@"
+          "@WSL_AUTOMEMORYRECLAIM@"
+          "@WSL_SPARSEVHD@"
+          "@DEFENDER_EXCLUSIONS_ENABLE@"
         ]
         [
           "${pkgs.nerd-fonts.sauce-code-pro}/share/fonts"
           "${pkgs.findutils}/bin/find"
+          "${pkgs.python3}/bin/python3"
           "${psEntrypoint}"
           "${psLogonScript}"
           "${psTaskSetupScript}"
+          "${psConfigScript}"
           (if cfg.usbipd.enable then "true" else "false")
           (if cfg.usbipd.busid == null then "" else cfg.usbipd.busid)
           (if cfg.usbipd.auto_attach then "true" else "false")
@@ -88,6 +100,12 @@ let
           (toString cfg.usbipd.wait_seconds)
           (if cfg.pcscd.enable then "true" else "false")
           "${pcscd_systemd_unit}"
+          (if cfg.wslconfig.enable then "true" else "false")
+          cfg.wslconfig.memory
+          (toString cfg.wslconfig.processors)
+          cfg.wslconfig.autoMemoryReclaim
+          (if cfg.wslconfig.sparseVhd then "true" else "false")
+          (if cfg.defenderExclusions.enable then "true" else "false")
         ]
         bashScriptTemplate;
     executable = true;
@@ -96,6 +114,42 @@ in
 {
   options.ext.wsl = {
     enable = mkEnableOption "wsl-specific configuration";
+
+    wslconfig = {
+      enable = mkOption {
+        type = types.bool;
+        default = true;
+        description = "automatically manage host .wslconfig performance settings";
+      };
+      memory = mkOption {
+        type = types.str;
+        default = "24GB";
+        description = "memory allocation limit for wsl 2";
+      };
+      processors = mkOption {
+        type = types.int;
+        default = 16;
+        description = "number of logical processors allocated to wsl 2";
+      };
+      autoMemoryReclaim = mkOption {
+        type = types.str;
+        default = "dropcache";
+        description = "auto memory reclaim mode for wsl 2 (dropcache, gradual, disabled)";
+      };
+      sparseVhd = mkOption {
+        type = types.bool;
+        default = true;
+        description = "enable sparse vhd auto-compaction in wsl 2";
+      };
+    };
+
+    defenderExclusions = {
+      enable = mkOption {
+        type = types.bool;
+        default = true;
+        description = "automatically apply windows defender real-time scanning exclusions for wsl";
+      };
+    };
 
     usbipd = {
       enable = mkEnableOption "usbipd auto-attach at windows logon";
