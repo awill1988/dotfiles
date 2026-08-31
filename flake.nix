@@ -232,6 +232,7 @@
                 # ext.wsl.usbipd.distro_name = "Debian";
                 ext.wsl.usbipd.auto_attach = true;
                 ext.wsl.pcscd.enable = true;
+                modules.dev.node.enable = true;
                 home.sessionVariables = {
                   LD_LIBRARY_PATH = "/usr/lib/wsl/lib:${pkgs.onnxruntime}/lib:$LD_LIBRARY_PATH";
                   PKG_CONFIG_PATH = "${pkgs.openssl.dev}/lib/pkgconfig:${pkgs.onnxruntime.dev}/lib/pkgconfig:$PKG_CONFIG_PATH";
