@@ -138,17 +138,19 @@ in
           ];
         };
         initContent = ''
-          export GPG_TTY="$(${pkgs.coreutils}/bin/tty)"
-          export SSH_AUTH_SOCK="''${SSH_AUTH_SOCK:-$(${pkgs.gnupg}/bin/gpgconf --list-dirs agent-ssh-socket)}"
+          if [ -t 0 ]; then
+            export GPG_TTY="$(${pkgs.coreutils}/bin/tty 2>/dev/null || true)"
+          fi
+          export SSH_AUTH_SOCK="''${SSH_AUTH_SOCK:-$(${pkgs.gnupg}/bin/gpgconf --list-dirs agent-ssh-socket 2>/dev/null || true)}"
 
           if command -v theme-switch >/dev/null 2>&1; then
             theme-switch sync-host --quiet 2>/dev/null || true
           fi
 
-          if command -v ${pkgs.pass}/bin/pass >/dev/null 2>&1; then
-            if [ ! -f "''${PASSWORD_STORE_DIR}/.gpg-id" ] && [ -n "''${KEY_ID:-}" ]; then
+          if [ -t 0 ] && command -v ${pkgs.pass}/bin/pass >/dev/null 2>&1; then
+            if [ -n "''${PASSWORD_STORE_DIR:-}" ] && [ ! -f "''${PASSWORD_STORE_DIR}/.gpg-id" ] && [ -n "''${KEY_ID:-}" ]; then
               mkdir -p "''${PASSWORD_STORE_DIR}"
-              ${pkgs.pass}/bin/pass init "''${KEY_ID}"
+              ${pkgs.pass}/bin/pass init "''${KEY_ID}" || true
             fi
           fi
 
