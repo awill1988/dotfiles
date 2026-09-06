@@ -29,6 +29,8 @@ in
         ripgrep
         fd
         tree-sitter
+        fzf
+        nil
       ];
     };
 

@@ -74,6 +74,68 @@ return {
 				end)
 			end
 
+			local function open_context_menu(state)
+				local mousepos = vim.fn.getmousepos()
+				if mousepos.winid == state.winid and mousepos.line > 0 then
+					pcall(vim.api.nvim_win_set_cursor, state.winid, { mousepos.line, 0 })
+				end
+
+				local node = state.tree:get_node()
+				if not node then
+					return
+				end
+
+				local is_dir = node.type == "directory"
+				local options = {
+					{ label = "󰏋 Open / Open Media", action = "open_media_or_file" },
+					{ label = " Open in Split", action = "open_split" },
+					{ label = " Open in VSplit", action = "open_vsplit" },
+					{ label = "󰓩 Open in New Tab", action = "open_tabnew" },
+					{ label = "󰏔 New File / Directory", action = "add" },
+					{ label = "󰑕 Rename", action = "rename" },
+					{ label = "󰆴 Delete", action = "delete" },
+					{ label = "󰆏 Copy", action = "copy_to_clipboard" },
+					{ label = "󰆐 Cut", action = "cut_to_clipboard" },
+					{ label = "󰆒 Paste", action = "paste_from_clipboard" },
+					{ label = "󰅍 Copy Absolute Path", action = "copy_path" },
+					{ label = "󰅍 Copy Relative Path", action = "copy_relpath" },
+					{ label = "󰋜 Reveal in System Explorer", action = "reveal_in_os" },
+					{ label = "󰈈 Toggle Hidden Files", action = "toggle_hidden" },
+				}
+
+				local labels = {}
+				for _, item in ipairs(options) do
+					table.insert(labels, item.label)
+				end
+
+				vim.ui.select(labels, {
+					prompt = "Right-Click Action (" .. node.name .. "):",
+				}, function(choice, idx)
+					if not choice or not idx then
+						return
+					end
+					local selected = options[idx]
+					local cc = require("neo-tree.sources.filesystem.commands")
+
+					if selected.action == "copy_path" then
+						vim.fn.setreg("+", node.path)
+						vim.notify("Copied path: " .. node.path, vim.log.levels.INFO)
+					elseif selected.action == "copy_relpath" then
+						local relpath = vim.fn.fnamemodify(node.path, ":.")
+						vim.fn.setreg("+", relpath)
+						vim.notify("Copied relative path: " .. relpath, vim.log.levels.INFO)
+					elseif selected.action == "reveal_in_os" then
+						local opener = system_default_opener()
+						local target = is_dir and node.path or vim.fn.fnamemodify(node.path, ":h")
+						vim.system({ opener, target })
+					elseif selected.action == "open_media_or_file" then
+						open_media_or_file(state)
+					elseif cc[selected.action] then
+						cc[selected.action](state)
+					end
+				end)
+			end
+
 			require("neo-tree").setup({
 				filesystem = {
 					follow_current_file = {
@@ -90,10 +152,12 @@ return {
 					},
 					commands = {
 						open_media_or_file = open_media_or_file,
+						open_context_menu = open_context_menu,
 					},
 					window = {
 						mappings = {
 							["<2-LeftMouse>"] = "open_media_or_file",
+							["<RightMouse>"] = "open_context_menu",
 						},
 					},
 				},
