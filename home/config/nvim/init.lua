@@ -9,3 +9,7 @@ require("core.keymaps")
 
 -- Other options
 require("core.options")
+
+-- Context menu and tmux AI prompt integration
+require("core.menu")
+
