@@ -60,11 +60,14 @@ let
     }
     trap cleanup EXIT
 
-    if [ -n "$orig_key" ] && [ -f "$orig_key" ]; then
-      sign_key="$orig_key"
-    elif [ -n "$orig_key" ]; then
-      if gpg_key="$(${pkgs.gnupg}/bin/gpg --export-ssh-key "$orig_key" 2>/dev/null || true)"; then
-        if [ -n "$gpg_key" ]; then
+    agent_keys="$(${ssh-add} -L 2>/dev/null || true)"
+
+    # Tier 1: Check Yubikey / GPG key in active SSH agent
+    if [ -n "$orig_key" ] && [ ! -f "$orig_key" ]; then
+      gpg_key="$(${pkgs.gnupg}/bin/gpg --export-ssh-key "$orig_key" 2>/dev/null || true)"
+      if [ -n "$gpg_key" ]; then
+        gpg_key_body="$(echo "$gpg_key" | awk '{print $2}')"
+        if [ -n "$gpg_key_body" ] && echo "$agent_keys" | grep -q "$gpg_key_body"; then
           tmp_pubkey="$(mktemp /tmp/git-ssh-sign-XXXXXX.pub)"
           echo "$gpg_key" > "$tmp_pubkey"
           sign_key="$tmp_pubkey"
@@ -72,17 +75,23 @@ let
       fi
     fi
 
-    if [ -z "$sign_key" ]; then
-      if agent_keys="$(${ssh-add} -L 2>/dev/null || true)"; then
-        yubikey_line="$(echo "$agent_keys" | grep -E 'openpgp:|cardno:' | head -n1 || true)"
-        if [ -n "$yubikey_line" ]; then
-          tmp_pubkey="$(mktemp /tmp/git-ssh-sign-XXXXXX.pub)"
-          echo "$yubikey_line" > "$tmp_pubkey"
-          sign_key="$tmp_pubkey"
-        fi
+    if [ -z "$sign_key" ] && [ -n "$agent_keys" ]; then
+      yubikey_line="$(echo "$agent_keys" | grep -E 'openpgp:|cardno:' | head -n1 || true)"
+      if [ -n "$yubikey_line" ]; then
+        tmp_pubkey="$(mktemp /tmp/git-ssh-sign-XXXXXX.pub)"
+        echo "$yubikey_line" > "$tmp_pubkey"
+        sign_key="$tmp_pubkey"
       fi
     fi
 
+    if [ -z "$sign_key" ] && [ -n "$orig_key" ] && [ -f "$orig_key" ]; then
+      orig_key_body="$(awk '{print $2}' "$orig_key" 2>/dev/null || true)"
+      if [ -n "$orig_key_body" ] && echo "$agent_keys" | grep -q "$orig_key_body"; then
+        sign_key="$orig_key"
+      fi
+    fi
+
+    # Tier 2: Fallback to local SSH key file (~/.ssh/id_ed25519.pub)
     if [ -z "$sign_key" ]; then
       for candidate in "$HOME/.ssh/id_ed25519.pub" "$HOME/.ssh/id_rsa.pub"; do
         if [ -f "$candidate" ]; then
@@ -92,8 +101,9 @@ let
       done
     fi
 
+    # Tier 3: Fail if no key found
     if [ -z "$sign_key" ]; then
-      echo "error: no ssh signing key found (no valid GPG key export, no yubikey, no ~/.ssh/id_ed25519.pub)" >&2
+      echo "error: no ssh signing key available (Yubikey not connected and ~/.ssh/id_ed25519.pub missing)" >&2
       exit 1
     fi
 
