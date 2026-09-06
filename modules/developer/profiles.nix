@@ -97,6 +97,11 @@ let
     };
 
     agents = {
+      code = mkOption {
+        type = types.str;
+        default = "agy";
+        description = "Agent CLI program launched when 'code' is activated (e.g. agy, claude, gemini, codex)";
+      };
       claude = {
         enable = mkOption {
           type = types.bool;

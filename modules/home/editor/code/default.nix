@@ -36,8 +36,40 @@ in
           tmux_bin="tmux"
           fd_bin="fd"
           shell_bin="zsh"
-          claude_bin="$HOME/.local/bin/claude"
-          [ -x "$claude_bin" ] || claude_bin="claude"
+          resolve_agent_bin() {
+            local target_dir="$1"
+            local agent_name=""
+
+            if command -v profile-router >/dev/null 2>&1; then
+              # shellcheck disable=SC2016
+              agent_name=$(cd "$target_dir" && profile-router sh -c 'echo "''${CODE_AGENT:-}"' 2>/dev/null || true)
+            fi
+            [ -n "$agent_name" ] || agent_name="''${CODE_AGENT:-agy}"
+
+            case "$agent_name" in
+              claude)
+                local bin="$HOME/.local/bin/claude"
+                [ -x "$bin" ] && echo "$bin" || echo "claude"
+                ;;
+              agy)
+                local bin="$HOME/.local/bin/agy"
+                [ -x "$bin" ] && echo "$bin" || echo "agy"
+                ;;
+              gemini)
+                local bin="$HOME/.local/bin/gemini"
+                [ -x "$bin" ] && echo "$bin" || echo "gemini"
+                ;;
+              codex)
+                local bin="$HOME/.local/bin/codex"
+                [ -x "$bin" ] && echo "$bin" || echo "codex"
+                ;;
+              *)
+                local bin="$HOME/.local/bin/$agent_name"
+                [ -x "$bin" ] && echo "$bin" || echo "$agent_name"
+                ;;
+            esac
+          }
+
           nvim_bin="nvim"
           self="$0"
 
@@ -243,7 +275,8 @@ in
           spawn_session() {
             local log="/tmp/code-spawn-$session.log"
             : >"$log"
-            local nvim_pane shell_pane
+            local nvim_pane shell_pane agent_bin
+            agent_bin="$(resolve_agent_bin "$resolved_path")"
             {
               nvim_pane=$("$tmux_bin" new-session -d -s "$session" -c "$resolved_path" \
                 -x "$cols" -y "$rows" \
@@ -259,8 +292,8 @@ in
 
               "$tmux_bin" split-window -h -l 50% \
                 -t "$shell_pane" -c "$resolved_path" \
-                "$claude_bin" \
-                || echo "claude split failed" >&2
+                "$agent_bin" \
+                || echo "agent split failed ($agent_bin)" >&2
 
               "$tmux_bin" select-pane -t "$nvim_pane" || true
 

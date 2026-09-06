@@ -13,6 +13,7 @@
       region = "us-east-1";
       profile = "personal";
     };
+    agents.code = "agy";
   };
 
   # Layer 3: Machine / Host Definitions
@@ -49,6 +50,7 @@
         profile = "arro-staging";
         region = "us-west-2";
       };
+      agents.code = "claude";
       agents.claude = {
         configDir = "~/.config/claude-secondary";
         excludeMcpServers = [ "blender" ];

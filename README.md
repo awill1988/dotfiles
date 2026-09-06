@@ -13,7 +13,7 @@ Personal dotfiles and developer toolchain managed with [Nix](https://nixos.org/)
   - `Layer 4: Per-Folder Overrides` — Subfolder diffs (e.g. `~/projects/arro/security-audit`) overlaying custom role ARNs, gitconfig settings, or MCP tools.
 - **Dynamic CWD Auto-Routing (`profile-router`)**:
   - Automatically matches Current Working Directory against profile path prefixes (`~/projects/arro`, `~/projects/personal`, etc.).
-  - Sets `$DEVELOPER_PROFILE`, `$CLAUDE_CONFIG_DIR`, `$GEMINI_CONFIG_DIR`, `$CODEX_CONFIG_DIR`, `$AGY_CONFIG_DIR`, `$AWS_PROFILE`, `$AWS_REGION`, and Git author details dynamically on execution.
+  - Sets `$DEVELOPER_PROFILE`, `$CODE_AGENT`, `$CLAUDE_CONFIG_DIR`, `$GEMINI_CONFIG_DIR`, `$CODEX_CONFIG_DIR`, `$AGY_CONFIG_DIR`, `$AWS_PROFILE`, `$AWS_REGION`, and Git author details dynamically on execution.
 - **`direnv` / `nix-direnv` Integration**: Provides `use_profile <name>` helper for explicit per-project `.envrc` overrides.
 - **First-Class MCP Tool Gateway (`contextforge`)**: Unified agent tools gateway and sidecar manager.
 

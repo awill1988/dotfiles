@@ -127,6 +127,9 @@ let
 
       ${concatMapStringsSep "\n" (p: ''
         if [ "$active_profile" = "${p.name}" ]; then
+          CODE_AGENT="${p.agents.code}"
+          export CODE_AGENT
+
           ${
             if p.agents.claude.configDir != null then
               ''
@@ -239,7 +242,7 @@ in
               if [ -d "$profile_dir/claude" ] && [ ! -L "$profile_dir/claude" ]; then
                 rm -rf "$profile_dir/claude"
               fi
-              ln -sfT "$target_claude_dir" "$profile_dir/claude"
+              ln -sfn "$target_claude_dir" "$profile_dir/claude"
               claude_dest_dir="$target_claude_dir"
             ''
           else
