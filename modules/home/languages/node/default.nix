@@ -10,6 +10,8 @@ let
   cfg = config.modules.dev.node;
   nodePkg = cfg.package;
   pnpmPkg = pkgs.pnpm.override { nodejs = nodePkg; };
+  expoCliVersion = "57.0.22";
+  npmPrefix = "${config.xdg.dataHome}/npm";
   # npm registry tarball ships prebuilt dist/cli.mjs; wrap with our node to avoid global npm install.
   aicommitsPkg = pkgs.stdenvNoCC.mkDerivation rec {
     pname = "aicommits";
@@ -81,16 +83,48 @@ in
     home.sessionVariables = {
       NPM_CONFIG_USERCONFIG = "${config.xdg.configHome}/npm/config";
       NPM_CONFIG_CACHE = "${config.xdg.cacheHome}/npm";
-      NPM_CONFIG_PREFIX = "${config.xdg.dataHome}/npm";
+      NPM_CONFIG_PREFIX = npmPrefix;
       NODE_REPL_HISTORY = "${config.xdg.cacheHome}/node/repl_history";
     };
 
     # Add npm global bin directory to PATH
-    home.sessionPath = [ "${config.xdg.dataHome}/npm/bin" ];
+    home.sessionPath = [ "${npmPrefix}/bin" ];
+
+    programs.zsh.initContent = lib.mkIf cfg.xdg.enable ''
+      export NPM_CONFIG_USERCONFIG="${config.xdg.configHome}/npm/config"
+      export NPM_CONFIG_CACHE="${config.xdg.cacheHome}/npm"
+      export NPM_CONFIG_PREFIX="${npmPrefix}"
+      case ":$PATH:" in
+        *":${npmPrefix}/bin:"*) ;;
+        *) export PATH="${npmPrefix}/bin:$PATH" ;;
+      esac
+    '';
 
     # Ensure tmp dir exists (lightweight) via activation script
     home.activation.ensureNpmTmpDir = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
       mkdir -p ${config.xdg.cacheHome}/npm-tmp
+    '';
+
+    home.activation.installExpoCli = lib.hm.dag.entryAfter [ "ensureNpmTmpDir" ] ''
+      npm_prefix=${lib.escapeShellArg npmPrefix}
+      installed_version="$(${nodePkg}/bin/node -e '
+        try {
+          process.stdout.write(require(process.argv[1]).version);
+        } catch (_) {}
+      ' "$npm_prefix/lib/node_modules/@expo/cli/package.json" 2>/dev/null || true)"
+
+      if [ "$installed_version" != "${expoCliVersion}" ]; then
+        NPM_CONFIG_USERCONFIG=${lib.escapeShellArg "${config.xdg.configHome}/npm/config"} \
+          NPM_CONFIG_CACHE=${lib.escapeShellArg "${config.xdg.cacheHome}/npm"} \
+          ${nodePkg}/bin/npm install \
+            --global \
+            --prefix "$npm_prefix" \
+            --save-exact \
+            --loglevel=error \
+            --no-audit \
+            --no-fund \
+            "@expo/cli@${expoCliVersion}"
+      fi
     '';
   };
 }

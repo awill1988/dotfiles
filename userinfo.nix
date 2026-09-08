@@ -130,12 +130,17 @@
     yourmoodai = {
       identity.email = "founder@yourmood.ai";
       pathPrefixes = [
+        "~/projects/yourmood.ai"
         "~/projects/yourmood-ai"
         "~/projects/yourmood"
       ];
       aws = {
         profile = "yourmood-prod";
         region = "us-east-1";
+      };
+      agents.code = "codex";
+      agents.codex = {
+        configDir = "~/.config/codex-secondary";
       };
     };
   };

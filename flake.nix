@@ -186,6 +186,7 @@
               };
               home-manager.sharedModules = [
                 {
+                  modules.dev.node.enable = true;
                   developer = {
                     hostName = "macbook-personal";
                     baseline = primaryUserInfo.baseline;

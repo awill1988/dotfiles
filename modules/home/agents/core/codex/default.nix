@@ -91,35 +91,53 @@ let
         decision = "allow",
     )
   '';
-  codex_wrapper = pkgs.writeShellScriptBin "codex" ''
-    set -euo pipefail
+  codex_wrapper = pkgs.writeShellApplication {
+    name = "codex";
+    runtimeInputs = with pkgs; [ coreutils ];
+    text = ''
+      run_codex() {
+        active_config_dir="''${CODEX_HOME:-''${CODEX_CONFIG_DIR:-${codex_config_dir}}}"
+        target_dir="$active_config_dir/skills"
 
-    target_dir="${codex_config_dir}/skills"
-
-    if [[ -d "${local_skills_dir}" ]]; then
-      mkdir -p "$target_dir"
-
-      for source in "${local_skills_dir}"/*; do
-        [[ -f "$source/SKILL.md" ]] || continue
-        target="$target_dir/$(basename "$source")"
-
-        if [[ -e "$target" && ! -L "$target" ]]; then
-          echo "preserving unmanaged skill $target" >&2
-          continue
+        if [[ -d "${local_skills_dir}" ]]; then
+          mkdir -p "$target_dir"
+          for source in "${local_skills_dir}"/*; do
+            [[ -f "$source/SKILL.md" ]] || continue
+            target="$target_dir/$(basename "$source")"
+            if [[ -e "$target" && ! -L "$target" ]]; then
+              echo "preserving unmanaged skill $target" >&2
+              continue
+            fi
+            ln -sfnT "$source" "$target"
+          done
         fi
 
-        ${pkgs.coreutils}/bin/ln -sfnT "$source" "$target"
-      done
-    fi
+        export CODEX_DISABLE_TELEMETRY=1
+        export OTEL_SDK_DISABLED=true
+        export DO_NOT_TRACK=1
 
-    # telemetry opt-outs; config.toml [analytics] enabled = false covers the
-    # structured analytics endpoint; these cover any otel/sdk pathways.
-    export CODEX_DISABLE_TELEMETRY=1
-    export OTEL_SDK_DISABLED=true
-    export DO_NOT_TRACK=1
+        exec "${cfg.package}/bin/codex" "$@"
+      }
 
-    exec "${cfg.package}/bin/codex" "$@"
-  '';
+      if [ "''${PROFILE_ROUTER_ACTIVE:-0}" = "1" ]; then
+        run_codex "$@"
+      else
+        export PROFILE_ROUTER_ACTIVE=1
+        ${
+          if config.developer.profileRouter != null then
+            ''exec "${config.developer.profileRouter}/bin/profile-router" "$0" "$@"''
+          else
+            ''
+              if command -v profile-router >/dev/null 2>&1; then
+                exec profile-router "$0" "$@"
+              else
+                run_codex "$@"
+              fi
+            ''
+        }
+      fi
+    '';
+  };
 in
 {
   config = lib.mkMerge [

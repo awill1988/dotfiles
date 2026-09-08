@@ -324,7 +324,7 @@ in
       AWS_SHARED_CREDENTIALS_FILE = "${config.xdg.configHome}/aws/credentials";
       AWS_SSO_SESSION_CACHE_DIR = "${config.xdg.cacheHome}/aws/sso/cache";
       AWS_VAULT_PASS_CMD = "${pkgs.pass}/bin/pass";
-      PATH = "$LOCAL_BIN:$PYENV_HOME/shims:$PYENV_HOME/bin:$ELIXIR_PATH:$GOPATH/bin:$RBENV_ROOT/plugins/ruby-build/bin:$HOME/google-cloud-sdk/bin:$ANDROID_HOME/emulator:$ANDROID_HOME/platform-tools:$PATH:$CARGO_HOME/bin";
+      PATH = "$LOCAL_BIN:/opt/homebrew/bin:/opt/homebrew/sbin:$PYENV_HOME/shims:$PYENV_HOME/bin:$ELIXIR_PATH:$GOPATH/bin:$RBENV_ROOT/plugins/ruby-build/bin:$HOME/google-cloud-sdk/bin:$ANDROID_HOME/emulator:$ANDROID_HOME/platform-tools:$PATH:$CARGO_HOME/bin";
     };
 
     home.shellAliases = {

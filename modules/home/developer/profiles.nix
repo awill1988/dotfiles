@@ -161,11 +161,15 @@ let
               ''
                 CODEX_CONFIG_DIR="${builtins.replaceStrings [ "~" ] [ "$HOME" ] p.agents.codex.configDir}"
                 export CODEX_CONFIG_DIR
+                CODEX_HOME="$CODEX_CONFIG_DIR"
+                export CODEX_HOME
               ''
             else
               ''
                 CODEX_CONFIG_DIR="${config.xdg.configHome}/profiles/${p.name}/codex"
                 export CODEX_CONFIG_DIR
+                CODEX_HOME="$CODEX_CONFIG_DIR"
+                export CODEX_HOME
               ''
           }
 
@@ -232,7 +236,7 @@ in
       set -euo pipefail
       ${concatMapStringsSep "\n" (p: ''
         profile_dir="${config.xdg.configHome}/profiles/${p.name}"
-        mkdir -p "$profile_dir/gemini" "$profile_dir/codex" "$profile_dir/antigravity" "$profile_dir/git"
+        mkdir -p "$profile_dir/gemini" "$profile_dir/antigravity" "$profile_dir/git"
 
         ${
           if p.agents.claude.configDir != null then
@@ -254,6 +258,31 @@ in
               claude_dest_dir="$profile_dir/claude"
             ''
         }
+
+        ${
+          if p.agents.codex.configDir != null then
+            ''
+              target_codex_dir="${builtins.replaceStrings [ "~" ] [ "$HOME" ] p.agents.codex.configDir}"
+              mkdir -p "$target_codex_dir"
+              if [ -d "$profile_dir/codex" ] && [ ! -L "$profile_dir/codex" ]; then
+                rm -rf "$profile_dir/codex"
+              fi
+              ln -sfn "$target_codex_dir" "$profile_dir/codex"
+              codex_dest_dir="$target_codex_dir"
+            ''
+          else
+            ''
+              if [ -L "$profile_dir/codex" ]; then
+                rm -f "$profile_dir/codex"
+              fi
+              mkdir -p "$profile_dir/codex"
+              codex_dest_dir="$profile_dir/codex"
+            ''
+        }
+
+        if [ ! -f "$codex_dest_dir/config.toml" ]; then
+          install -m 600 "${./../agents/core/codex/config.toml}" "$codex_dest_dir/config.toml"
+        fi
 
         if [ ! -f "$claude_dest_dir/settings.json" ]; then
           install -m 600 "${mkClaudeSettings p}" "$claude_dest_dir/settings.json"
@@ -295,6 +324,7 @@ in
         export CLAUDE_CONFIG_DIR="$HOME/.config/profiles/$profile/claude"
         export GEMINI_CONFIG_DIR="$HOME/.config/profiles/$profile/gemini"
         export CODEX_CONFIG_DIR="$HOME/.config/profiles/$profile/codex"
+        export CODEX_HOME="$CODEX_CONFIG_DIR"
         export AGY_CONFIG_DIR="$HOME/.config/profiles/$profile/antigravity"
         echo "activated developer profile: $profile"
       }

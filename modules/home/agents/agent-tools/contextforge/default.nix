@@ -169,6 +169,21 @@ let
 
   mcp_servers_source = ../../../../../mcp-servers.toml;
 
+  qgis_mcp_plugin_src = "${
+    pkgs.fetchFromGitHub {
+      owner = "nkarasiak";
+      repo = "qgis-mcp";
+      rev = "main";
+      hash = "sha256-lDzjRG4NFL3WMb0WGmFbIQRSKXZCoAj7fpQZ8dgYwQ4=";
+    }
+  }/qgis_mcp_plugin";
+
+  qgis_plugin_dir =
+    if is_darwin then
+      "Library/Application Support/QGIS/QGIS3/profiles/default/python/plugins/qgis_mcp"
+    else
+      ".local/share/QGIS/QGIS3/profiles/default/python/plugins/qgis_mcp";
+
   # --- python helper derivations ---
 
   bridge_supervisor_parse_toml_py = pkgs.writeText "bridge-supervisor-parse-toml.py" (
@@ -504,6 +519,10 @@ in
     xdg.configFile."mcp/snowflake-mcp-config.yaml" = {
       source = snowflake_mcp_config;
       force = true;
+    };
+
+    home.file."${qgis_plugin_dir}" = {
+      source = qgis_mcp_plugin_src;
     };
 
     # 3. activation: stable wrappers for launchd (avoids nix store hashes in

@@ -155,7 +155,7 @@ let
         configDir = mkOption {
           type = types.nullOr types.str;
           default = null;
-          description = "Explicit custom config directory path for Codex";
+          description = "Explicit custom config directory path for Codex (e.g. ~/.config/codex-secondary)";
         };
         config = mkOption {
           type = types.attrs;
