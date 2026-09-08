@@ -1,6 +1,6 @@
 projects = { "/Users/adam/projects" = { trust_level = "trusted" }, "/home/adam/projects" = { trust_level = "trusted" } }
-model = "gpt-5.5"
-model_reasoning_effort = "high"
+model = "gpt-5.6-sol"
+model_reasoning_effort = "medium"
 approval_policy = "on-request"
 sandbox_mode = "danger-full-access"
 project_doc_fallback_filenames = ["CLAUDE.md", "GEMINI.md"]
