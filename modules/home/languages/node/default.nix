@@ -125,6 +125,8 @@ in
             --no-fund \
             "@expo/cli@${expoCliVersion}"
       fi
+
+      ln -sfn expo-internal "$npm_prefix/bin/expo"
     '';
   };
 }
