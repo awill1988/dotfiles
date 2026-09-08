@@ -60,6 +60,7 @@ in
     "bundletool"
     "cocoapods"
     "eas-cli"
+    "fastlane"
     "imessage-exporter"
     "jadx"
     "ldns"
