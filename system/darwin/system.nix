@@ -13,6 +13,11 @@ in
 
   system.primaryUser = username;
 
+  security.pam.services.sudo_local = {
+    touchIdAuth = true;
+    reattach = true; # support Touch ID from tmux and screen sessions
+  };
+
   system = {
     defaults.LaunchServices.LSQuarantine = false;
 
