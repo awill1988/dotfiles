@@ -180,6 +180,33 @@ let
           description = "AGY orchestrator settings";
         };
       };
+      opencode = {
+        enable = mkOption {
+          type = types.bool;
+          default = true;
+          description = "Enable OpenCode configuration";
+        };
+        configDir = mkOption {
+          type = types.nullOr types.str;
+          default = null;
+          description = "Explicit custom config directory path for OpenCode";
+        };
+        localEndpoint = mkOption {
+          type = types.str;
+          default = "http://localhost:11434/v1";
+          description = "Local OpenAI-compatible API endpoint for offline execution";
+        };
+        model = mkOption {
+          type = types.str;
+          default = "ollama/qwen2.5-coder:32b";
+          description = "Default local model identifier";
+        };
+        config = mkOption {
+          type = types.attrs;
+          default = { };
+          description = "OpenCode settings";
+        };
+      };
     };
   };
 

@@ -38,6 +38,7 @@ in
       font-awesome_5
       source-code-pro
       dejavu_fonts
+      google-fonts
     ];
 
     # macOS: symlink fonts to ~/Library/Fonts so applications can find them

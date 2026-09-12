@@ -280,6 +280,7 @@
         home-agent-codex = import ./modules/home/agents/core/codex;
         home-agent-gemini = import ./modules/home/agents/core/gemini;
         home-agent-agy = import ./modules/home/agents/core/agy;
+        home-agent-opencode = import ./modules/home/agents/core/opencode;
         home-agent-prompts = import ./modules/home/agents/orchestration/agent-prompts;
         home-agent-skills = import ./modules/home/agents/orchestration/agent-skills {
           golang_skills_src = inputs.golang-skills;

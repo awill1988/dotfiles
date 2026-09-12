@@ -29,7 +29,7 @@ in
       set -euo pipefail
       ${concatMapStringsSep "\n" (p: ''
         profile_dir="${config.xdg.configHome}/profiles/${p.name}"
-        mkdir -p "$profile_dir/claude" "$profile_dir/gemini" "$profile_dir/antigravity" "$profile_dir/codex"
+        mkdir -p "$profile_dir/claude" "$profile_dir/gemini" "$profile_dir/antigravity" "$profile_dir/codex" "$profile_dir/opencode"
 
         # 1. Seed canonical AGENTS.md
         install -m 600 -C "${instructions_source}" "$profile_dir/AGENTS.md"
@@ -39,6 +39,8 @@ in
         ln -sf "$profile_dir/AGENTS.md" "$profile_dir/gemini/GEMINI.md"
         ln -sf "$profile_dir/AGENTS.md" "$profile_dir/antigravity/AGY.md"
         ln -sf "$profile_dir/AGENTS.md" "$profile_dir/codex/AGENTS.override.md"
+        ln -sf "$profile_dir/AGENTS.md" "$profile_dir/opencode/OPENCODE.md"
+        ln -sf "$profile_dir/AGENTS.md" "$profile_dir/opencode/AGENTS.md"
       '') profilesList}
     '';
   };

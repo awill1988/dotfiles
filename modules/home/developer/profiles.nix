@@ -85,6 +85,20 @@ let
       }
     );
 
+  mkOpencodeConfig =
+    profile:
+    pkgs.writeText "opencode-config-${profile.name}.json" (
+      builtins.toJSON {
+        provider = "local";
+        endpoint = profile.agents.opencode.localEndpoint;
+        model = profile.agents.opencode.model;
+        offlineOnly = true;
+        telemetry = {
+          enabled = false;
+        };
+      }
+    );
+
   # Helper script to dynamically route tools based on CWD
   profile-router = pkgs.writeShellApplication {
     name = "profile-router";
@@ -186,6 +200,19 @@ let
               ''
           }
 
+          ${
+            if p.agents.opencode.configDir != null then
+              ''
+                OPENCODE_CONFIG_DIR="${builtins.replaceStrings [ "~" ] [ "$HOME" ] p.agents.opencode.configDir}"
+                export OPENCODE_CONFIG_DIR
+              ''
+            else
+              ''
+                OPENCODE_CONFIG_DIR="${config.xdg.configHome}/profiles/${p.name}/opencode"
+                export OPENCODE_CONFIG_DIR
+              ''
+          }
+
           ${optionalString (p.aws.profile != null) ''
             AWS_PROFILE="${p.aws.profile}"
             export AWS_PROFILE
@@ -228,6 +255,7 @@ in
     programs.claude.enable = true;
     programs.gemini.enable = true;
     programs.agy.enable = true;
+    programs.opencode.enable = true;
     developer.profileRouter = profile-router;
     developer.resolvedProfiles = listToAttrs (map (p: nameValuePair p.name p) resolvedProfiles);
     home.packages = [ profile-router ];
@@ -280,6 +308,31 @@ in
             ''
         }
 
+        ${
+          if p.agents.opencode.configDir != null then
+            ''
+              target_opencode_dir="${builtins.replaceStrings [ "~" ] [ "$HOME" ] p.agents.opencode.configDir}"
+              mkdir -p "$target_opencode_dir"
+              if [ -d "$profile_dir/opencode" ] && [ ! -L "$profile_dir/opencode" ]; then
+                rm -rf "$profile_dir/opencode"
+              fi
+              ln -sfn "$target_opencode_dir" "$profile_dir/opencode"
+              opencode_dest_dir="$target_opencode_dir"
+            ''
+          else
+            ''
+              if [ -L "$profile_dir/opencode" ]; then
+                rm -f "$profile_dir/opencode"
+              fi
+              mkdir -p "$profile_dir/opencode"
+              opencode_dest_dir="$profile_dir/opencode"
+            ''
+        }
+
+        if [ ! -f "$opencode_dest_dir/opencode.json" ]; then
+          install -m 600 "${mkOpencodeConfig p}" "$opencode_dest_dir/opencode.json"
+        fi
+
         if [ ! -f "$codex_dest_dir/config.toml" ]; then
           install -m 600 "${./../agents/core/codex/config.toml}" "$codex_dest_dir/config.toml"
         fi
@@ -326,6 +379,7 @@ in
         export CODEX_CONFIG_DIR="$HOME/.config/profiles/$profile/codex"
         export CODEX_HOME="$CODEX_CONFIG_DIR"
         export AGY_CONFIG_DIR="$HOME/.config/profiles/$profile/antigravity"
+        export OPENCODE_CONFIG_DIR="$HOME/.config/profiles/$profile/opencode"
         echo "activated developer profile: $profile"
       }
     '';

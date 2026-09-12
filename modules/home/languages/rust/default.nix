@@ -30,18 +30,21 @@ in
   };
 
   config = mkIf cfg.enable {
-    home.packages = with pkgs; [
-      (rust-bin.stable.latest.default.override {
-        extensions = [
-          "rust-src"
-          "rust-analyzer"
-          "clippy"
-          "llvm-tools-preview"
-        ];
-      })
-      cargo-cache
-      cargo-sweep
-    ] ++ optional cfg.sccache.enable sccache;
+    home.packages =
+      with pkgs;
+      [
+        (rust-bin.stable.latest.default.override {
+          extensions = [
+            "rust-src"
+            "rust-analyzer"
+            "clippy"
+            "llvm-tools-preview"
+          ];
+        })
+        cargo-cache
+        cargo-sweep
+      ]
+      ++ optional cfg.sccache.enable sccache;
 
     home.sessionVariables = mkIf cfg.sccache.enable {
       RUSTC_WRAPPER = "${pkgs.sccache}/bin/sccache";
