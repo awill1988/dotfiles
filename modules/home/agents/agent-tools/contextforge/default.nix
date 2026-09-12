@@ -771,349 +771,416 @@ in
 
     # 6. shell integration
     programs.zsh.initContent = lib.mkAfter ''
-            # contextforge gateway status
-            function mcpgw-status() {
-              local url="http://${cfg.host}:${toString cfg.port}"
-              local health
-              health="$(curl -sf --max-time 5 "$url/health" 2>/dev/null)" || {
-                echo "contextforge gateway: not reachable at $url"
-                return 1
-              }
-              echo "contextforge gateway: healthy"
-              echo "url: $url"
-              echo "health: $health"
-            }
+                  # contextforge gateway status
+                  function mcpgw-status() {
+                    local url="http://${cfg.host}:${toString cfg.port}"
+                    local health
+                    health="$(curl -sf --max-time 5 "$url/health" 2>/dev/null)" || {
+                      echo "contextforge gateway: not reachable at $url"
+                      return 1
+                    }
+                    echo "contextforge gateway: healthy"
+                    echo "url: $url"
+                    echo "health: $health"
+                  }
 
-            # contextforge manual repair/re-setup tool
-            # cleans stale state, re-creates virtual server + token, re-syncs gateways
-            function mcpgw-setup() {
-              local url="http://${cfg.host}:${toString cfg.port}"
-              local data_dir="${data_dir}"
-              local uuid_file="$data_dir/virtual-server-id"
-              local token_file="$data_dir/gateway-token"
+                  # contextforge manual repair/re-setup tool
+                  # cleans stale state, re-creates virtual server + token, re-syncs gateways
+                  function mcpgw-setup() {
+                    local url="http://${cfg.host}:${toString cfg.port}"
+                    local data_dir="${data_dir}"
+                    local uuid_file="$data_dir/virtual-server-id"
+                    local token_file="$data_dir/gateway-token"
 
-              echo "==> manual repair/re-setup for contextforge"
-              echo ""
+                    echo "==> manual repair/re-setup for contextforge"
+                    echo ""
 
-              # clean stale state so everything is recreated fresh
-              rm -f "$uuid_file" "$token_file"
-              echo "==> cleared stale uuid and token"
+                    # clean stale state so everything is recreated fresh
+                    rm -f "$uuid_file" "$token_file"
+                    echo "==> cleared stale uuid and token"
 
-              echo ""
-              echo "==> waiting for gateway health..."
-              local attempts=0
-              while ! curl -sf --max-time 5 "$url/health" >/dev/null 2>&1; do
-                attempts=$((attempts + 1))
-                if [[ $attempts -ge 30 ]]; then
-                  echo "error: gateway not healthy after 30 attempts" >&2
-                  return 1
-                fi
-                sleep 1
-              done
-              echo "gateway is healthy"
+                    echo ""
+                    echo "==> waiting for gateway health..."
+                    local attempts=0
+                    while ! curl -sf --max-time 5 "$url/health" >/dev/null 2>&1; do
+                      attempts=$((attempts + 1))
+                      if [[ $attempts -ge 30 ]]; then
+                        echo "error: gateway not healthy after 30 attempts" >&2
+                        return 1
+                      fi
+                      sleep 1
+                    done
+                    echo "gateway is healthy"
 
-              echo ""
-              echo "==> creating virtual server with all tools..."
-              local response uuid
-              response="$(curl -sf --max-time 10 -X POST \
-                -H "Content-Type: application/json" \
-                -d '{"server": {"name": "contextforge-all", "tools": "all"}}' \
-                "$url/servers" 2>/dev/null)" || {
-                # 409 means it already exists — fetch the existing uuid
-                uuid="$(curl -sf --max-time 10 "$url/servers" 2>/dev/null \
-                  | ${pkgs.jq}/bin/jq -r '.[] | select(.name == "contextforge-all") | .id // empty')"
-                if [[ -z "$uuid" ]]; then
-                  echo "error: failed to create or find virtual server" >&2
-                  return 1
-                fi
-                echo "virtual server already exists: $uuid"
-              }
+                    echo ""
+                    echo "==> creating virtual server with all tools..."
+                    local response uuid
+                    response="$(curl -sf --max-time 10 -X POST \
+                      -H "Content-Type: application/json" \
+                      -d '{"server": {"name": "contextforge-all", "tools": "all"}}' \
+                      "$url/servers" 2>/dev/null)" || {
+                      # 409 means it already exists — fetch the existing uuid
+                      uuid="$(curl -sf --max-time 10 "$url/servers" 2>/dev/null \
+                        | ${pkgs.jq}/bin/jq -r '.[] | select(.name == "contextforge-all") | .id // empty')"
+                      if [[ -z "$uuid" ]]; then
+                        echo "error: failed to create or find virtual server" >&2
+                        return 1
+                      fi
+                      echo "virtual server already exists: $uuid"
+                    }
 
-              if [[ -z "''${uuid:-}" ]]; then
-                uuid="$(echo "$response" | ${pkgs.jq}/bin/jq -r '.id // .uuid // empty')"
-                if [[ -z "$uuid" ]]; then
-                  echo "error: no uuid returned from server creation" >&2
-                  echo "response: $response"
-                  return 1
-                fi
-              fi
+                    if [[ -z "''${uuid:-}" ]]; then
+                      uuid="$(echo "$response" | ${pkgs.jq}/bin/jq -r '.id // .uuid // empty')"
+                      if [[ -z "$uuid" ]]; then
+                        echo "error: no uuid returned from server creation" >&2
+                        echo "response: $response"
+                        return 1
+                      fi
+                    fi
 
-              local tmp
-              tmp="$(mktemp)"
-              echo "$uuid" > "$tmp"
-              mv "$tmp" "$uuid_file"
-              echo "virtual server uuid: $uuid"
-              echo "saved to $uuid_file"
+                    local tmp
+                    tmp="$(mktemp)"
+                    echo "$uuid" > "$tmp"
+                    mv "$tmp" "$uuid_file"
+                    echo "virtual server uuid: $uuid"
+                    echo "saved to $uuid_file"
 
-              echo ""
-              echo "==> generating gateway token..."
-              local token
-              token="$(${gateway_venv}/bin/python -c "
-      import jwt, warnings
-      warnings.filterwarnings('ignore')
-      print(jwt.encode(
-          {'sub': 'admin@example.com', 'iss': 'mcpgateway', 'aud': 'mcpgateway-api',
-           'user': {'email': 'admin@example.com', 'full_name': 'Local Admin',
-                    'is_admin': True, 'auth_provider': 'local'}},
-          'my-test-key', algorithm='HS256'))
-      " 2>/dev/null)" || {
-                echo "warning: failed to generate token" >&2
-              }
+                    echo ""
+                    echo "==> generating gateway token..."
+                    local token
+                    token="$(${gateway_venv}/bin/python -c "
+            import jwt, warnings
+            warnings.filterwarnings('ignore')
+            print(jwt.encode(
+                {'sub': 'admin@example.com', 'iss': 'mcpgateway', 'aud': 'mcpgateway-api',
+                 'user': {'email': 'admin@example.com', 'full_name': 'Local Admin',
+                          'is_admin': True, 'auth_provider': 'local'}},
+                'my-test-key', algorithm='HS256'))
+            " 2>/dev/null)" || {
+                      echo "warning: failed to generate token" >&2
+                    }
 
-              if [[ -n "''${token:-}" ]]; then
-                tmp="$(mktemp)"
-                echo "$token" > "$tmp"
-                chmod 600 "$tmp"
-                mv "$tmp" "$token_file"
-                echo "gateway token saved to $token_file"
-              fi
+                    if [[ -n "''${token:-}" ]]; then
+                      tmp="$(mktemp)"
+                      echo "$token" > "$tmp"
+                      chmod 600 "$tmp"
+                      mv "$tmp" "$token_file"
+                      echo "gateway token saved to $token_file"
+                    fi
 
-              echo ""
-              echo "==> re-registering mcp servers with gateway..."
-              contextforge-mcp-sync || echo "warning: sync failed, run contextforge-mcp-sync manually" >&2
+                    echo ""
+                    echo "==> re-registering mcp servers with gateway..."
+                    contextforge-mcp-sync || echo "warning: sync failed, run contextforge-mcp-sync manually" >&2
 
-              echo ""
-              echo "==> done! verify with: mcpgw-status"
-            }
+                    echo ""
+                    echo "==> done! verify with: mcpgw-status"
+                  }
 
-            # contextforge bridge status checker
-            function mcpgw-bridges() {
-              local config_file="${config_dir}/mcp-servers.toml"
-              python3 - "$config_file" <<'PYBRIDGE'
-      import sys
+                  # contextforge bridge status checker
+                  function mcpgw-bridges() {
+                    local config_file="${config_dir}/mcp-servers.toml"
+                    python3 - "$config_file" <<'PYBRIDGE'
+            import sys
 
-      try:
-          import tomllib
-      except ModuleNotFoundError:
-          print("error: python3 lacks tomllib", file=sys.stderr)
-          sys.exit(1)
+            try:
+                import tomllib
+            except ModuleNotFoundError:
+                print("error: python3 lacks tomllib", file=sys.stderr)
+                sys.exit(1)
 
-      import subprocess
+            import subprocess
 
-      config_path = sys.argv[1]
+            config_path = sys.argv[1]
+            with open(config_path, "rb") as f:
+                data = tomllib.load(f)
+
+            bridges = []
+            for server in data.get("servers", []):
+                if not isinstance(server, dict):
+                    continue
+                transport = (server.get("transport") or "").lower()
+                if transport != "stdio":
+                    continue
+                bridge = server.get("bridge") or {}
+                port = bridge.get("port")
+                if not port:
+                    continue
+                name = server.get("name", "unknown")
+                bridges.append((name, port))
+
+            if not bridges:
+                print("no stdio bridges configured")
+                sys.exit(0)
+
+            print(f"{'name':<20} {'port':<8} {'status'}")
+            print("-" * 40)
+            for name, port in bridges:
+                try:
+                    result = subprocess.run(
+                        ["curl", "-sf", "--max-time", "2", "-X", "POST", "-H", "Content-Type: application/json", "-d", "{}", f"http://127.0.0.1:{port}/mcp"],
+                        capture_output=True, timeout=5
+                    )
+                    status = "healthy" if result.returncode == 0 else "unreachable"
+                except Exception:
+                    status = "unreachable"
+                print(f"{name:<20} {port:<8} {status}")
+            PYBRIDGE
+                  }
+
+                  # enable an mcp server dynamically in contextforge gateway
+                  function mcpgw-enable() {
+                    local name="''${1:-}"
+                    if [[ -z "$name" ]]; then
+                      echo "usage: mcpgw-enable <server-name>" >&2
+                      return 1
+                    fi
+                    local url="http://${cfg.host}:${toString cfg.port}"
+                    python3 - "$url" "$name" "${config_dir}/mcp-servers.toml" <<'PYENABLE'
+      import sys, json, urllib.request, tomllib
+
+      url, target_name, config_path = sys.argv[1], sys.argv[2], sys.argv[3]
       with open(config_path, "rb") as f:
           data = tomllib.load(f)
 
-      bridges = []
-      for server in data.get("servers", []):
-          if not isinstance(server, dict):
-              continue
-          transport = (server.get("transport") or "").lower()
-          if transport != "stdio":
-              continue
-          bridge = server.get("bridge") or {}
-          port = bridge.get("port")
-          if not port:
-              continue
-          name = server.get("name", "unknown")
-          bridges.append((name, port))
+      server = next((s for s in data.get("servers", []) if isinstance(s, dict) and s.get("name") == target_name), None)
+      if not server:
+          print(f"error: server '{target_name}' not found in mcp-servers.toml", file=sys.stderr)
+          sys.exit(1)
 
-      if not bridges:
-          print("no stdio bridges configured")
-          sys.exit(0)
+      port = (server.get("bridge") or {}).get("port")
+      server_url = f"http://localhost:{port}/mcp" if port else server.get("url")
+      transport = "STREAMABLEHTTP" if port else (server.get("transport") or "HTTP").upper()
 
-      print(f"{'name':<20} {'port':<8} {'status'}")
-      print("-" * 40)
-      for name, port in bridges:
-          try:
-              result = subprocess.run(
-                  ["curl", "-sf", "--max-time", "2", "-X", "POST", "-H", "Content-Type: application/json", "-d", "{}", f"http://127.0.0.1:{port}/mcp"],
-                  capture_output=True, timeout=5
-              )
-              status = "healthy" if result.returncode == 0 else "unreachable"
-          except Exception:
-              status = "unreachable"
-          print(f"{name:<20} {port:<8} {status}")
-      PYBRIDGE
-            }
-
-            # contextforge log viewer
-            function mcpgw-logs() {
-              local component="''${1:-all}"
-              local log_dir="$HOME/Library/Logs"
-              local lines="''${2:-50}"
-
-              case "$component" in
-                gateway)  tail -n "$lines" "$log_dir/contextforge-gateway.log" ;;
-                bridge|bridges)  tail -n "$lines" "$log_dir/contextforge-bridge.log" ;;
-                setup)    tail -n "$lines" "$log_dir/contextforge-setup.log" ;;
-                all)
-                  for name in gateway bridge setup; do
-                    local f="$log_dir/contextforge-$name.log"
-                    [[ -f "$f" ]] || continue
-                    echo "==> $name"
-                    tail -n "$lines" "$f"
-                    echo ""
-                  done
-                  ;;
-                -f|follow)
-                  tail -f "$log_dir"/contextforge-*.log
-                  ;;
-                *)
-                  echo "usage: mcpgw-logs [gateway|bridge|setup|all|follow] [lines]"
-                  echo "  default: all, 50 lines"
-                  return 1
-                  ;;
-              esac
-            }
-
-            # contextforge full teardown + restart — for when the stack is wedged
-            function mcpgw-nuke() {
-              local full=0
-              [[ "''${1:-}" == "--full" ]] && full=1
-
-              echo "==> tearing down contextforge stack"
-
-              if [[ "$(uname -s)" == "Darwin" ]]; then
-                local uid agent_dir
-                uid="$(id -u)"
-                agent_dir="$HOME/Library/LaunchAgents"
-
-                for label in com.contextforge.setup com.contextforge.bridge-supervisor com.contextforge.gateway; do
-                  /bin/launchctl bootout "gui/$uid/$label" 2>/dev/null || true
-                done
-                echo "    unloaded launchd agents"
-              else
-                systemctl --user stop \
-                  contextforge-setup.service \
-                  contextforge-bridge-supervisor.service \
-                  contextforge-gateway.service 2>/dev/null || true
-                echo "    stopped systemd services"
-              fi
-
-              # kill any surviving mcpgateway processes (gateway, translate, wrapper)
-              pkill -f mcpgateway 2>/dev/null || true
-              sleep 1
-              pkill -9 -f mcpgateway 2>/dev/null || true
-
-              # force-kill anything still holding gateway or bridge ports
-              for port in ${toString cfg.port} $(python3 -c "
-      import tomllib, sys
+      payload = {"name": target_name, "url": server_url, "transport": transport}
+      req = urllib.request.Request(f"{url}/gateways", data=json.dumps(payload).encode(), headers={"Content-Type": "application/json"})
       try:
-          with open('${config_dir}/mcp-servers.toml', 'rb') as f:
-              data = tomllib.load(f)
-          for s in data.get('servers', []):
-              p = (s.get('bridge') or {}).get('port')
-              if p: print(p)
-      except Exception:
-          pass
-      " 2>/dev/null); do
-                lsof -ti :"$port" 2>/dev/null | xargs kill -9 2>/dev/null || true
-              done
-              echo "    killed remaining processes"
+          with urllib.request.urlopen(req) as resp:
+              print(f"==> enabled server '{target_name}' in contextforge gateway (status {resp.status})")
+      except urllib.error.HTTPError as e:
+          if e.code == 409:
+              print(f"==> server '{target_name}' is already enabled")
+          else:
+              print(f"error: failed to enable server '{target_name}': {e}", file=sys.stderr)
+              sys.exit(1)
+      PYENABLE
+                  }
 
-              # wipe state (db, uuid, token)
-              rm -f "${data_dir}/gateway.db" \
-                    "${data_dir}/virtual-server-id" \
-                    "${data_dir}/gateway-token"
-              echo "    cleared state (db, uuid, token)"
-
-              if [[ "$full" -eq 1 ]]; then
-                rm -rf "${cache_dir}"
-                mkdir -p "${cache_dir}"
-                echo "    cleared caches (uv, npm)"
-              fi
-
-              # truncate logs (darwin only — linux uses journald)
-              if [[ "$(uname -s)" == "Darwin" ]]; then
-                for f in "$HOME/Library/Logs"/contextforge-*.log; do
-                  [[ -f "$f" ]] && : > "$f"
-                done
-                echo "    truncated logs"
-              fi
-
-              echo ""
-              echo "==> re-bootstrapping contextforge stack"
-
-              if [[ "$(uname -s)" == "Darwin" ]]; then
-                for label in com.contextforge.gateway com.contextforge.bridge-supervisor com.contextforge.setup; do
-                  local plist="$agent_dir/$label.plist"
-                  [[ -f "$plist" ]] || continue
-                  if ! /bin/launchctl bootstrap "gui/$uid" "$plist" 2>/dev/null; then
-                    echo "    warning: failed to bootstrap $label" >&2
-                  fi
-                done
-                echo "    bootstrapped launchd agents"
-              else
-                systemctl --user start \
-                  contextforge-gateway.service \
-                  contextforge-bridge-supervisor.service 2>/dev/null || true
-                systemctl --user start contextforge-setup.service 2>/dev/null || true
-                echo "    started systemd services"
-              fi
-
-              echo ""
-              echo "==> waiting for gateway health..."
-              local url="http://${cfg.host}:${toString cfg.port}"
-              local i=0
-              while ! curl -sf --max-time 2 "$url/health" >/dev/null 2>&1; do
-                i=$((i + 1))
-                if [[ $i -ge 15 ]]; then
-                  echo "error: gateway not healthy after 30s — check logs" >&2
-                  return 1
-                fi
-                sleep 2
-              done
-              echo "gateway is healthy"
-
-              echo ""
-              echo "==> waiting for bridges to start..."
-              local bridge_ports
-              bridge_ports="$(python3 -c "
-      import tomllib
-      try:
-          with open('${config_dir}/mcp-servers.toml', 'rb') as f:
-              data = tomllib.load(f)
-          for s in data.get('servers', []):
-              p = (s.get('bridge') or {}).get('port')
-              if p: print(p)
-      except Exception:
-          pass
-      " 2>/dev/null)"
-
-              if [[ -n "$bridge_ports" ]]; then
-                local total ready prev_ready attempt
-                total="$(echo "$bridge_ports" | wc -l | tr -d ' ')"
-                prev_ready=0
-                attempt=0
-
-                while (( attempt < 20 )); do
-                  ready=0
-                  while IFS= read -r port; do
-                    if curl -sf --max-time 2 -X POST \
-                        -H "Content-Type: application/json" -d '{}' \
-                        "http://127.0.0.1:$port/mcp" >/dev/null 2>&1; then
-                      (( ready++ )) || true
+                  # disable an mcp server dynamically in contextforge gateway
+                  function mcpgw-disable() {
+                    local name="''${1:-}"
+                    if [[ -z "$name" ]]; then
+                      echo "usage: mcpgw-disable <server-name>" >&2
+                      return 1
                     fi
-                  done <<< "$bridge_ports"
+                    local url="http://${cfg.host}:${toString cfg.port}"
+                    python3 - "$url" "$name" <<'PYDISABLE'
+      import sys, json, urllib.request
 
-                  if (( ready > prev_ready )); then
-                    echo "    $ready/$total bridges ready"
-                    prev_ready=$ready
-                  fi
+      url, target_name = sys.argv[1], sys.argv[2]
+      try:
+          with urllib.request.urlopen(f"{url}/gateways") as resp:
+              gateways = json.loads(resp.read().decode())
+          target = next((g for g in gateways if g.get("name") == target_name), None)
+          if not target:
+              print(f"==> server '{target_name}' is not currently active in gateway")
+              sys.exit(0)
+          gw_id = target["id"]
+          req = urllib.request.Request(f"{url}/gateways/{gw_id}", method="DELETE")
+          with urllib.request.urlopen(req) as resp:
+              print(f"==> disabled/removed server '{target_name}' from contextforge gateway")
+      except Exception as e:
+          print(f"error: failed to disable server '{target_name}': {e}", file=sys.stderr)
+          sys.exit(1)
+      PYDISABLE
+                  }
 
-                  # done if all up, or if count stabilized after at least one is ready
-                  if (( ready == total )); then
-                    break
-                  fi
-                  if (( ready > 0 && ready == prev_ready && attempt > 5 )); then
-                    echo "    $ready/$total bridges ready (continuing, remaining may have missing env)"
-                    break
-                  fi
+                  # contextforge log viewer
+                  function mcpgw-logs() {
+                    local component="''${1:-all}"
+                    local log_dir="$HOME/Library/Logs"
+                    local lines="''${2:-50}"
 
-                  (( attempt++ )) || true
-                  sleep 3
-                done
+                    case "$component" in
+                      gateway)  tail -n "$lines" "$log_dir/contextforge-gateway.log" ;;
+                      bridge|bridges)  tail -n "$lines" "$log_dir/contextforge-bridge.log" ;;
+                      setup)    tail -n "$lines" "$log_dir/contextforge-setup.log" ;;
+                      all)
+                        for name in gateway bridge setup; do
+                          local f="$log_dir/contextforge-$name.log"
+                          [[ -f "$f" ]] || continue
+                          echo "==> $name"
+                          tail -n "$lines" "$f"
+                          echo ""
+                        done
+                        ;;
+                      -f|follow)
+                        tail -f "$log_dir"/contextforge-*.log
+                        ;;
+                      *)
+                        echo "usage: mcpgw-logs [gateway|bridge|setup|all|follow] [lines]"
+                        echo "  default: all, 50 lines"
+                        return 1
+                        ;;
+                    esac
+                  }
 
-                if (( prev_ready == 0 )); then
-                  echo "    no bridges ready after 60s (continuing anyway)"
-                fi
-              fi
+                  # contextforge full teardown + restart — for when the stack is wedged
+                  function mcpgw-nuke() {
+                    local full=0
+                    [[ "''${1:-}" == "--full" ]] && full=1
 
-              echo ""
-              echo "==> registering servers and tools..."
-              mcpgw-setup
-            }
+                    echo "==> tearing down contextforge stack"
+
+                    if [[ "$(uname -s)" == "Darwin" ]]; then
+                      local uid agent_dir
+                      uid="$(id -u)"
+                      agent_dir="$HOME/Library/LaunchAgents"
+
+                      for label in com.contextforge.setup com.contextforge.bridge-supervisor com.contextforge.gateway; do
+                        /bin/launchctl bootout "gui/$uid/$label" 2>/dev/null || true
+                      done
+                      echo "    unloaded launchd agents"
+                    else
+                      systemctl --user stop \
+                        contextforge-setup.service \
+                        contextforge-bridge-supervisor.service \
+                        contextforge-gateway.service 2>/dev/null || true
+                      echo "    stopped systemd services"
+                    fi
+
+                    # kill any surviving mcpgateway processes (gateway, translate, wrapper)
+                    pkill -f mcpgateway 2>/dev/null || true
+                    sleep 1
+                    pkill -9 -f mcpgateway 2>/dev/null || true
+
+                    # force-kill anything still holding gateway or bridge ports
+                    for port in ${toString cfg.port} $(python3 -c "
+            import tomllib, sys
+            try:
+                with open('${config_dir}/mcp-servers.toml', 'rb') as f:
+                    data = tomllib.load(f)
+                for s in data.get('servers', []):
+                    p = (s.get('bridge') or {}).get('port')
+                    if p: print(p)
+            except Exception:
+                pass
+            " 2>/dev/null); do
+                      lsof -ti :"$port" 2>/dev/null | xargs kill -9 2>/dev/null || true
+                    done
+                    echo "    killed remaining processes"
+
+                    # wipe state (db, uuid, token)
+                    rm -f "${data_dir}/gateway.db" \
+                          "${data_dir}/virtual-server-id" \
+                          "${data_dir}/gateway-token"
+                    echo "    cleared state (db, uuid, token)"
+
+                    if [[ "$full" -eq 1 ]]; then
+                      rm -rf "${cache_dir}"
+                      mkdir -p "${cache_dir}"
+                      echo "    cleared caches (uv, npm)"
+                    fi
+
+                    # truncate logs (darwin only — linux uses journald)
+                    if [[ "$(uname -s)" == "Darwin" ]]; then
+                      for f in "$HOME/Library/Logs"/contextforge-*.log; do
+                        [[ -f "$f" ]] && : > "$f"
+                      done
+                      echo "    truncated logs"
+                    fi
+
+                    echo ""
+                    echo "==> re-bootstrapping contextforge stack"
+
+                    if [[ "$(uname -s)" == "Darwin" ]]; then
+                      for label in com.contextforge.gateway com.contextforge.bridge-supervisor com.contextforge.setup; do
+                        local plist="$agent_dir/$label.plist"
+                        [[ -f "$plist" ]] || continue
+                        if ! /bin/launchctl bootstrap "gui/$uid" "$plist" 2>/dev/null; then
+                          echo "    warning: failed to bootstrap $label" >&2
+                        fi
+                      done
+                      echo "    bootstrapped launchd agents"
+                    else
+                      systemctl --user start \
+                        contextforge-gateway.service \
+                        contextforge-bridge-supervisor.service 2>/dev/null || true
+                      systemctl --user start contextforge-setup.service 2>/dev/null || true
+                      echo "    started systemd services"
+                    fi
+
+                    echo ""
+                    echo "==> waiting for gateway health..."
+                    local url="http://${cfg.host}:${toString cfg.port}"
+                    local i=0
+                    while ! curl -sf --max-time 2 "$url/health" >/dev/null 2>&1; do
+                      i=$((i + 1))
+                      if [[ $i -ge 15 ]]; then
+                        echo "error: gateway not healthy after 30s — check logs" >&2
+                        return 1
+                      fi
+                      sleep 2
+                    done
+                    echo "gateway is healthy"
+
+                    echo ""
+                    echo "==> waiting for bridges to start..."
+                    local bridge_ports
+                    bridge_ports="$(python3 -c "
+            import tomllib
+            try:
+                with open('${config_dir}/mcp-servers.toml', 'rb') as f:
+                    data = tomllib.load(f)
+                for s in data.get('servers', []):
+                    p = (s.get('bridge') or {}).get('port')
+                    if p: print(p)
+            except Exception:
+                pass
+            " 2>/dev/null)"
+
+                    if [[ -n "$bridge_ports" ]]; then
+                      local total ready prev_ready attempt
+                      total="$(echo "$bridge_ports" | wc -l | tr -d ' ')"
+                      prev_ready=0
+                      attempt=0
+
+                      while (( attempt < 20 )); do
+                        ready=0
+                        while IFS= read -r port; do
+                          if curl -sf --max-time 2 -X POST \
+                              -H "Content-Type: application/json" -d '{}' \
+                              "http://127.0.0.1:$port/mcp" >/dev/null 2>&1; then
+                            (( ready++ )) || true
+                          fi
+                        done <<< "$bridge_ports"
+
+                        if (( ready > prev_ready )); then
+                          echo "    $ready/$total bridges ready"
+                          prev_ready=$ready
+                        fi
+
+                        # done if all up, or if count stabilized after at least one is ready
+                        if (( ready == total )); then
+                          break
+                        fi
+                        if (( ready > 0 && ready == prev_ready && attempt > 5 )); then
+                          echo "    $ready/$total bridges ready (continuing, remaining may have missing env)"
+                          break
+                        fi
+
+                        (( attempt++ )) || true
+                        sleep 3
+                      done
+
+                      if (( prev_ready == 0 )); then
+                        echo "    no bridges ready after 60s (continuing anyway)"
+                      fi
+                    fi
+
+                    echo ""
+                    echo "==> registering servers and tools..."
+                    mcpgw-setup
+                  }
     '';
   };
 }

@@ -75,6 +75,7 @@ in
   homebrew.casks = [
     "android-studio"
     "dbeaver-community"
+    "inkscape"
     "macfuse"
     "qgis"
     "tuist"

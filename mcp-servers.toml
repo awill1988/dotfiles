@@ -146,3 +146,11 @@ gateway_register = true
 # bridge = { port = 4461 }
 # gateway_register = true
 
+[[servers]]
+name = "inkscape"
+transport = "stdio"
+command = "uvx"
+args = ["inkscape-mcp"]
+bridge = { port = 4462 }
+gateway_register = false
+
