@@ -35,7 +35,7 @@ args = ["-y", "firefox-devtools-mcp@latest", "--viewport", "1280x720", "--enable
 [mcp_servers.icon-composer]
 enabled = true
 command = "npx"
-args = ["-y", "--package=icon-composer-mcp@1.1.0", "--call", "node \"$(realpath \"$(which icon-composer-mcp)\")\""]
+args = ["-y", "--package=icon-composer-mcp@latest", "--call", "node \"$(realpath \"$(which icon-composer-mcp)\")\""]
 
 [shell_environment_policy]
 inherit = "all"

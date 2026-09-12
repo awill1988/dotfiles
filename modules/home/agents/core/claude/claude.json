@@ -22,7 +22,7 @@
     },
     "icon-composer": {
       "command": "npx",
-      "args": ["-y", "--package=icon-composer-mcp@1.1.0", "--call", "node \"$(realpath \"$(which icon-composer-mcp)\")\""],
+      "args": ["-y", "--package=icon-composer-mcp@latest", "--call", "node \"$(realpath \"$(which icon-composer-mcp)\")\""],
       "env": {}
     }
   }

@@ -151,6 +151,7 @@ name = "inkscape"
 transport = "stdio"
 command = "uvx"
 args = ["inkscape-mcp"]
+env = { PKG_CONFIG_PATH = "/opt/homebrew/lib/pkgconfig" }
 bridge = { port = 4462 }
-gateway_register = false
+gateway_register = true
 
