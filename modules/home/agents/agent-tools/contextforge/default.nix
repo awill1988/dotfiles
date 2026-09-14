@@ -924,7 +924,7 @@ in
                 except Exception:
                     status = "unreachable"
                 print(f"{name:<20} {port:<8} {status}")
-            PYBRIDGE
+      PYBRIDGE
                   }
 
                   # enable an mcp server dynamically in contextforge gateway
