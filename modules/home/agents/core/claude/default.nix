@@ -10,7 +10,7 @@ let
   claude_cache = "${config.xdg.cacheHome}/claude";
   claude_state = "${config.xdg.stateHome}/claude";
 
-  base_package = pkgs.claude-code;
+  base_package = pkgs.claude;
 
   # wrapper delegates profile resolution directly to profile-router
   claude_wrapper = pkgs.writeShellApplication {

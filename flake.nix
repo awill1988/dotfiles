@@ -366,7 +366,12 @@
           };
         in
         {
-          inherit (pkgs) gemini codex agy;
+          inherit (pkgs)
+            gemini
+            codex
+            agy
+            claude
+            ;
         }
       );
     };

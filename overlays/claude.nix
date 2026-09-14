@@ -80,4 +80,6 @@ in
       maintainers = [ ];
     };
   };
+
+  claude-code = final.claude;
 }
