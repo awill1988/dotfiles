@@ -79,6 +79,8 @@ let
       export GEMINI_TELEMETRY_TRACES_ENABLED=false
       export GEMINI_TELEMETRY_LOG_PROMPTS=false
       export GEMINI_ANALYTICS_DISABLED=true
+      export GEMINI_DISABLE_AUTO_UPDATE=1
+      export GEMINI_UI_ANIMATIONS_DISABLED=true
       export OTEL_SDK_DISABLED=true
       export DO_NOT_TRACK=1
 

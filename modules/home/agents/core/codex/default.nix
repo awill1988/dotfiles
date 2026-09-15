@@ -113,6 +113,9 @@ let
         fi
 
         export CODEX_DISABLE_TELEMETRY=1
+        export CODEX_DISABLE_AUTO_UPDATE=1
+        export CODEX_DISABLE_UPDATE_CHECK=1
+        export CODEX_DISABLE_ANIMATIONS=1
         export OTEL_SDK_DISABLED=true
         export DO_NOT_TRACK=1
 

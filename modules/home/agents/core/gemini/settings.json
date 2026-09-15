@@ -27,6 +27,10 @@
     "enableNotifications": false,
     "defaultApprovalMode": "default"
   },
+  "ui": {
+    "enableAnimations": false,
+    "showSpinner": false
+  },
   "context": {
     "fileName": ["AGENTS.md", "CLAUDE.md", "CONTEXT.md", "GEMINI.md"]
   },

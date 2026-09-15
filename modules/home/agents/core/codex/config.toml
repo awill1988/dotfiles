@@ -44,3 +44,14 @@ experimental_use_profile = true
 
 [analytics]
 enabled = false
+
+[telemetry]
+enabled = false
+
+[update]
+auto_update = "disabled"
+check_for_updates = false
+
+[ui]
+enable_animations = false
+show_spinner = false

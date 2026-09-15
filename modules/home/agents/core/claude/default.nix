@@ -22,6 +22,16 @@ let
       # bypass socks proxy for claude and mcp servers
       unset ALL_PROXY all_proxy SOCKS_PROXY socks_proxy
 
+      export DISABLE_AUTOUPDATER=1
+      export DISABLE_UPDATES=1
+      export CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC=1
+      export DISABLE_NON_ESSENTIAL_MODEL_CALLS=1
+      export CLAUDE_CODE_DISABLE_AUTO_MEMORY=1
+      export CLAUDE_CODE_DISABLE_FEEDBACK_SURVEY=1
+      export ENABLE_CLAUDEAI_MCP_SERVERS=false
+      export OTEL_SDK_DISABLED=true
+      export DO_NOT_TRACK=1
+
       ${
         if config.developer.profileRouter != null then
           ''

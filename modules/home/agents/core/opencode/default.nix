@@ -20,6 +20,12 @@ let
       telemetry = {
         enabled = false;
       };
+      general = {
+        enableAutoUpdate = false;
+      };
+      ui = {
+        enableAnimations = false;
+      };
     }
   );
 
@@ -29,6 +35,8 @@ let
     text = ''
       export OPENCODE_TELEMETRY_ENABLED=false
       export OPENCODE_OFFLINE_ONLY=1
+      export OPENCODE_DISABLE_AUTO_UPDATE=1
+      export OPENCODE_UI_ANIMATIONS_DISABLED=1
       export OTEL_SDK_DISABLED=true
       export DO_NOT_TRACK=1
 

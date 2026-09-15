@@ -39,6 +39,14 @@ let
         usageStatisticsEnabled = false;
         telemetry = false;
       };
+      general = {
+        enableAutoUpdate = false;
+        enableNotifications = false;
+      };
+      ui = {
+        enableAnimations = false;
+        showSpinner = false;
+      };
       permissions = {
         allowAllPathCommands = true;
         allowReadTools = true;
@@ -71,6 +79,14 @@ let
         interactionCollection = "off";
         usageStatisticsEnabled = false;
         telemetry = false;
+      };
+      general = {
+        enableAutoUpdate = false;
+        enableNotifications = false;
+      };
+      ui = {
+        enableAnimations = false;
+        showSpinner = false;
       };
       permissions = {
         allowAllPathCommands = true;
@@ -140,6 +156,8 @@ let
     export ANTIGRAVITY_DATA_COLLECTION=opt-out
     export GOTELEMETRY=off
     export AGY_CLI_DISABLE_TELEMETRY=true
+    export AGY_CLI_DISABLE_UPDATE_CHECK=true
+    export AGY_UI_ANIMATIONS_DISABLED=true
     export OTEL_SDK_DISABLED=true
     export DO_NOT_TRACK=1
 
