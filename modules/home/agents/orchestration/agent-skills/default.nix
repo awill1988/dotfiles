@@ -122,11 +122,27 @@ in
         "${config.home.homeDirectory}/.codex/skills"
         "${config.xdg.configHome}/claude/skills"
         "${config.home.homeDirectory}/.claude/skills"
+        "${config.xdg.configHome}/claude-secondary/skills"
+        "${config.xdg.configHome}/claude-secondary/.claude/skills"
         "${config.xdg.configHome}/gemini/skills"
         "${config.home.homeDirectory}/.gemini/skills"
         "${config.xdg.configHome}/antigravity/skills"
         "${config.xdg.configHome}/antigravity-restricted/skills"
         "${config.xdg.configHome}/opencode/skills"
+        ${lib.concatMapStringsSep " " (p: ''
+          "${config.xdg.configHome}/profiles/${p.name}/opencode/skills"
+          "${config.xdg.configHome}/profiles/${p.name}/claude/skills"
+          ${lib.optionalString (p.agents.opencode.configDir != null)
+            ''"${
+              builtins.replaceStrings [ "~" ] [ config.home.homeDirectory ] p.agents.opencode.configDir
+            }/skills"''
+          }
+          ${lib.optionalString (p.agents.claude.configDir != null)
+            ''"${
+              builtins.replaceStrings [ "~" ] [ config.home.homeDirectory ] p.agents.claude.configDir
+            }/skills"''
+          }
+        '') (lib.attrValues (config.developer.resolvedProfiles or { }))}
       )
 
       for target_dir in "''${TARGET_AGENT_DIRS[@]}"; do

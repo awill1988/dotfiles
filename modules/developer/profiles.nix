@@ -191,6 +191,11 @@ let
           default = null;
           description = "Explicit custom config directory path for OpenCode";
         };
+        provider = mkOption {
+          type = types.str;
+          default = "local";
+          description = "LLM provider identifier (e.g. anthropic, local, openai)";
+        };
         localEndpoint = mkOption {
           type = types.str;
           default = "http://localhost:11434/v1";
@@ -199,7 +204,12 @@ let
         model = mkOption {
           type = types.str;
           default = "ollama/qwen2.5-coder:32b";
-          description = "Default local model identifier";
+          description = "Default model identifier";
+        };
+        apiKeyEnvVar = mkOption {
+          type = types.nullOr types.str;
+          default = null;
+          description = "Environment variable name containing API key for provider auth";
         };
         config = mkOption {
           type = types.attrs;

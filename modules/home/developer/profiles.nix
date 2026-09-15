@@ -65,7 +65,15 @@ let
           DISABLE_NON_ESSENTIAL_MODEL_CALLS = "1";
           CLAUDE_CODE_MAX_OUTPUT_TOKENS = "128000";
           ENABLE_CLAUDEAI_MCP_SERVERS = "false";
+          DISABLE_AUTOUPDATER = "1";
+          DISABLE_UPDATES = "1";
+          CLAUDE_CODE_DISABLE_AUTO_MEMORY = "1";
+          CLAUDE_CODE_DISABLE_FEEDBACK_SURVEY = "1";
         };
+        autoUpdaterStatus = "disabled";
+        axScreenReader = false;
+        spinnerTipsEnabled = false;
+        autoMemoryEnabled = false;
         effortLevel = profile.agents.claude.effortLevel;
         telemetry = {
           enabled = false;
@@ -88,16 +96,65 @@ let
   mkOpencodeConfig =
     profile:
     pkgs.writeText "opencode-config-${profile.name}.json" (
-      builtins.toJSON {
-        provider = "local";
-        endpoint = profile.agents.opencode.localEndpoint;
-        model = profile.agents.opencode.model;
-        offlineOnly = true;
-        telemetry = {
-          enabled = false;
-        };
-      }
+      builtins.toJSON (
+        {
+          provider = profile.agents.opencode.provider;
+          endpoint = profile.agents.opencode.localEndpoint;
+          model = profile.agents.opencode.model;
+          offlineOnly = (profile.agents.opencode.provider == "local");
+          telemetry = {
+            enabled = false;
+          };
+          general = {
+            enableAutoUpdate = false;
+          };
+          ui = {
+            enableAnimations = false;
+          };
+        }
+        // (
+          if profile.agents.opencode.apiKeyEnvVar != null then
+            {
+              providerOptions = {
+                "${profile.agents.opencode.provider}" = {
+                  apiKeyEnvVar = profile.agents.opencode.apiKeyEnvVar;
+                };
+              };
+            }
+          else
+            { }
+        )
+        // profile.agents.opencode.config
+      )
     );
+
+  mkOpencodeProfileWrapper =
+    p:
+    let
+      target_dir =
+        if p.agents.opencode.configDir != null then
+          builtins.replaceStrings [ "~" ] [ "$HOME" ] p.agents.opencode.configDir
+        else
+          "${config.xdg.configHome}/profiles/${p.name}/opencode";
+    in
+    pkgs.writeShellApplication {
+      name = "opencode-${p.name}";
+      runtimeInputs = with pkgs; [ coreutils ];
+      text = ''
+        export DEVELOPER_PROFILE="${p.name}"
+        export OPENCODE_CONFIG_DIR="${target_dir}"
+        export OPENCODE_CACHE_DIR="${target_dir}/cache"
+        export OPENCODE_STATE_DIR="${target_dir}/state"
+        export OPENCODE_TELEMETRY_ENABLED=false
+        export OPENCODE_OFFLINE_ONLY=${if p.agents.opencode.provider == "local" then "true" else "false"}
+        export OPENCODE_DISABLE_AUTO_UPDATE=1
+        export OPENCODE_UI_ANIMATIONS_DISABLED=1
+        export OTEL_SDK_DISABLED=true
+        export DO_NOT_TRACK=1
+
+        exec "${pkgs.opencode}/bin/opencode" "$@"
+      '';
+    };
 
   # Helper script to dynamically route tools based on CWD
   profile-router = pkgs.writeShellApplication {
@@ -205,11 +262,23 @@ let
               ''
                 OPENCODE_CONFIG_DIR="${builtins.replaceStrings [ "~" ] [ "$HOME" ] p.agents.opencode.configDir}"
                 export OPENCODE_CONFIG_DIR
+                OPENCODE_CACHE_DIR="${
+                  builtins.replaceStrings [ "~" ] [ "$HOME" ] p.agents.opencode.configDir
+                }/cache"
+                export OPENCODE_CACHE_DIR
+                OPENCODE_STATE_DIR="${
+                  builtins.replaceStrings [ "~" ] [ "$HOME" ] p.agents.opencode.configDir
+                }/state"
+                export OPENCODE_STATE_DIR
               ''
             else
               ''
                 OPENCODE_CONFIG_DIR="${config.xdg.configHome}/profiles/${p.name}/opencode"
                 export OPENCODE_CONFIG_DIR
+                OPENCODE_CACHE_DIR="${config.xdg.cacheHome}/profiles/${p.name}/opencode"
+                export OPENCODE_CACHE_DIR
+                OPENCODE_STATE_DIR="${config.xdg.stateHome}/profiles/${p.name}/opencode"
+                export OPENCODE_STATE_DIR
               ''
           }
 
@@ -258,7 +327,19 @@ in
     programs.opencode.enable = true;
     developer.profileRouter = profile-router;
     developer.resolvedProfiles = listToAttrs (map (p: nameValuePair p.name p) resolvedProfiles);
-    home.packages = [ profile-router ];
+    home.packages = [ profile-router ] ++ (map mkOpencodeProfileWrapper resolvedProfiles);
+
+    home.file = listToAttrs (
+      concatMap (p: [
+        {
+          name = ".local/bin/opencode-${p.name}";
+          value = {
+            source = "${mkOpencodeProfileWrapper p}/bin/opencode-${p.name}";
+            force = true;
+          };
+        }
+      ]) resolvedProfiles
+    );
 
     home.activation.ensureProfileDirs = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
       set -euo pipefail
@@ -329,9 +410,33 @@ in
             ''
         }
 
+        if [ -L "$opencode_dest_dir/opencode.json" ]; then
+          rm -f "$opencode_dest_dir/opencode.json"
+        fi
         if [ ! -f "$opencode_dest_dir/opencode.json" ]; then
           install -m 600 "${mkOpencodeConfig p}" "$opencode_dest_dir/opencode.json"
+        else
+          ${pkgs.jq}/bin/jq -s '.[0] * .[1]' \
+            "$opencode_dest_dir/opencode.json" "${mkOpencodeConfig p}" > "$opencode_dest_dir/opencode.json.tmp"
+          chmod 600 "$opencode_dest_dir/opencode.json.tmp"
+          mv "$opencode_dest_dir/opencode.json.tmp" "$opencode_dest_dir/opencode.json"
         fi
+
+        ${optionalString (p.name == primaryProfile.name) ''
+          primary_opencode_dir="${config.xdg.configHome}/opencode"
+          mkdir -p "$primary_opencode_dir"
+          if [ -L "$primary_opencode_dir/opencode.json" ]; then
+            rm -f "$primary_opencode_dir/opencode.json"
+          fi
+          if [ ! -f "$primary_opencode_dir/opencode.json" ]; then
+            install -m 600 "${mkOpencodeConfig p}" "$primary_opencode_dir/opencode.json"
+          else
+            ${pkgs.jq}/bin/jq -s '.[0] * .[1]' \
+              "$primary_opencode_dir/opencode.json" "${mkOpencodeConfig p}" > "$primary_opencode_dir/opencode.json.tmp"
+            chmod 600 "$primary_opencode_dir/opencode.json.tmp"
+            mv "$primary_opencode_dir/opencode.json.tmp" "$primary_opencode_dir/opencode.json"
+          fi
+        ''}
 
         if [ ! -f "$codex_dest_dir/config.toml" ]; then
           install -m 600 "${./../agents/core/codex/config.toml}" "$codex_dest_dir/config.toml"
@@ -339,7 +444,24 @@ in
 
         if [ ! -f "$claude_dest_dir/settings.json" ]; then
           install -m 600 "${mkClaudeSettings p}" "$claude_dest_dir/settings.json"
+        else
+          ${pkgs.jq}/bin/jq -s '((.[0] * .[1]) | del(.env.CLAUDE_AX_SCREEN_READER)) | if .permissions.allow then .permissions.allow = ([.permissions.allow[] | if (type == "string" and startswith("Bash(")) then (if (. | sub("^Bash\\("; "") | sub("\\)$"; "") | rtrimstr("*") | rtrimstr(" ") | contains("*")) then empty else . end) else . end] + ["Bash(aws *)"] | unique) else . end' \
+            "$claude_dest_dir/settings.json" "${mkClaudeSettings p}" > "$claude_dest_dir/settings.json.tmp"
+          chmod 600 "$claude_dest_dir/settings.json.tmp"
+          mv "$claude_dest_dir/settings.json.tmp" "$claude_dest_dir/settings.json"
         fi
+
+        for base_claude_dir in "${config.xdg.configHome}/claude" "${config.home.homeDirectory}/.claude" "${config.xdg.configHome}/claude-secondary"; do
+          mkdir -p "$base_claude_dir"
+          if [ ! -f "$base_claude_dir/settings.json" ]; then
+            install -m 600 "${mkClaudeSettings p}" "$base_claude_dir/settings.json"
+          else
+            ${pkgs.jq}/bin/jq -s '((.[0] * .[1]) | del(.env.CLAUDE_AX_SCREEN_READER)) | if .permissions.allow then .permissions.allow = ([.permissions.allow[] | if (type == "string" and startswith("Bash(")) then (if (. | sub("^Bash\\("; "") | sub("\\)$"; "") | rtrimstr("*") | rtrimstr(" ") | contains("*")) then empty else . end) else . end] + ["Bash(aws *)"] | unique) else . end' \
+              "$base_claude_dir/settings.json" "${mkClaudeSettings p}" > "$base_claude_dir/settings.json.tmp"
+            chmod 600 "$base_claude_dir/settings.json.tmp"
+            mv "$base_claude_dir/settings.json.tmp" "$base_claude_dir/settings.json"
+          fi
+        done
 
         if [ ! -f "$claude_dest_dir/.claude.json" ]; then
           install -m 600 "${mkClaudeUserConfig p}" "$claude_dest_dir/.claude.json"

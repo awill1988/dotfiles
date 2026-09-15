@@ -125,6 +125,12 @@
           };
         };
       };
+      agents.opencode = {
+        configDir = "~/.config/opencode-work";
+        provider = "anthropic";
+        model = "anthropic/claude-3-7-sonnet";
+        apiKeyEnvVar = "WORK_ANTHROPIC_API_KEY";
+      };
     };
 
     yourmoodai = {
@@ -141,6 +147,11 @@
       agents.code = "codex";
       agents.codex = {
         configDir = "~/.config/codex-secondary";
+      };
+      agents.opencode = {
+        configDir = "~/.config/opencode-yourmoodai";
+        provider = "anthropic";
+        model = "anthropic/claude-3-5-haiku";
       };
     };
   };
