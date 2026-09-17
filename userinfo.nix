@@ -14,6 +14,11 @@
       profile = "personal";
     };
     agents.code = "agy";
+    agents.claude.mcpServers = {
+      contextforge = {
+        command = "mcpgw-wrapper";
+      };
+    };
   };
 
   # Layer 3: Machine / Host Definitions

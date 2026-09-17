@@ -50,9 +50,14 @@ let
 
   mkClaudeUserConfig =
     profile:
+    let
+      filteredMcpServers = lib.filterAttrs (
+        name: _: !builtins.elem name profile.agents.claude.excludeMcpServers
+      ) profile.agents.claude.mcpServers;
+    in
     pkgs.writeText "claude-user-config-${profile.name}.json" (
       builtins.toJSON {
-        mcpServers = profile.agents.claude.mcpServers;
+        mcpServers = filteredMcpServers;
       }
     );
 
@@ -466,11 +471,25 @@ in
         if [ ! -f "$claude_dest_dir/.claude.json" ]; then
           install -m 600 "${mkClaudeUserConfig p}" "$claude_dest_dir/.claude.json"
         else
-          ${pkgs.jq}/bin/jq -s '.[0] + {mcpServers: .[1].mcpServers}' \
+          ${pkgs.jq}/bin/jq -s '.[0] + {mcpServers: (.[0].mcpServers // {}) + .[1].mcpServers}' \
             "$claude_dest_dir/.claude.json" "${mkClaudeUserConfig p}" > "$claude_dest_dir/.claude.json.tmp"
           chmod 600 "$claude_dest_dir/.claude.json.tmp"
           mv "$claude_dest_dir/.claude.json.tmp" "$claude_dest_dir/.claude.json"
         fi
+
+        ${optionalString (p.name == primaryProfile.name) ''
+          for primary_claude_base in "${config.xdg.configHome}/claude" "${config.home.homeDirectory}"; do
+            mkdir -p "$primary_claude_base"
+            if [ ! -f "$primary_claude_base/.claude.json" ]; then
+              install -m 600 "${mkClaudeUserConfig p}" "$primary_claude_base/.claude.json"
+            else
+              ${pkgs.jq}/bin/jq -s '.[0] + {mcpServers: (.[0].mcpServers // {}) + .[1].mcpServers}' \
+                "$primary_claude_base/.claude.json" "${mkClaudeUserConfig p}" > "$primary_claude_base/.claude.json.tmp"
+              chmod 600 "$primary_claude_base/.claude.json.tmp"
+              mv "$primary_claude_base/.claude.json.tmp" "$primary_claude_base/.claude.json"
+            fi
+          done
+        ''}
 
         cat <<EOF > "$profile_dir/git/config"
         [user]
