@@ -77,6 +77,7 @@ let
         };
         autoUpdaterStatus = "disabled";
         axScreenReader = false;
+        prefersReducedMotion = true;
         spinnerTipsEnabled = false;
         autoMemoryEnabled = false;
         effortLevel = profile.agents.claude.effortLevel;
