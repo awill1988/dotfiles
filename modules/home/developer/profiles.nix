@@ -69,7 +69,8 @@ let
           CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC = "1";
           DISABLE_NON_ESSENTIAL_MODEL_CALLS = "1";
           CLAUDE_CODE_MAX_OUTPUT_TOKENS = "128000";
-          ENABLE_CLAUDEAI_MCP_SERVERS = "false";
+          ENABLE_CLAUDEAI_MCP_SERVERS =
+            if profile.agents.claude.enableOrganizationalMcp then "true" else "false";
           DISABLE_AUTOUPDATER = "1";
           DISABLE_UPDATES = "1";
           CLAUDE_CODE_DISABLE_AUTO_MEMORY = "1";
@@ -217,6 +218,19 @@ let
               ''
                 CLAUDE_CONFIG_DIR="${config.xdg.configHome}/profiles/${p.name}/claude"
                 export CLAUDE_CONFIG_DIR
+              ''
+          }
+
+          ${
+            if p.agents.claude.enableOrganizationalMcp then
+              ''
+                ENABLE_CLAUDEAI_MCP_SERVERS="true"
+                export ENABLE_CLAUDEAI_MCP_SERVERS
+              ''
+            else
+              ''
+                ENABLE_CLAUDEAI_MCP_SERVERS="false"
+                export ENABLE_CLAUDEAI_MCP_SERVERS
               ''
           }
 
@@ -457,17 +471,19 @@ in
           mv "$claude_dest_dir/settings.json.tmp" "$claude_dest_dir/settings.json"
         fi
 
-        for base_claude_dir in "${config.xdg.configHome}/claude" "${config.home.homeDirectory}/.claude" "${config.xdg.configHome}/claude-secondary"; do
-          mkdir -p "$base_claude_dir"
-          if [ ! -f "$base_claude_dir/settings.json" ]; then
-            install -m 600 "${mkClaudeSettings p}" "$base_claude_dir/settings.json"
-          else
-            ${pkgs.jq}/bin/jq -s '((.[0] * .[1]) | del(.env.CLAUDE_AX_SCREEN_READER)) | if .permissions.allow then .permissions.allow = ([.permissions.allow[] | if (type == "string" and startswith("Bash(")) then (if (. | sub("^Bash\\("; "") | sub("\\)$"; "") | rtrimstr("*") | rtrimstr(" ") | contains("*")) then empty else . end) else . end] + ["Bash(aws *)"] | unique) else . end' \
-              "$base_claude_dir/settings.json" "${mkClaudeSettings p}" > "$base_claude_dir/settings.json.tmp"
-            chmod 600 "$base_claude_dir/settings.json.tmp"
-            mv "$base_claude_dir/settings.json.tmp" "$base_claude_dir/settings.json"
-          fi
-        done
+        ${optionalString (p.name == primaryProfile.name) ''
+          for base_claude_dir in "${config.xdg.configHome}/claude" "${config.home.homeDirectory}/.claude"; do
+            mkdir -p "$base_claude_dir"
+            if [ ! -f "$base_claude_dir/settings.json" ]; then
+              install -m 600 "${mkClaudeSettings p}" "$base_claude_dir/settings.json"
+            else
+              ${pkgs.jq}/bin/jq -s '((.[0] * .[1]) | del(.env.CLAUDE_AX_SCREEN_READER)) | if .permissions.allow then .permissions.allow = ([.permissions.allow[] | if (type == "string" and startswith("Bash(")) then (if (. | sub("^Bash\\("; "") | sub("\\)$"; "") | rtrimstr("*") | rtrimstr(" ") | contains("*")) then empty else . end) else . end] + ["Bash(aws *)"] | unique) else . end' \
+                "$base_claude_dir/settings.json" "${mkClaudeSettings p}" > "$base_claude_dir/settings.json.tmp"
+              chmod 600 "$base_claude_dir/settings.json.tmp"
+              mv "$base_claude_dir/settings.json.tmp" "$base_claude_dir/settings.json"
+            fi
+          done
+        ''}
 
         if [ ! -f "$claude_dest_dir/.claude.json" ]; then
           install -m 600 "${mkClaudeUserConfig p}" "$claude_dest_dir/.claude.json"

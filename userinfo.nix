@@ -58,6 +58,7 @@
       agents.code = "claude";
       agents.claude = {
         configDir = "~/.config/claude-secondary";
+        enableOrganizationalMcp = true;
         excludeMcpServers = [ "blender" ];
         mcpServers = {
           atlassian = {

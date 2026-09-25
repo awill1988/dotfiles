@@ -128,6 +128,11 @@ let
           default = "medium";
           description = "Claude effort level";
         };
+        enableOrganizationalMcp = mkOption {
+          type = types.bool;
+          default = false;
+          description = "Enable Claude.ai organizational MCP servers";
+        };
       };
       gemini = {
         enable = mkOption {
