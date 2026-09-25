@@ -173,7 +173,6 @@ in
           {
             ccommit = aicommits_lowercase;
           };
-        branch.autosetupmerge = true;
         color.ui = "auto";
         commit.verbose = true;
         diff.submodule = "log";
@@ -287,17 +286,40 @@ in
         "*.xcframework"
         "*.swiftmodule"
         ".direnv/"
+        ".worktrees/"
+        "worktrees/"
+        ".worktree/"
+        "worktree/"
+        ".wt/"
+        "*.worktree/"
+        ".*-wt*/"
+        ".claude-wt-*/"
+        ".agent-worktrees/"
+        "agent-worktrees/"
+        ".agent-scratch/"
+        ".agent-temp/"
+        "agent-scratch/"
         ".claude/"
         ".claude.json"
         ".claude.settings.json"
+        ".claude_history"
+        ".claude_session*"
         ".gemini/"
         ".gemini.json"
+        ".antigravity/"
+        ".antigravitycli/"
+        ".antigravity_history"
+        ".agy/"
+        ".agy_history"
         ".codex/"
         ".codex.json"
-        ".aider*"
+        ".opencode/"
+        ".opencode.json"
         ".cursor/"
         ".windsurf/"
-        ".antigravitycli/"
+        ".copilot/"
+        ".aider*"
+        ".derived_data/"
         "*.mp4"
       ];
     };
