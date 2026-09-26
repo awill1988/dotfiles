@@ -20,8 +20,15 @@
 
 For general coding standards and practices, see program-specific files:
 - `modules/home/agents/orchestration/agent-prompts/AGENTS.md`
+- `modules/home/agents/core/claude/CLAUDE.md`
 - `modules/home/agents/core/codex/AGENTS.override.md`
 - `modules/home/agents/core/gemini/GEMINI.md`
+
+## Response Profile
+
+- **Tone**: Technical, concise, direct
+- Lead every response by describing what you are doing. Personality, if any, comes after that and never in place of it
+- **Forbid prose**: eliminate conversational filler, preambles, conversational postambles, pleasantries, sycophancy, and wrap-up summaries. Never include project-management boilerplate, status check-in templates, or sections like "Need from you:" or "By when:". Deliver technical facts, code, and direct execution without conversational narration
 
 ## Project Structure
 
