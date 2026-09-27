@@ -41,6 +41,7 @@ Git is configured with `push.default = simple` and `push.autoSetupRemote = true`
 - **Use plain `git push`** — never use explicit refspecs (`git push origin local:remote`) as this bypasses safety checks
 - **Never use `git push --force`** on `master`, `main`, or any shared branch
 - **If `git push` refuses**, do not attempt to fix it — ask the user
+- **Forbidden from pushing unverified commits**: All commits pushed to GitHub must be cryptographically signed (SSH or GPG) and verified by GitHub. Agents are strictly forbidden from pushing unverified commits. Verify commit signatures (`git log --show-signature -1` or `git verify-commit HEAD`) prior to pushing. If git signing fails or you cannot find a way to sign a commit, you **MUST STOP** immediately and notify the user — never attempt to bypass signing (e.g., `--no-gpg-sign`) or push unsigned commits.
 
 ## Practices
 
