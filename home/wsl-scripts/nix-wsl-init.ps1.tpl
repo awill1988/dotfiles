@@ -22,6 +22,21 @@ param(
   [int]$WslWaitSeconds = 30,
 
   [Parameter(Mandatory=$false)]
+  [string]$WslConfigEnable = "false",
+
+  [Parameter(Mandatory=$false)]
+  [string]$Memory = "",
+
+  [Parameter(Mandatory=$false)]
+  [string]$Processors = "",
+
+  [Parameter(Mandatory=$false)]
+  [string]$AutoMemoryReclaim = "",
+
+  [Parameter(Mandatory=$false)]
+  [string]$SparseVhd = "",
+
+  [Parameter(Mandatory=$false)]
   [string]$DefenderExclusionsEnable = "true"
 )
 
