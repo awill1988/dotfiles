@@ -174,7 +174,7 @@ let
       owner = "nkarasiak";
       repo = "qgis-mcp";
       rev = "main";
-      hash = "sha256-lDzjRG4NFL3WMb0WGmFbIQRSKXZCoAj7fpQZ8dgYwQ4=";
+      hash = "sha256-5FdS0vBtztc9pllkKSf6d6gVE3ODG2AKPzczWdy4Mwc=";
     }
   }/qgis_mcp_plugin";
 
