@@ -20,6 +20,7 @@ set relativenumber
 set signcolumn=yes
 set cursorline
 set cursorlineopt=number
+highlight CursorLineNr cterm=bold gui=bold
 
 " colorcolumn: show margin one column after textwidth
 set colorcolumn=+1
