@@ -1,0 +1,18 @@
+{
+  "display_name": "Disk Space Monitor Harness",
+  "description": "Checks root disk space every 30m; executes agent harness workflow if free space drops by >1%",
+  "builtin": "schedule",
+  "args": [
+    "*/30 * * * *",
+    "python3",
+    "disk_monitor_harness.py",
+    "--runner",
+    "agentapi"
+  ],
+  "restart_policy": "always",
+  "env": {
+    "LOG_LEVEL": "info",
+    "DISK_MOUNT_POINT": "/",
+    "THRESHOLD_PERCENT": "1.0"
+  }
+}
