@@ -285,6 +285,7 @@
         home-agent-skills = import ./modules/home/agents/orchestration/agent-skills {
           golang_skills_src = inputs.golang-skills;
         };
+        home-agent-continuous = import ./modules/home/agents/orchestration/continuous-agent;
         home-agent-tools = import ./modules/home/agents/agent-tools;
         home-agent-local-ai = import ./modules/home/agents/local-ai;
 

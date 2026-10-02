@@ -29,4 +29,5 @@
       };
     };
   rustup = import ./rustup.nix;
+  worktrunk = import ./worktrunk.nix;
 }
