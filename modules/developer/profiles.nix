@@ -102,6 +102,23 @@ let
         default = "agy";
         description = "Agent CLI program launched when 'code' is activated (e.g. agy, claude, gemini, codex)";
       };
+      continuousLoop = {
+        enable = mkOption {
+          type = types.bool;
+          default = true;
+          description = "Enable continuous agent loop for this profile";
+        };
+        allowedModels = mkOption {
+          type = types.listOf types.str;
+          default = [
+            "claude"
+            "codex"
+            "agy"
+          ];
+          description = "Models permitted for continuous agent loops in this profile";
+        };
+      };
+
       claude = {
         enable = mkOption {
           type = types.bool;

@@ -56,6 +56,7 @@
         region = "us-west-2";
       };
       agents.code = "claude";
+      agents.continuousLoop.allowedModels = [ "claude-secondary" ];
       agents.claude = {
         configDir = "~/.config/claude-secondary";
         enableOrganizationalMcp = true;

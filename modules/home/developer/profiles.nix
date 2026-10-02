@@ -333,6 +333,32 @@ let
         fi
       '') resolvedProfiles}
 
+      case "''${1:-}" in
+        --show-profile)
+          echo "$active_profile"
+          exit 0
+          ;;
+        --show-allowed-models)
+          ${concatMapStringsSep "\n" (p: ''
+            if [ "$active_profile" = "${p.name}" ]; then
+              echo "${concatStringsSep "," p.agents.continuousLoop.allowedModels}"
+              exit 0
+            fi
+          '') resolvedProfiles}
+          echo "claude,codex,agy"
+          exit 0
+          ;;
+        --show-env)
+          echo "DEVELOPER_PROFILE=$DEVELOPER_PROFILE"
+          echo "CODE_AGENT=''${CODE_AGENT:-}"
+          echo "CLAUDE_CONFIG_DIR=''${CLAUDE_CONFIG_DIR:-}"
+          echo "CODEX_CONFIG_DIR=''${CODEX_CONFIG_DIR:-}"
+          echo "AGY_CONFIG_DIR=''${AGY_CONFIG_DIR:-}"
+          echo "OPENCODE_CONFIG_DIR=''${OPENCODE_CONFIG_DIR:-}"
+          exit 0
+          ;;
+      esac
+
       cmd="''${1:-}"
       if [ -n "$cmd" ]; then
         shift
@@ -340,6 +366,7 @@ let
       fi
     '';
   };
+
 in
 {
   imports = [ ../../developer/profiles.nix ];
