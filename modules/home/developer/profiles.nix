@@ -75,6 +75,10 @@ let
           DISABLE_UPDATES = "1";
           CLAUDE_CODE_DISABLE_AUTO_MEMORY = "1";
           CLAUDE_CODE_DISABLE_FEEDBACK_SURVEY = "1";
+          DISABLE_TELEMETRY = "1";
+          DISABLE_GROWTHBOOK = "1";
+          DISABLE_ERROR_REPORTING = "1";
+          DO_NOT_TRACK = "1";
         };
         autoUpdaterStatus = "disabled";
         axScreenReader = false;

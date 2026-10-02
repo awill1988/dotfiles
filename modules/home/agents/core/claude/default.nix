@@ -32,6 +32,9 @@ let
       export ENABLE_CLAUDEAI_MCP_SERVERS
       export OTEL_SDK_DISABLED=true
       export DO_NOT_TRACK=1
+      export DISABLE_TELEMETRY=1
+      export DISABLE_GROWTHBOOK=1
+      export DISABLE_ERROR_REPORTING=1
 
       ${
         if config.developer.profileRouter != null then

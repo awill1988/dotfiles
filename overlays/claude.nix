@@ -63,6 +63,9 @@ in
     postFixup = ''
       wrapProgram $out/bin/claude \
         --set CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC 1 \
+        --set DISABLE_TELEMETRY 1 \
+        --set DISABLE_GROWTHBOOK 1 \
+        --set DISABLE_ERROR_REPORTING 1 \
         --set DO_NOT_TRACK 1
     '';
 
