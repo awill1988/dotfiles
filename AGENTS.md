@@ -88,3 +88,12 @@ sudo ./result/sw/bin/darwin-rebuild switch --flake .#macbook-personal
 - Do not include task lists or checklists in PR descriptions unless explicitly requested
 - All contributions are attributed to the repository owner; no AI agent attribution in commits or PRs
 - **Push safety**: use plain `git push` — never use explicit refspecs or `--force` on `master`/`main`. Verify the current branch before pushing. If `git push` refuses, ask the user. Agents are strictly forbidden from pushing unverified commits to GitHub; if commit signing fails or cannot be configured, stop immediately.
+
+## Developer Profile & Agent Identity
+
+- This repository (`~/projects/awill1988/dotfiles`) runs under the `personal` developer profile
+- All commits are authored and signed as `Adam Williams <adam@williams.engineer>`
+- Primary agent orchestrator is `agy` with peers `claude` and `codex`
+- Corporate/work repositories (`~/projects/arro/*`) resolve to the `work` profile and must exclusively use `claude-secondary` (`CLAUDE_CONFIG_DIR=~/.config/claude-secondary`)
+- Autonomous continuous loops (`agent-loop` / `loop`) adhere to active profile boundaries and isolate iterations into Git worktrees (`wt switch -c`)
+

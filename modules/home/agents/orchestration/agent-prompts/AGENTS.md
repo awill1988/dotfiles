@@ -183,3 +183,24 @@ This system has multiple AI coding assistants available:
 - **Antigravity (AGY)**: Multi-agent orchestrator
 
 When users reference other AI assistants by name, understand they may be comparing capabilities or workflows between tools.
+
+## Developer Profiles & Identity Routing
+
+- **Profile Resolution**: Active developer profiles (`personal`, `work`, etc.) are resolved automatically by `profile-router` based on current working directory `pathPrefixes` and `folderOverrides`
+- **Work Repositories (`~/projects/arro/*`)**:
+  - Always run under the `work` developer profile
+  - **Claude Identity**: Must use `claude-secondary` (`CLAUDE_CONFIG_DIR=~/.config/claude-secondary`)
+  - **Account Isolation**: Never use personal accounts (`claude`, `codex`, `agy` personal tokens) in work repositories. Doing so violates corporate confidentiality and data governance policies
+  - **Commit Identity**: Commits must be authored and signed using the work identity (`adam@arrofinance.com`)
+- **Personal Repositories (`~/projects/personal/*`, `~/projects/awill1988/*`)**:
+  - Run under the `personal` developer profile
+  - Author and sign commits using personal identity (`adam@williams.engineer`)
+  - Full model suite (`claude`, `codex`, `agy`, `opencode`) is authorized
+
+## Continuous Agent Loops
+
+- The `agent-loop` (aliased as `loop`) tool executes autonomous development loops until tests/verification pass
+- **Profile Adherence**: `agent-loop` resolves the active developer profile from the target workspace. In `work` profiles, it restricts execution to `claude-secondary` and will not swap to unauthorized personal models
+- **Worktree Invariant**: Autonomous loops must execute in isolated Git worktrees (`wt switch -c agent-loop/<task>`). Worktrees are created adjacent to the parent repository within the same path prefix to preserve profile resolution
+- **Stop Conditions**: Every continuous loop must have deterministic verification gates (e.g. `nix flake check`, `pytest`, `cargo test`) before changes can be staged or committed
+
