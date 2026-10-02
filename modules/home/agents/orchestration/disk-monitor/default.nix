@@ -80,7 +80,7 @@ in
       pkgs.llama-cpp
     ];
 
-    launchd.user.agents.disk-monitor = mkIf (cfg.enableLaunchd && pkgs.stdenv.isDarwin) {
+    launchd.agents.disk-monitor = mkIf (cfg.enableLaunchd && pkgs.stdenv.isDarwin) {
       enable = true;
       config = {
         ProgramArguments = [ "${harness_pkg}/bin/disk-monitor-harness" ];
