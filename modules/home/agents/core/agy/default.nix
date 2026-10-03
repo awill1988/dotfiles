@@ -170,10 +170,10 @@ let
           ${pkgs.coreutils}/bin/install -m 600 "''${AGY_CONFIG_DIR}/settings.json" "$target"
         else
           ${pkgs.jq}/bin/jq -s '
-            (.[0] * .[1])
-            | .permissions.allow = (((.[0].permissions.allow // []) + (.[1].permissions.allow // [])) | unique)
-            | .permissions.deny = (((.[0].permissions.deny // []) + (.[1].permissions.deny // [])) | unique)
-            | .permissions.ask = (((.[0].permissions.ask // []) + (.[1].permissions.ask // [])) | unique)
+            .[0] as $target | .[1] as $source | ($target * $source)
+            | .permissions.allow = (((($target.permissions.allow // []) + ($source.permissions.allow // [])) | unique))
+            | .permissions.deny = (((($target.permissions.deny // []) + ($source.permissions.deny // [])) | unique))
+            | .permissions.ask = (((($target.permissions.ask // []) + ($source.permissions.ask // [])) | unique))
           ' "$target" "''${AGY_CONFIG_DIR}/settings.json" > "$target.tmp"
           ${pkgs.coreutils}/bin/chmod 600 "$target.tmp"
           ${pkgs.coreutils}/bin/mv "$target.tmp" "$target"
@@ -241,10 +241,10 @@ in
           install -m 600 "$source" "$target"
         else
           ${pkgs.jq}/bin/jq -s '
-            (.[0] * .[1])
-            | .permissions.allow = (((.[0].permissions.allow // []) + (.[1].permissions.allow // [])) | unique)
-            | .permissions.deny = (((.[0].permissions.deny // []) + (.[1].permissions.deny // [])) | unique)
-            | .permissions.ask = (((.[0].permissions.ask // []) + (.[1].permissions.ask // [])) | unique)
+            .[0] as $target | .[1] as $source | ($target * $source)
+            | .permissions.allow = (((($target.permissions.allow // []) + ($source.permissions.allow // [])) | unique))
+            | .permissions.deny = (((($target.permissions.deny // []) + ($source.permissions.deny // [])) | unique))
+            | .permissions.ask = (((($target.permissions.ask // []) + ($source.permissions.ask // [])) | unique))
           ' "$target" "$source" > "$target.tmp"
           chmod 600 "$target.tmp"
           mv "$target.tmp" "$target"

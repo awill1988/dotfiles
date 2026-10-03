@@ -619,9 +619,10 @@ in
           install -m 600 "${mkClaudeSettings p}" "$claude_dest_dir/settings.json"
         else
           ${pkgs.jq}/bin/jq -s '
-            ((.[0] * .[1]) | del(.env.CLAUDE_AX_SCREEN_READER))
-            | .permissions.allow = (((.[0].permissions.allow // []) + (.[1].permissions.allow // [])) | unique)
-            | .permissions.deny = (((.[0].permissions.deny // []) + (.[1].permissions.deny // [])) | unique)
+            .[0] as $target | .[1] as $source
+            | (($target * $source) | del(.env.CLAUDE_AX_SCREEN_READER))
+            | .permissions.allow = (((($target.permissions.allow // []) + ($source.permissions.allow // [])) | unique))
+            | .permissions.deny = (((($target.permissions.deny // []) + ($source.permissions.deny // [])) | unique))
           ' "$claude_dest_dir/settings.json" "${mkClaudeSettings p}" > "$claude_dest_dir/settings.json.tmp"
           chmod 600 "$claude_dest_dir/settings.json.tmp"
           mv "$claude_dest_dir/settings.json.tmp" "$claude_dest_dir/settings.json"
@@ -634,9 +635,10 @@ in
               install -m 600 "${mkClaudeSettings p}" "$base_claude_dir/settings.json"
             else
               ${pkgs.jq}/bin/jq -s '
-                ((.[0] * .[1]) | del(.env.CLAUDE_AX_SCREEN_READER))
-                | .permissions.allow = (((.[0].permissions.allow // []) + (.[1].permissions.allow // [])) | unique)
-                | .permissions.deny = (((.[0].permissions.deny // []) + (.[1].permissions.deny // [])) | unique)
+                .[0] as $target | .[1] as $source
+                | (($target * $source) | del(.env.CLAUDE_AX_SCREEN_READER))
+                | .permissions.allow = (((($target.permissions.allow // []) + ($source.permissions.allow // [])) | unique))
+                | .permissions.deny = (((($target.permissions.deny // []) + ($source.permissions.deny // [])) | unique))
               ' "$base_claude_dir/settings.json" "${mkClaudeSettings p}" > "$base_claude_dir/settings.json.tmp"
               chmod 600 "$base_claude_dir/settings.json.tmp"
               mv "$base_claude_dir/settings.json.tmp" "$base_claude_dir/settings.json"
@@ -650,10 +652,10 @@ in
           install -m 600 "${mkAgySettings p}" "$agy_dest_dir/settings.json"
         else
           ${pkgs.jq}/bin/jq -s '
-            (.[0] * .[1])
-            | .permissions.allow = (((.[0].permissions.allow // []) + (.[1].permissions.allow // [])) | unique)
-            | .permissions.deny = (((.[0].permissions.deny // []) + (.[1].permissions.deny // [])) | unique)
-            | .permissions.ask = (((.[0].permissions.ask // []) + (.[1].permissions.ask // [])) | unique)
+            .[0] as $target | .[1] as $source | ($target * $source)
+            | .permissions.allow = (((($target.permissions.allow // []) + ($source.permissions.allow // [])) | unique))
+            | .permissions.deny = (((($target.permissions.deny // []) + ($source.permissions.deny // [])) | unique))
+            | .permissions.ask = (((($target.permissions.ask // []) + ($source.permissions.ask // [])) | unique))
           ' "$agy_dest_dir/settings.json" "${mkAgySettings p}" > "$agy_dest_dir/settings.json.tmp"
           chmod 600 "$agy_dest_dir/settings.json.tmp"
           mv "$agy_dest_dir/settings.json.tmp" "$agy_dest_dir/settings.json"
@@ -666,10 +668,10 @@ in
               install -m 600 "${mkAgySettings p}" "$base_agy_dir/settings.json"
             else
               ${pkgs.jq}/bin/jq -s '
-                (.[0] * .[1])
-                | .permissions.allow = (((.[0].permissions.allow // []) + (.[1].permissions.allow // [])) | unique)
-                | .permissions.deny = (((.[0].permissions.deny // []) + (.[1].permissions.deny // [])) | unique)
-                | .permissions.ask = (((.[0].permissions.ask // []) + (.[1].permissions.ask // [])) | unique)
+                .[0] as $target | .[1] as $source | ($target * $source)
+                | .permissions.allow = (((($target.permissions.allow // []) + ($source.permissions.allow // [])) | unique))
+                | .permissions.deny = (((($target.permissions.deny // []) + ($source.permissions.deny // [])) | unique))
+                | .permissions.ask = (((($target.permissions.ask // []) + ($source.permissions.ask // [])) | unique))
               ' "$base_agy_dir/settings.json" "${mkAgySettings p}" > "$base_agy_dir/settings.json.tmp"
               chmod 600 "$base_agy_dir/settings.json.tmp"
               mv "$base_agy_dir/settings.json.tmp" "$base_agy_dir/settings.json"
@@ -684,10 +686,10 @@ in
             install -m 600 "${mkAgySettings p}" "$restricted_agy_dir/settings.json"
           else
             ${pkgs.jq}/bin/jq -s '
-              (.[0] * .[1])
-              | .permissions.allow = (((.[0].permissions.allow // []) + (.[1].permissions.allow // [])) | unique)
-              | .permissions.deny = (((.[0].permissions.deny // []) + (.[1].permissions.deny // [])) | unique)
-              | .permissions.ask = (((.[0].permissions.ask // []) + (.[1].permissions.ask // [])) | unique)
+              .[0] as $target | .[1] as $source | ($target * $source)
+              | .permissions.allow = (((($target.permissions.allow // []) + ($source.permissions.allow // [])) | unique))
+              | .permissions.deny = (((($target.permissions.deny // []) + ($source.permissions.deny // [])) | unique))
+              | .permissions.ask = (((($target.permissions.ask // []) + ($source.permissions.ask // [])) | unique))
             ' "$restricted_agy_dir/settings.json" "${mkAgySettings p}" > "$restricted_agy_dir/settings.json.tmp"
             chmod 600 "$restricted_agy_dir/settings.json.tmp"
             mv "$restricted_agy_dir/settings.json.tmp" "$restricted_agy_dir/settings.json"
