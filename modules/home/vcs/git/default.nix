@@ -124,6 +124,99 @@ let
     exec ${ssh-keygen} "''${new_args[@]}"
   '';
 
+  pre-push-hook = pkgs.writeShellScript "git-pre-push" ''
+    set -euo pipefail
+
+    remote_name="''${1:-}"
+    remote_url="''${2:-}"
+    zero="0000000000000000000000000000000000000000"
+
+    stdin_data="$(${pkgs.coreutils}/bin/cat)"
+    if [ -z "$stdin_data" ]; then
+      exit 0
+    fi
+
+    while IFS=' ' read -r local_ref local_sha remote_ref remote_sha; do
+      [ -z "$local_ref" ] && continue
+
+      # Branch or ref deletion
+      if [ "$local_sha" = "$zero" ]; then
+        continue
+      fi
+
+      if [ "$remote_sha" = "$zero" ]; then
+        if [ -n "$remote_name" ] && ${pkgs.git}/bin/git for-each-ref --format='%(refname)' "refs/remotes/$remote_name" 2>/dev/null | ${pkgs.gnugrep}/bin/grep -q .; then
+          commits="$(${pkgs.git}/bin/git rev-list "$local_sha" --not --remotes="$remote_name")"
+        elif ${pkgs.git}/bin/git for-each-ref --format='%(refname)' refs/remotes/ 2>/dev/null | ${pkgs.gnugrep}/bin/grep -q .; then
+          commits="$(${pkgs.git}/bin/git rev-list "$local_sha" --not --remotes)"
+        else
+          commits="$(${pkgs.git}/bin/git rev-list "$local_sha")"
+        fi
+      else
+        commits="$(${pkgs.git}/bin/git rev-list "$remote_sha..$local_sha")"
+      fi
+
+      for commit in $commits; do
+        sig_status="$(${pkgs.git}/bin/git log -1 --format='%G?' "$commit" 2>/dev/null || echo "N")"
+        case "$sig_status" in
+          G|U)
+            ;;
+          *)
+            echo "error: push rejected: commit $commit is not cryptographically signed (signature status: $sig_status)" >&2
+            echo "commit details: $(${pkgs.git}/bin/git log -1 --format='%h - %an: %s' "$commit" 2>/dev/null)" >&2
+            echo "all commits must be cryptographically signed with a valid SSH or GPG key before pushing." >&2
+            exit 1
+            ;;
+        esac
+      done
+    done <<< "$stdin_data"
+
+    git_dir="$(${pkgs.git}/bin/git rev-parse --git-dir 2>/dev/null || true)"
+    if [ -n "$git_dir" ] && [ -f "$git_dir/hooks/pre-push" ] && [ -x "$git_dir/hooks/pre-push" ]; then
+      current_script="$(${pkgs.coreutils}/bin/realpath "$0")"
+      local_hook="$(${pkgs.coreutils}/bin/realpath "$git_dir/hooks/pre-push")"
+      if [ "$current_script" != "$local_hook" ]; then
+        printf '%s\n' "$stdin_data" | "$git_dir/hooks/pre-push" "$remote_name" "$remote_url"
+      fi
+    fi
+
+    exit 0
+  '';
+
+  post-checkout-hook = pkgs.writeShellScript "git-post-checkout" ''
+    set -euo pipefail
+
+    prev_head="''${1:-}"
+    new_head="''${2:-}"
+    is_branch_checkout="''${3:-0}"
+
+    if [ "$is_branch_checkout" -ne 1 ]; then
+      exit 0
+    fi
+
+    branch="$(${pkgs.git}/bin/git symbolic-ref --quiet --short HEAD 2>/dev/null || true)"
+    if [ -n "$branch" ]; then
+      upstream="$(${pkgs.git}/bin/git rev-parse --symbolic-full-name --abbrev-ref '@{u}' 2>/dev/null || true)"
+      if [ -z "$upstream" ]; then
+        preferred_remote="$(${pkgs.git}/bin/git config checkout.defaultRemote 2>/dev/null || echo "origin")"
+        if ${pkgs.git}/bin/git rev-parse --verify --quiet "refs/remotes/$preferred_remote/$branch" >/dev/null 2>&1; then
+          ${pkgs.git}/bin/git branch --set-upstream-to="$preferred_remote/$branch" "$branch" >/dev/null 2>&1 || true
+        fi
+      fi
+    fi
+
+    git_dir="$(${pkgs.git}/bin/git rev-parse --git-dir 2>/dev/null || true)"
+    if [ -n "$git_dir" ] && [ -f "$git_dir/hooks/post-checkout" ] && [ -x "$git_dir/hooks/post-checkout" ]; then
+      current_script="$(${pkgs.coreutils}/bin/realpath "$0")"
+      local_hook="$(${pkgs.coreutils}/bin/realpath "$git_dir/hooks/post-checkout")"
+      if [ "$current_script" != "$local_hook" ]; then
+        exec "$git_dir/hooks/post-checkout" "$@"
+      fi
+    fi
+
+    exit 0
+  '';
+
   gitIncludeIfs = listToAttrs (
     concatMap (
       p:
@@ -165,6 +258,7 @@ in
           logAllRefUpdates = true;
           precomposeunicode = true;
           whitespace = "trailing-space,space-before-tab";
+          hooksPath = "${config.xdg.configHome}/git/hooks";
         };
         alias =
           let
@@ -184,6 +278,7 @@ in
         merge.tool = "${pkgs.vim}/bin/vimdiff";
         mergetool.keepBackup = true;
         branch.autoSetupMerge = "simple";
+        checkout.defaultRemote = "origin";
         pull.rebase = true;
         push.autoSetupRemote = true;
         push.default = "simple";
@@ -322,6 +417,16 @@ in
         ".derived_data/"
         "*.mp4"
       ];
+    };
+
+    xdg.configFile."git/hooks/pre-push" = {
+      source = pre-push-hook;
+      executable = true;
+    };
+
+    xdg.configFile."git/hooks/post-checkout" = {
+      source = post-checkout-hook;
+      executable = true;
     };
 
     home.packages = with pkgs; [
