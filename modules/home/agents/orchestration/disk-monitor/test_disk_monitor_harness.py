@@ -8,6 +8,7 @@ from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 from disk_monitor_harness import (
+    dispatch_local_notification,
     evaluate_and_step,
     format_concise_prompt,
     get_disk_metrics,
@@ -171,6 +172,62 @@ class TestOfflineMetalDiskMonitorHarness(unittest.TestCase):
         self.assertIn("decreased by 2.50 percentage points", prompt)
         self.assertIn("Current Free: 80.0 GB", prompt)
         self.assertIn("Prior Baseline: 85.0 GB", prompt)
+
+    @patch("sys.platform", "darwin")
+    @patch("subprocess.run")
+    def test_dispatch_local_notification_banner_and_modal(
+        self, mock_subproc: MagicMock
+    ) -> None:
+        mock_subproc.return_value = MagicMock(returncode=0, stdout="button returned:OK", stderr="")
+
+        dispatch_local_notification(
+            title="Disk Alert",
+            message="Storage dropped 1.5%",
+            modal=True,
+            timeout_seconds=30,
+        )
+
+        self.assertEqual(mock_subproc.call_count, 2)
+
+        # Call 1: Notification banner with sound
+        banner_call = mock_subproc.call_args_list[0][0][0]
+        self.assertEqual(banner_call[0], "osascript")
+        self.assertIn('display notification "Storage dropped 1.5%" with title "Disk Alert" sound name "default"', banner_call[2])
+
+        # Call 2: Critical modal alert with timeout
+        alert_call = mock_subproc.call_args_list[1][0][0]
+        self.assertEqual(alert_call[0], "osascript")
+        self.assertIn('display alert "Disk Alert" message "Storage dropped 1.5%" as critical giving up after 30', alert_call[2])
+
+    @patch("sys.platform", "darwin")
+    @patch("subprocess.run")
+    def test_dispatch_local_notification_no_modal(
+        self, mock_subproc: MagicMock
+    ) -> None:
+        mock_subproc.return_value = MagicMock(returncode=0, stdout="", stderr="")
+
+        dispatch_local_notification(
+            title="Disk Alert",
+            message="Storage dropped 1.5%",
+            modal=False,
+        )
+
+        self.assertEqual(mock_subproc.call_count, 1)
+        banner_call = mock_subproc.call_args_list[0][0][0]
+        self.assertEqual(banner_call[0], "osascript")
+        self.assertIn('display notification "Storage dropped 1.5%" with title "Disk Alert" sound name "default"', banner_call[2])
+
+    @patch("sys.platform", "linux")
+    @patch("subprocess.run")
+    def test_dispatch_local_notification_non_darwin(
+        self, mock_subproc: MagicMock
+    ) -> None:
+        dispatch_local_notification(
+            title="Disk Alert",
+            message="Storage dropped 1.5%",
+            modal=True,
+        )
+        mock_subproc.assert_not_called()
 
 
 if __name__ == "__main__":

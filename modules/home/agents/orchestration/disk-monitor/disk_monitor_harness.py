@@ -97,15 +97,53 @@ def format_concise_prompt(
     )
 
 
-def dispatch_local_notification(title: str, message: str) -> None:
-    """Send local notification banner on macOS using osascript."""
+def dispatch_local_notification(
+    title: str,
+    message: str,
+    modal: bool = True,
+    timeout_seconds: int = 60,
+) -> None:
+    """Send local notification banner and interactive modal alert on macOS."""
     if sys.platform != "darwin":
         return
-    script = f'display notification "{message}" with title "{title}"'
+
+    clean_title = title.replace('"', '\\"')
+    clean_message = message.replace('"', '\\"')
+
+    # 1. Notification banner with default sound
+    banner_script = (
+        f'display notification "{clean_message}" with title "{clean_title}" sound name "default"'
+    )
     try:
-        subprocess.run(["osascript", "-e", script], check=False, capture_output=True)
+        proc = subprocess.run(
+            ["osascript", "-e", banner_script],
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=10,
+        )
+        if proc.returncode != 0:
+            log(f"notification banner failed: {proc.stderr.strip()}")
     except Exception as exc:
-        log(f"notification dispatch failed: {exc}")
+        log(f"notification banner dispatch failed: {exc}")
+
+    # 2. Interactive modal dialog to guarantee delivery regardless of Focus/DND mode
+    if modal:
+        alert_script = (
+            f'display alert "{clean_title}" message "{clean_message}" as critical giving up after {timeout_seconds}'
+        )
+        try:
+            proc = subprocess.run(
+                ["osascript", "-e", alert_script],
+                capture_output=True,
+                text=True,
+                check=False,
+                timeout=timeout_seconds + 5,
+            )
+            if proc.returncode != 0:
+                log(f"modal alert dialog failed: {proc.stderr.strip()}")
+        except Exception as exc:
+            log(f"modal alert dialog dispatch failed: {exc}")
 
 
 def invoke_offline_metal_model(
@@ -217,6 +255,8 @@ def evaluate_and_step(
     model_path: Path = DEFAULT_MODEL_PATH,
     gpu_layers: int = DEFAULT_GPU_LAYERS,
     simulated_current: dict[str, float] | None = None,
+    modal: bool = True,
+    modal_timeout: int = 60,
 ) -> bool:
     """Perform a single evaluation step. Returns True if an alert workflow was triggered."""
     current = simulated_current if simulated_current is not None else get_disk_metrics(mount_point)
@@ -248,6 +288,8 @@ def evaluate_and_step(
         dispatch_local_notification(
             title="Disk Space Alert",
             message=f"Free storage dropped by {delta:.2f}%. Remaining: {current['free_gb']} GB ({current['free_pct']:.1f}%).",
+            modal=modal,
+            timeout_seconds=modal_timeout,
         )
 
         # Reset baseline to current level following alert
@@ -315,6 +357,25 @@ def parse_args() -> argparse.Namespace:
         help="Agent invocation runner mechanism (default: llama_metal)",
     )
     parser.add_argument(
+        "--modal",
+        dest="modal",
+        action="store_true",
+        default=True,
+        help="Display interactive macOS modal alert dialog (default: True)",
+    )
+    parser.add_argument(
+        "--no-modal",
+        dest="modal",
+        action="store_false",
+        help="Disable interactive macOS modal alert dialog",
+    )
+    parser.add_argument(
+        "--modal-timeout",
+        type=int,
+        default=60,
+        help="Timeout in seconds before interactive modal alert dismisses automatically (default: 60)",
+    )
+    parser.add_argument(
         "--daemon",
         action="store_true",
         help="Run continuously in background polling loop rather than single check",
@@ -344,6 +405,8 @@ def main() -> int:
             runner=args.runner,
             model_path=args.model_path,
             gpu_layers=args.gpu_layers,
+            modal=args.modal,
+            modal_timeout=args.modal_timeout,
         )
         return 0
 
@@ -357,6 +420,8 @@ def main() -> int:
                 runner=args.runner,
                 model_path=args.model_path,
                 gpu_layers=args.gpu_layers,
+                modal=args.modal,
+                modal_timeout=args.modal_timeout,
             )
         except Exception as exc:
             log(f"error during evaluation tick: {exc}")

@@ -22,6 +22,8 @@ let
         --gpu-layers "${toString cfg.gpuLayers}" \
         --threshold "${toString cfg.thresholdPercent}" \
         --mount "${cfg.mountPoint}" \
+        ${if cfg.enableModalAlert then "--modal" else "--no-modal"} \
+        --modal-timeout "${toString cfg.modalTimeoutSeconds}" \
         "$@"
     '';
   };
@@ -61,6 +63,16 @@ in
       type = types.str;
       default = "/";
       description = "Filesystem mount point to monitor";
+    };
+    enableModalAlert = mkOption {
+      type = types.bool;
+      default = true;
+      description = "Display interactive modal alert (display alert as critical) on macOS to guarantee delivery during Focus/DND";
+    };
+    modalTimeoutSeconds = mkOption {
+      type = types.int;
+      default = 60;
+      description = "Timeout in seconds before interactive modal alert dismisses automatically";
     };
     enableLaunchd = mkOption {
       type = types.bool;
