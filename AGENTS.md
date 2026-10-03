@@ -87,7 +87,7 @@ sudo ./result/sw/bin/darwin-rebuild switch --flake .#macbook-personal
 - PRs should state target host/profile, list affected modules, and note manual steps
 - Do not include task lists or checklists in PR descriptions unless explicitly requested
 - All contributions are attributed to the repository owner; no AI agent attribution in commits or PRs
-- **Push safety**: use plain `git push` — never use explicit refspecs or `--force` on `master`/`main`. Verify the current branch before pushing. If `git push` refuses, ask the user. Agents are strictly forbidden from pushing unverified commits to GitHub; if commit signing fails or cannot be configured, stop immediately.
+- **Push safety**: use plain `git push` — never use explicit refspecs or `--force` on `master`/`main`. Verify the current branch before pushing. If `git push` refuses, ask the user.
 
 ## Developer Profile & Agent Identity
 
