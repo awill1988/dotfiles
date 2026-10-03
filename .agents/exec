@@ -1,0 +1,15 @@
+#!/usr/bin/env sh
+# .agents/exec - execute an arbitrary command within the sanitized agent environment
+set -eu
+_dir="$(cd "$(dirname "$0")" && pwd)"
+# shellcheck disable=SC1091
+. "${_dir}/_common.sh"
+
+apply_telemetry_guards
+
+if [ $# -eq 0 ]; then
+  log_error "exec requires at least one command argument"
+  exit 1
+fi
+
+exec "$@"

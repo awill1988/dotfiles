@@ -1,0 +1,7 @@
+#!/usr/bin/env sh
+# .agents/gemini - launch Gemini CLI with repository profile and telemetry guards
+set -eu
+_dir="$(cd "$(dirname "$0")" && pwd)"
+# shellcheck disable=SC1091
+. "${_dir}/_common.sh"
+dispatch_agent gemini "$@"

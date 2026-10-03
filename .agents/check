@@ -1,0 +1,77 @@
+#!/usr/bin/env sh
+# .agents/check - validate instruction authority, attribution invariants, and push safety
+set -eu
+_dir="$(cd "$(dirname "$0")" && pwd)"
+# shellcheck disable=SC1091
+. "${_dir}/_common.sh"
+
+log_info "running repository agent checks..."
+failed=0
+
+# 1. Verify AGENTS.md existence
+if [ ! -f "${REPO_ROOT}/AGENTS.md" ]; then
+  log_error "missing canonical AGENTS.md at repository root"
+  failed=1
+else
+  log_info "check passed: canonical AGENTS.md exists"
+fi
+
+# 2. Check compatibility shims
+for shim in CLAUDE.md GEMINI.md AGY.md CODEX.md; do
+  target="${REPO_ROOT}/${shim}"
+  if [ ! -e "$target" ] && [ ! -L "$target" ]; then
+    log_warn "missing compatibility shim: ${shim}"
+  elif [ -L "$target" ]; then
+    link_dest="$(readlink "$target" || true)"
+    if [ "$link_dest" != "AGENTS.md" ] && [ "$link_dest" != "./AGENTS.md" ]; then
+      log_warn "symlink ${shim} points to ${link_dest} instead of AGENTS.md"
+    else
+      log_info "check passed: ${shim} symlink verified"
+    fi
+  else
+    log_info "check passed: ${shim} shim exists"
+  fi
+done
+
+# 3. Check for prohibited AI attribution tags in recent commits and staged changes
+if git rev-parse HEAD >/dev/null 2>&1; then
+  attribution_pattern='(Co-Authored-By|Generated-By|Assisted-By|Reviewed with Claude Code)'
+  matches="$(git log -n 10 --format='%H %s%n%b' | grep -E "$attribution_pattern" || true)"
+  if [ -n "$matches" ]; then
+    log_error "prohibited ai attribution tags found in recent commits:"
+    printf '%s\n' "$matches" >&2
+    failed=1
+  else
+    log_info "check passed: no prohibited ai attribution in recent commits"
+  fi
+
+  staged_matches="$(git diff --cached | grep -E "$attribution_pattern" || true)"
+  if [ -n "$staged_matches" ]; then
+    log_error "prohibited ai attribution tags found in staged changes:"
+    printf '%s\n' "$staged_matches" >&2
+    failed=1
+  fi
+fi
+
+# 4. Check commit signing configuration
+gpg_sign="$(git config commit.gpgsign || echo "false")"
+signing_key="$(git config user.signingkey || echo "")"
+if [ "$gpg_sign" = "true" ] || [ -n "$signing_key" ]; then
+  log_info "check passed: commit signing configured (commit.gpgsign=${gpg_sign})"
+else
+  log_warn "commit signing is not enabled in git config"
+fi
+
+# 5. Check branch push safety
+current_branch="$(git branch --show-current 2>/dev/null || echo "")"
+if [ "$current_branch" = "master" ] || [ "$current_branch" = "main" ]; then
+  log_warn "currently on protected branch: ${current_branch}; direct pushes forbidden"
+elif [ -n "$current_branch" ]; then
+  log_info "check passed: on working branch '${current_branch}'"
+fi
+
+if [ "$failed" -ne 0 ]; then
+  log_error "repository agent checks failed"
+  exit 1
+fi
+log_info "all repository agent checks passed cleanly"

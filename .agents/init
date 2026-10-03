@@ -1,0 +1,47 @@
+#!/usr/bin/env sh
+# .agents/init - bootstrap or verify repository agent files and compatibility shims
+set -eu
+_dir="$(cd "$(dirname "$0")" && pwd)"
+# shellcheck disable=SC1091
+. "${_dir}/_common.sh"
+
+log_info "initializing repository agent environment..."
+
+# Ensure canonical AGENTS.md exists
+if [ ! -f "${REPO_ROOT}/AGENTS.md" ]; then
+  log_info "creating canonical AGENTS.md"
+  cat <<'EOF' > "${REPO_ROOT}/AGENTS.md"
+# Repository Guidelines
+
+## Instruction Authority
+- Treat `AGENTS.md` as the canonical instruction source for this repository
+- Treat `CLAUDE.md`, `GEMINI.md`, `AGY.md`, and `CODEX.md` as compatibility shims or symlinks
+
+## No AI Attribution
+- Never attribute work to any AI system in commits, pull requests, code comments, release notes, changelogs, or contributor metadata
+- Never add AI-related footers or signatures such as `Co-Authored-By`, `Generated-By`, `Assisted-By`, or `Reviewed with Claude Code`
+EOF
+else
+  log_info "canonical AGENTS.md is present"
+fi
+
+# Create compatibility shims / symlinks
+for shim in CLAUDE.md GEMINI.md AGY.md CODEX.md; do
+  target="${REPO_ROOT}/${shim}"
+  if [ ! -e "$target" ] && [ ! -L "$target" ]; then
+    log_info "creating symlink ${shim} -> AGENTS.md"
+    ln -s AGENTS.md "$target"
+  fi
+done
+
+# Ensure config.env template exists
+if [ ! -f "${REPO_ROOT}/.agents/config.env" ]; then
+  cat <<'EOF' > "${REPO_ROOT}/.agents/config.env"
+# repository-specific agent configuration
+# export CODE_AGENT="agy"
+# export LOG_LEVEL="info"
+EOF
+  log_info "created .agents/config.env template"
+fi
+
+log_info "initialization complete"
