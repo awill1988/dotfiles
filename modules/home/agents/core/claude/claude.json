@@ -17,7 +17,7 @@
     },
     "firefox-devtools": {
       "command": "npx",
-      "args": ["-y", "firefox-devtools-mcp@latest", "--viewport", "1280x720", "--enableScript", "--outputFile", "/tmp/firefox-devtools-mcp.log"],
+      "args": ["-y", "@mozilla/firefox-devtools-mcp@latest", "--viewport", "1280x720", "--toolPreset", "developer", "--outputFile", "/tmp/firefox-devtools-mcp.log"],
       "env": {}
     },
     "icon-composer": {

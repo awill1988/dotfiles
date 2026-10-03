@@ -155,3 +155,11 @@ env = { PKG_CONFIG_PATH = "/opt/homebrew/lib/pkgconfig" }
 bridge = { port = 4462 }
 gateway_register = true
 
+[[servers]]
+name = "firefox-devtools"
+transport = "stdio"
+command = "npx"
+args = ["--yes", "@mozilla/firefox-devtools-mcp@latest", "--viewport", "1280x720", "--toolPreset", "developer", "--outputFile", "/tmp/firefox-devtools-mcp.log"]
+bridge = { port = 4463 }
+gateway_register = true
+
