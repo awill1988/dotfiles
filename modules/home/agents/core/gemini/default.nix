@@ -5,99 +5,75 @@
   ...
 }:
 let
+  permsLib = import ../../../../developer/permissions.nix { inherit lib; };
   cfg = config.programs.gemini;
   gemini_home = "${config.xdg.configHome}/gemini";
-  settings_source = ./settings.json;
   gemini_instructions_source = ./GEMINI.md;
-  aws_readonly_policy = ''
-    [[rule]]
-    mcpName = "contextforge"
-    toolName = [
-      "aws-call-aws",
-      "aws-suggest-aws-commands",
-      "aws-docs-read-documentation",
-      "aws-docs-read-sections",
-      "aws-docs-search-documentation",
-      "aws-docs-recommend",
-    ]
-    decision = "allow"
-    priority = 900
 
-    [[rule]]
-    toolName = "run_shell_command"
-    commandPrefix = [
-      "aws configure list",
-      "aws sts get-caller-identity",
-      "aws s3 ls",
-      "aws ec2 describe-",
-      "aws iam get-",
-      "aws iam list-",
-      "aws lambda get-",
-      "aws lambda list-",
-      "aws logs describe-",
-      "aws logs get-",
-      "aws rds describe-",
-      "aws ssm describe-",
-      "aws ssm get-",
-      "aws sts get-",
-    ]
-    decision = "allow"
-    priority = 850
+  baseline_permissions =
+    if config ? developer && config.developer ? baseline then
+      config.developer.baseline.agents.permissions
+    else
+      permsLib.defaultPermissions;
 
-    [[rule]]
-    toolName = "run_shell_command"
-    commandPrefix = "aws"
-    decision = "deny"
-    priority = 840
-    denyMessage = "aws shell commands must use an explicit read-only allowlist entry or the read-only aws mcp server"
+  unified_policy = permsLib.toGeminiPolicy baseline_permissions;
 
-    [[rule]]
-    toolName = "run_shell_command"
-    commandPrefix = [
-      "cat",
-      "env",
-      "file",
-      "find",
-      "grep",
-      "head",
-      "ls",
-      "pwd",
-      "rg",
-      "tail",
-      "wc",
-      "which",
-      "whoami",
-    ]
-    decision = "allow"
-    priority = 800
-  '';
+  generated_settings = pkgs.writeText "gemini-settings.json" (
+    builtins.toJSON (
+      (builtins.fromJSON (builtins.readFile ./settings.json))
+      // {
+        tools = permsLib.toGeminiSettings baseline_permissions;
+      }
+    )
+  );
+
   gemini_wrapper = pkgs.writeShellApplication {
     name = "gemini";
     runtimeInputs = with pkgs; [ coreutils ];
     text = ''
-      export GEMINI_TELEMETRY_ENABLED=false
-      export GEMINI_TELEMETRY_TRACES_ENABLED=false
-      export GEMINI_TELEMETRY_LOG_PROMPTS=false
-      export GEMINI_ANALYTICS_DISABLED=true
-      export GEMINI_DISABLE_AUTO_UPDATE=1
-      export GEMINI_UI_ANIMATIONS_DISABLED=true
-      export OTEL_SDK_DISABLED=true
-      export DO_NOT_TRACK=1
+      run_gemini() {
+        policy_file="''${GEMINI_CONFIG_DIR:-${gemini_home}}/policies/permissions.toml"
+        if [ ! -f "$policy_file" ]; then
+          policy_file="${gemini_home}/policies/permissions.toml"
+        fi
+        if [ ! -f "$policy_file" ]; then
+          policy_file="${gemini_home}/policies/aws-readonly.toml"
+        fi
 
-      ${
-        if config.developer.profileRouter != null then
-          ''
-            exec "${config.developer.profileRouter}/bin/profile-router" "${cfg.package}/bin/gemini" --policy "${gemini_home}/policies/aws-readonly.toml" "$@"
-          ''
-        else
-          ''
-            if command -v profile-router >/dev/null 2>&1; then
-              exec profile-router "${cfg.package}/bin/gemini" --policy "${gemini_home}/policies/aws-readonly.toml" "$@"
-            else
-              exec "${cfg.package}/bin/gemini" --policy "${gemini_home}/policies/aws-readonly.toml" "$@"
-            fi
-          ''
+        policy_args=()
+        if [ -f "$policy_file" ]; then
+          policy_args=(--policy "$policy_file")
+        fi
+
+        export GEMINI_TELEMETRY_ENABLED=false
+        export GEMINI_TELEMETRY_TRACES_ENABLED=false
+        export GEMINI_TELEMETRY_LOG_PROMPTS=false
+        export GEMINI_ANALYTICS_DISABLED=true
+        export GEMINI_DISABLE_AUTO_UPDATE=1
+        export GEMINI_UI_ANIMATIONS_DISABLED=true
+        export OTEL_SDK_DISABLED=true
+        export DO_NOT_TRACK=1
+
+        exec "${cfg.package}/bin/gemini" "''${policy_args[@]}" "$@"
       }
+
+      if [ "''${PROFILE_ROUTER_ACTIVE:-0}" = "1" ]; then
+        run_gemini "$@"
+      else
+        export PROFILE_ROUTER_ACTIVE=1
+        ${
+          if config.developer.profileRouter != null then
+            ''exec "${config.developer.profileRouter}/bin/profile-router" "$0" "$@"''
+          else
+            ''
+              if command -v profile-router >/dev/null 2>&1; then
+                exec profile-router "$0" "$@"
+              else
+                run_gemini "$@"
+              fi
+            ''
+        }
+      fi
     '';
   };
 in
@@ -124,20 +100,24 @@ in
     home.sessionVariables.GEMINI_CLI_SYSTEM_SETTINGS_PATH = lib.mkDefault "${gemini_home}/settings.json";
 
     xdg.configFile."gemini/settings.json" = {
-      source = settings_source;
+      source = generated_settings;
       force = true;
     };
     xdg.configFile."gemini/GEMINI.md" = {
       source = gemini_instructions_source;
       force = true;
     };
+    xdg.configFile."gemini/policies/permissions.toml" = {
+      text = unified_policy;
+      force = true;
+    };
     xdg.configFile."gemini/policies/aws-readonly.toml" = {
-      text = aws_readonly_policy;
+      text = unified_policy;
       force = true;
     };
 
     # Backwards compatibility for tools that still look under ~/.gemini
-    home.file.".gemini/settings.json".source = settings_source;
+    home.file.".gemini/settings.json".source = generated_settings;
     home.file.".gemini/GEMINI.md".source = gemini_instructions_source;
   };
 }

@@ -6,6 +6,7 @@
 }:
 with lib;
 let
+  permsLib = import ../../developer/permissions.nix { inherit lib; };
   cfg = config.developer;
   baseline = cfg.baseline;
   profilesList = attrValues cfg.profiles;
@@ -101,7 +102,128 @@ let
           pr = "";
           sessionUrl = false;
         };
+        permissions = permsLib.toClaudePermissions profile.agents.permissions;
       }
+    );
+
+  mkAgySettings =
+    profile:
+    let
+      peers =
+        if profile.name == "work" then
+          [
+            {
+              name = "claude-secondary";
+              bin = "claude";
+              enabled = true;
+            }
+          ]
+        else
+          [
+            {
+              name = "claude";
+              bin = "claude";
+              enabled = true;
+            }
+            {
+              name = "gemini";
+              bin = "gemini";
+              enabled = true;
+            }
+            {
+              name = "codex";
+              bin = "codex";
+              enabled = true;
+            }
+          ];
+    in
+    pkgs.writeText "agy-settings-${profile.name}.json" (
+      builtins.toJSON (
+        {
+          agentEcosystem = {
+            orchestrator = "agy";
+            inherit peers;
+          };
+          privacy = {
+            enableTelemetry = false;
+            interactionCollection = "off";
+            usageStatisticsEnabled = false;
+            telemetry = false;
+          };
+          general = {
+            enableAutoUpdate = false;
+            enableNotifications = false;
+          };
+          ui = {
+            enableAnimations = false;
+            showSpinner = false;
+          };
+          permissions = permsLib.toAgyPermissions profile.agents.permissions;
+          mcpServers = {
+            contextforge = {
+              command = "mcpgw-wrapper";
+            };
+          };
+        }
+        // profile.agents.agy.settings
+      )
+    );
+
+  mkCodexRules =
+    profile:
+    pkgs.writeText "codex-rules-${profile.name}.rules" (
+      permsLib.toCodexRules profile.agents.permissions
+    );
+
+  mkGeminiPolicy =
+    profile:
+    pkgs.writeText "gemini-policy-${profile.name}.toml" (
+      permsLib.toGeminiPolicy profile.agents.permissions
+    );
+
+  mkGeminiSettings =
+    profile:
+    pkgs.writeText "gemini-settings-${profile.name}.json" (
+      builtins.toJSON (
+        {
+          general = {
+            enableAutoUpdate = false;
+            enableNotifications = false;
+            defaultApprovalMode = "default";
+          };
+          ui = {
+            enableAnimations = false;
+            showSpinner = false;
+          };
+          context = {
+            fileName = [
+              "AGENTS.md"
+              "CLAUDE.md"
+              "CONTEXT.md"
+              "GEMINI.md"
+            ];
+          };
+          telemetry = {
+            enabled = false;
+            target = "local";
+            logPrompts = false;
+          };
+          privacy = {
+            usageStatisticsEnabled = false;
+          };
+          security = {
+            disableYoloMode = true;
+            disableAlwaysAllow = true;
+            enablePermanentToolApproval = false;
+            autoAddToPolicyByDefault = false;
+            environmentVariableRedaction = {
+              enabled = true;
+            };
+          };
+          tools = permsLib.toGeminiSettings profile.agents.permissions;
+        }
+        // profile.agents.gemini.settings
+      )
     );
 
   mkOpencodeConfig =
@@ -496,8 +618,11 @@ in
         if [ ! -f "$claude_dest_dir/settings.json" ]; then
           install -m 600 "${mkClaudeSettings p}" "$claude_dest_dir/settings.json"
         else
-          ${pkgs.jq}/bin/jq -s '((.[0] * .[1]) | del(.env.CLAUDE_AX_SCREEN_READER)) | if .permissions.allow then .permissions.allow = ([.permissions.allow[] | if (type == "string" and startswith("Bash(")) then (if (. | sub("^Bash\\("; "") | sub("\\)$"; "") | rtrimstr("*") | rtrimstr(" ") | contains("*")) then empty else . end) else . end] + ["Bash(aws *)"] | unique) else . end' \
-            "$claude_dest_dir/settings.json" "${mkClaudeSettings p}" > "$claude_dest_dir/settings.json.tmp"
+          ${pkgs.jq}/bin/jq -s '
+            ((.[0] * .[1]) | del(.env.CLAUDE_AX_SCREEN_READER))
+            | .permissions.allow = (((.[0].permissions.allow // []) + (.[1].permissions.allow // [])) | unique)
+            | .permissions.deny = (((.[0].permissions.deny // []) + (.[1].permissions.deny // [])) | unique)
+          ' "$claude_dest_dir/settings.json" "${mkClaudeSettings p}" > "$claude_dest_dir/settings.json.tmp"
           chmod 600 "$claude_dest_dir/settings.json.tmp"
           mv "$claude_dest_dir/settings.json.tmp" "$claude_dest_dir/settings.json"
         fi
@@ -508,12 +633,81 @@ in
             if [ ! -f "$base_claude_dir/settings.json" ]; then
               install -m 600 "${mkClaudeSettings p}" "$base_claude_dir/settings.json"
             else
-              ${pkgs.jq}/bin/jq -s '((.[0] * .[1]) | del(.env.CLAUDE_AX_SCREEN_READER)) | if .permissions.allow then .permissions.allow = ([.permissions.allow[] | if (type == "string" and startswith("Bash(")) then (if (. | sub("^Bash\\("; "") | sub("\\)$"; "") | rtrimstr("*") | rtrimstr(" ") | contains("*")) then empty else . end) else . end] + ["Bash(aws *)"] | unique) else . end' \
-                "$base_claude_dir/settings.json" "${mkClaudeSettings p}" > "$base_claude_dir/settings.json.tmp"
+              ${pkgs.jq}/bin/jq -s '
+                ((.[0] * .[1]) | del(.env.CLAUDE_AX_SCREEN_READER))
+                | .permissions.allow = (((.[0].permissions.allow // []) + (.[1].permissions.allow // [])) | unique)
+                | .permissions.deny = (((.[0].permissions.deny // []) + (.[1].permissions.deny // [])) | unique)
+              ' "$base_claude_dir/settings.json" "${mkClaudeSettings p}" > "$base_claude_dir/settings.json.tmp"
               chmod 600 "$base_claude_dir/settings.json.tmp"
               mv "$base_claude_dir/settings.json.tmp" "$base_claude_dir/settings.json"
             fi
           done
+        ''}
+
+        agy_dest_dir="$profile_dir/antigravity"
+        mkdir -p "$agy_dest_dir"
+        if [ ! -f "$agy_dest_dir/settings.json" ]; then
+          install -m 600 "${mkAgySettings p}" "$agy_dest_dir/settings.json"
+        else
+          ${pkgs.jq}/bin/jq -s '
+            (.[0] * .[1])
+            | .permissions.allow = (((.[0].permissions.allow // []) + (.[1].permissions.allow // [])) | unique)
+            | .permissions.deny = (((.[0].permissions.deny // []) + (.[1].permissions.deny // [])) | unique)
+            | .permissions.ask = (((.[0].permissions.ask // []) + (.[1].permissions.ask // [])) | unique)
+          ' "$agy_dest_dir/settings.json" "${mkAgySettings p}" > "$agy_dest_dir/settings.json.tmp"
+          chmod 600 "$agy_dest_dir/settings.json.tmp"
+          mv "$agy_dest_dir/settings.json.tmp" "$agy_dest_dir/settings.json"
+        fi
+
+        ${optionalString (p.name == primaryProfile.name) ''
+          for base_agy_dir in "${config.home.homeDirectory}/.gemini/antigravity-cli" "${config.xdg.configHome}/antigravity"; do
+            mkdir -p "$base_agy_dir"
+            if [ ! -f "$base_agy_dir/settings.json" ]; then
+              install -m 600 "${mkAgySettings p}" "$base_agy_dir/settings.json"
+            else
+              ${pkgs.jq}/bin/jq -s '
+                (.[0] * .[1])
+                | .permissions.allow = (((.[0].permissions.allow // []) + (.[1].permissions.allow // [])) | unique)
+                | .permissions.deny = (((.[0].permissions.deny // []) + (.[1].permissions.deny // [])) | unique)
+                | .permissions.ask = (((.[0].permissions.ask // []) + (.[1].permissions.ask // [])) | unique)
+              ' "$base_agy_dir/settings.json" "${mkAgySettings p}" > "$base_agy_dir/settings.json.tmp"
+              chmod 600 "$base_agy_dir/settings.json.tmp"
+              mv "$base_agy_dir/settings.json.tmp" "$base_agy_dir/settings.json"
+            fi
+          done
+        ''}
+
+        ${optionalString (p.name == "work") ''
+          restricted_agy_dir="${config.xdg.configHome}/antigravity-restricted"
+          mkdir -p "$restricted_agy_dir"
+          if [ ! -f "$restricted_agy_dir/settings.json" ]; then
+            install -m 600 "${mkAgySettings p}" "$restricted_agy_dir/settings.json"
+          else
+            ${pkgs.jq}/bin/jq -s '
+              (.[0] * .[1])
+              | .permissions.allow = (((.[0].permissions.allow // []) + (.[1].permissions.allow // [])) | unique)
+              | .permissions.deny = (((.[0].permissions.deny // []) + (.[1].permissions.deny // [])) | unique)
+              | .permissions.ask = (((.[0].permissions.ask // []) + (.[1].permissions.ask // [])) | unique)
+            ' "$restricted_agy_dir/settings.json" "${mkAgySettings p}" > "$restricted_agy_dir/settings.json.tmp"
+            chmod 600 "$restricted_agy_dir/settings.json.tmp"
+            mv "$restricted_agy_dir/settings.json.tmp" "$restricted_agy_dir/settings.json"
+          fi
+        ''}
+
+        mkdir -p "$codex_dest_dir/rules"
+        install -m 600 "${mkCodexRules p}" "$codex_dest_dir/rules/default.rules"
+        ${optionalString (p.name == primaryProfile.name) ''
+          mkdir -p "${config.xdg.configHome}/codex/rules"
+          install -m 600 "${mkCodexRules p}" "${config.xdg.configHome}/codex/rules/default.rules"
+        ''}
+
+        mkdir -p "$profile_dir/gemini/policies"
+        install -m 600 "${mkGeminiPolicy p}" "$profile_dir/gemini/policies/permissions.toml"
+        install -m 600 "${mkGeminiSettings p}" "$profile_dir/gemini/settings.json"
+        ${optionalString (p.name == primaryProfile.name) ''
+          mkdir -p "${config.xdg.configHome}/gemini/policies"
+          install -m 600 "${mkGeminiPolicy p}" "${config.xdg.configHome}/gemini/policies/permissions.toml"
+          install -m 600 "${mkGeminiSettings p}" "${config.xdg.configHome}/gemini/settings.json"
         ''}
 
         if [ ! -f "$claude_dest_dir/.claude.json" ]; then

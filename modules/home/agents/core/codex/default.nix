@@ -10,87 +10,13 @@ let
   local_skills_dir = "${config.home.homeDirectory}/.local/share/agent-skills";
   config_source = ./config.toml;
   agents_override_source = ./AGENTS.override.md;
-  default_rules = ''
-    prefix_rule(
-        pattern = ["aws", "configure", "list"],
-        decision = "allow",
-    )
-
-    prefix_rule(
-        pattern = ["aws", "sts", "get-caller-identity"],
-        decision = "allow",
-    )
-
-    prefix_rule(
-        pattern = ["aws", "s3", "ls"],
-        decision = "allow",
-    )
-
-    prefix_rule(
-        pattern = ["ls"],
-        decision = "allow",
-    )
-
-    prefix_rule(
-        pattern = ["cat"],
-        decision = "allow",
-    )
-
-    prefix_rule(
-        pattern = ["head"],
-        decision = "allow",
-    )
-
-    prefix_rule(
-        pattern = ["tail"],
-        decision = "allow",
-    )
-
-    prefix_rule(
-        pattern = ["rg"],
-        decision = "allow",
-    )
-
-    prefix_rule(
-        pattern = ["grep"],
-        decision = "allow",
-    )
-
-    prefix_rule(
-        pattern = ["find"],
-        decision = "allow",
-    )
-
-    prefix_rule(
-        pattern = ["which"],
-        decision = "allow",
-    )
-
-    prefix_rule(
-        pattern = ["file"],
-        decision = "allow",
-    )
-
-    prefix_rule(
-        pattern = ["wc"],
-        decision = "allow",
-    )
-
-    prefix_rule(
-        pattern = ["env"],
-        decision = "allow",
-    )
-
-    prefix_rule(
-        pattern = ["whoami"],
-        decision = "allow",
-    )
-
-    prefix_rule(
-        pattern = ["pwd"],
-        decision = "allow",
-    )
-  '';
+  permsLib = import ../../../../developer/permissions.nix { inherit lib; };
+  baseline_permissions =
+    if config ? developer && config.developer ? baseline then
+      config.developer.baseline.agents.permissions
+    else
+      permsLib.defaultPermissions;
+  default_rules = permsLib.toCodexRules baseline_permissions;
   codex_wrapper = pkgs.writeShellApplication {
     name = "codex";
     runtimeInputs = with pkgs; [ coreutils ];

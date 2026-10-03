@@ -6,6 +6,7 @@
 }:
 with lib;
 let
+  permsLib = import ./permissions.nix { inherit lib; };
   mcp_server_type = types.submodule {
     options = {
       command = mkOption {
@@ -237,6 +238,50 @@ let
           type = types.attrs;
           default = { };
           description = "OpenCode settings";
+        };
+      };
+
+      permissions = {
+        commands = {
+          allow = mkOption {
+            type = types.listOf types.str;
+            default = permsLib.defaultPermissions.commands.allow;
+            description = "Allowed shell command patterns (e.g. 'aws *', 'git *', 'nix *')";
+          };
+          deny = mkOption {
+            type = types.listOf types.str;
+            default = permsLib.defaultPermissions.commands.deny;
+            description = "Explicitly denied shell command patterns";
+          };
+        };
+        mcp = {
+          allow = mkOption {
+            type = types.listOf types.str;
+            default = permsLib.defaultPermissions.mcp.allow;
+            description = "Allowed MCP tools (<server>/<tool> or <server>/*)";
+          };
+          deny = mkOption {
+            type = types.listOf types.str;
+            default = permsLib.defaultPermissions.mcp.deny;
+            description = "Explicitly denied MCP tools (<server>/<tool> or <server>/*)";
+          };
+        };
+        filesystem = {
+          allowRead = mkOption {
+            type = types.listOf types.str;
+            default = permsLib.defaultPermissions.filesystem.allowRead;
+            description = "Allowed filesystem read paths";
+          };
+          allowWrite = mkOption {
+            type = types.listOf types.str;
+            default = permsLib.defaultPermissions.filesystem.allowWrite;
+            description = "Allowed filesystem write paths";
+          };
+          sensitive = mkOption {
+            type = types.listOf types.str;
+            default = permsLib.defaultPermissions.filesystem.sensitive;
+            description = "Sensitive filesystem paths requiring explicit user permission";
+          };
         };
       };
     };

@@ -5,6 +5,7 @@
   ...
 }:
 let
+  permsLib = import ../../../../developer/permissions.nix { inherit lib; };
   cfg = config.programs.agy;
   home_dir = config.home.homeDirectory;
   agy_home = "${config.xdg.configHome}/antigravity";
@@ -47,12 +48,12 @@ let
         enableAnimations = false;
         showSpinner = false;
       };
-      permissions = {
-        allowAllPathCommands = true;
-        allowReadTools = true;
-        allowedMcpTools = [ "*" ];
-        allowedShellCommands = [ "*" ];
-      };
+      permissions = permsLib.toAgyPermissions (
+        if config ? developer && config.developer ? baseline then
+          config.developer.baseline.agents.permissions
+        else
+          permsLib.defaultPermissions
+      );
       mcpServers = {
         contextforge = {
           command = "mcpgw-wrapper";
@@ -88,12 +89,12 @@ let
         enableAnimations = false;
         showSpinner = false;
       };
-      permissions = {
-        allowAllPathCommands = true;
-        allowReadTools = true;
-        allowedMcpTools = [ "*" ];
-        allowedShellCommands = [ "*" ];
-      };
+      permissions = permsLib.toAgyPermissions (
+        if config ? developer && config.developer.profiles ? work then
+          config.developer.profiles.work.agents.permissions
+        else
+          permsLib.defaultPermissions
+      );
       mcpServers = {
         contextforge = {
           command = "mcpgw-wrapper";
@@ -161,20 +162,43 @@ let
     export OTEL_SDK_DISABLED=true
     export DO_NOT_TRACK=1
 
-    ${
-      if config.developer.profileRouter != null then
-        ''
-          exec "${config.developer.profileRouter}/bin/profile-router" "${cfg.package}/bin/agy" "$@"
-        ''
-      else
-        ''
-          if command -v profile-router >/dev/null 2>&1; then
-            exec profile-router "${cfg.package}/bin/agy" "$@"
-          else
-            exec "${cfg.package}/bin/agy" "$@"
-          fi
-        ''
+    run_agy() {
+      if [ -n "''${AGY_CONFIG_DIR:-}" ] && [ -f "''${AGY_CONFIG_DIR}/settings.json" ]; then
+        target="${home_dir}/.gemini/antigravity-cli/settings.json"
+        mkdir -p "$(dirname "$target")"
+        if [ ! -f "$target" ]; then
+          ${pkgs.coreutils}/bin/install -m 600 "''${AGY_CONFIG_DIR}/settings.json" "$target"
+        else
+          ${pkgs.jq}/bin/jq -s '
+            (.[0] * .[1])
+            | .permissions.allow = (((.[0].permissions.allow // []) + (.[1].permissions.allow // [])) | unique)
+            | .permissions.deny = (((.[0].permissions.deny // []) + (.[1].permissions.deny // [])) | unique)
+            | .permissions.ask = (((.[0].permissions.ask // []) + (.[1].permissions.ask // [])) | unique)
+          ' "$target" "''${AGY_CONFIG_DIR}/settings.json" > "$target.tmp"
+          ${pkgs.coreutils}/bin/chmod 600 "$target.tmp"
+          ${pkgs.coreutils}/bin/mv "$target.tmp" "$target"
+        fi
+      fi
+      exec "${cfg.package}/bin/agy" "$@"
     }
+
+    if [ "''${PROFILE_ROUTER_ACTIVE:-0}" = "1" ]; then
+      run_agy "$@"
+    else
+      export PROFILE_ROUTER_ACTIVE=1
+      ${
+        if config.developer.profileRouter != null then
+          ''exec "${config.developer.profileRouter}/bin/profile-router" "$0" "$@"''
+        else
+          ''
+            if command -v profile-router >/dev/null 2>&1; then
+              exec profile-router "$0" "$@"
+            else
+              run_agy "$@"
+            fi
+          ''
+      }
+    fi
   '';
 in
 {
@@ -212,19 +236,24 @@ in
           rm -f "$target"
         fi
 
-        # Install or refresh settings if target does not exist or template source changed
+        # Install or refresh settings if target does not exist or merge with source
         if [[ ! -e "$target" ]]; then
           install -m 600 "$source" "$target"
         else
-          # Update default permissions structure if missing wildcard permissions
-          if grep -q '"allowedShellCommands":\s*\[\s*"aws' "$target"; then
-            install -m 600 "$source" "$target"
-          fi
+          ${pkgs.jq}/bin/jq -s '
+            (.[0] * .[1])
+            | .permissions.allow = (((.[0].permissions.allow // []) + (.[1].permissions.allow // [])) | unique)
+            | .permissions.deny = (((.[0].permissions.deny // []) + (.[1].permissions.deny // [])) | unique)
+            | .permissions.ask = (((.[0].permissions.ask // []) + (.[1].permissions.ask // [])) | unique)
+          ' "$target" "$source" > "$target.tmp"
+          chmod 600 "$target.tmp"
+          mv "$target.tmp" "$target"
         fi
       }
 
       seed_agy_settings "${primary_settings_src}" "${agy_home}/settings.json"
       seed_agy_settings "${restricted_settings_src}" "${agy_restricted_home}/settings.json"
+      seed_agy_settings "${primary_settings_src}" "${home_dir}/.gemini/antigravity-cli/settings.json"
     '';
 
     xdg.configFile."antigravity/AGY.md".source = claude_instructions_source;
