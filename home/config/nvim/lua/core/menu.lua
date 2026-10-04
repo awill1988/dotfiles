@@ -128,24 +128,134 @@ function M.ai_chat_selection()
 	end)
 end
 
--- 4. Setup PopUp menu & Keymaps
+local function has_lsp_method(bufnr, method)
+	return #vim.lsp.get_clients({ bufnr = bufnr, method = method }) > 0
+end
+
+local function copy_selection()
+	local selection = M.get_visual_selection()
+	if selection ~= "" then
+		vim.fn.setreg("+", selection)
+	end
+end
+
+local function paste_clipboard(context)
+	if context.visual then
+		vim.cmd([[normal! "+P]])
+	else
+		vim.cmd([[normal! "+gP]])
+	end
+end
+
+local function editable_buffer_items(context)
+	local items = {}
+	if context.visual then
+		table.insert(items, { label = "AI Chat Selection", key = "a", action = M.ai_chat_selection })
+		table.insert(items, { label = "Cut", key = "x", action = function() vim.cmd([[normal! "+x]]) end })
+		table.insert(items, { label = "Copy", key = "y", action = copy_selection })
+		table.insert(items, { label = "Paste", key = "p", action = paste_clipboard })
+		table.insert(items, { label = "Delete", key = "d", action = function() vim.cmd([[normal! "_x]]) end })
+		table.insert(items, { separator = true })
+	else
+		table.insert(items, {
+			label = "Open Target",
+			key = "o",
+			action = function()
+				local target = vim.fn.expand("<cfile>")
+				if target ~= "" then
+					vim.ui.open(target)
+				end
+			end,
+		})
+		if vim.treesitter.highlighter.active[context.bufnr] then
+			table.insert(items, { label = "Inspect Syntax", key = "i", action = function() vim.cmd("Inspect") end })
+		end
+	end
+
+	if has_lsp_method(context.bufnr, "textDocument/definition") then
+		table.insert(items, { label = "Go to Definition", key = "g", action = vim.lsp.buf.definition })
+	end
+	if has_lsp_method(context.bufnr, "textDocument/references") then
+		table.insert(items, { label = "Find References", key = "r", action = vim.lsp.buf.references })
+	end
+	if has_lsp_method(context.bufnr, "textDocument/hover") then
+		table.insert(items, { label = "Hover Information", key = "h", action = vim.lsp.buf.hover })
+	end
+	if has_lsp_method(context.bufnr, "textDocument/codeAction") then
+		table.insert(items, { label = "Code Actions", key = "c", action = vim.lsp.buf.code_action })
+	end
+	if not context.visual and has_lsp_method(context.bufnr, "textDocument/rename") then
+		table.insert(items, { label = "Rename Symbol", key = "n", action = vim.lsp.buf.rename })
+	end
+	if has_lsp_method(context.bufnr, "textDocument/formatting") then
+		table.insert(items, { label = "Format Document", key = "f", action = vim.lsp.buf.format })
+	end
+
+	if not context.visual then
+		table.insert(items, { label = "Show Diagnostics", key = "d", action = vim.diagnostic.open_float })
+		table.insert(items, { separator = true })
+		table.insert(items, { label = "Paste", key = "p", action = paste_clipboard })
+		table.insert(items, { label = "Select All", key = "s", action = function() vim.cmd("normal! ggVG") end })
+	end
+	return items
+end
+
+local function terminal_buffer_items(context)
+	local items = {}
+	if context.visual then
+		table.insert(items, { label = "Copy", key = "y", action = copy_selection })
+	end
+	table.insert(items, {
+		label = "Paste",
+		key = "p",
+		action = function()
+			local channel = vim.bo[context.bufnr].channel
+			if channel and channel > 0 then
+				vim.api.nvim_chan_send(channel, vim.fn.getreg("+"))
+			end
+		end,
+	})
+	table.insert(items, { label = "Close Window", key = "w", action = function() vim.cmd("close") end })
+	return items
+end
+
+local function generic_buffer_items(context)
+	local items = {}
+	if context.visual then
+		table.insert(items, { label = "Copy", key = "y", action = copy_selection })
+	end
+	if context.modifiable then
+		table.insert(items, { label = "Paste", key = "p", action = paste_clipboard })
+		table.insert(items, { label = "Select All", key = "s", action = function() vim.cmd("normal! ggVG") end })
+	end
+	table.insert(items, { label = "Close Window", key = "w", action = function() vim.cmd("close") end })
+	return items
+end
+
 function M.setup()
-	-- Clean up default unwanted entries safely
-	pcall(vim.cmd, [[aunmenu PopUp.How-to\ disable\ mouse]])
+	pcall(vim.cmd, "silent! aunmenu PopUp")
 
-	-- Add AI prompt action to PopUp menu for Visual mode
-	pcall(vim.cmd, [[vnoremenu PopUp.AI\ Chat\ Selection <cmd>lua require('core.menu').ai_chat_selection()<CR>]])
+	local context_menu = require("core.context_menu")
+	context_menu.register_provider({
+		name = "terminal",
+		priority = 80,
+		match = function(context) return context.buftype == "terminal" end,
+		build = function(context) return { items = terminal_buffer_items(context) } end,
+	})
+	context_menu.register_provider({
+		name = "editable-buffer",
+		priority = 50,
+		match = function(context) return context.buftype == "" and context.modifiable end,
+		build = function(context) return { items = editable_buffer_items(context) } end,
+	})
+	context_menu.register_provider({
+		name = "generic-buffer",
+		priority = -100,
+		match = function() return true end,
+		build = function(context) return { items = generic_buffer_items(context) } end,
+	})
+	context_menu.setup()
 
-	-- Add LSP and useful editing actions to PopUp menu
-	pcall(vim.cmd, [[anoremenu PopUp.-LspSep- <Nop>]])
-	pcall(vim.cmd, [[anoremenu PopUp.Go\ to\ Definition <cmd>lua vim.lsp.buf.definition()<CR>]])
-	pcall(vim.cmd, [[anoremenu PopUp.Find\ References <cmd>lua vim.lsp.buf.references()<CR>]])
-	pcall(vim.cmd, [[anoremenu PopUp.Hover\ Information <cmd>lua vim.lsp.buf.hover()<CR>]])
-	pcall(vim.cmd, [[anoremenu PopUp.Code\ Actions <cmd>lua vim.lsp.buf.code_action()<CR>]])
-	pcall(vim.cmd, [[anoremenu PopUp.Rename\ Symbol <cmd>lua vim.lsp.buf.rename()<CR>]])
-	pcall(vim.cmd, [[anoremenu PopUp.Format\ Document <cmd>lua vim.lsp.buf.format()<CR>]])
-
-	-- Add keybinding (<leader>ai in visual mode)
 	vim.keymap.set("v", "<leader>ai", function()
 		M.ai_chat_selection()
 	end, { desc = "AI Chat with selection" })
