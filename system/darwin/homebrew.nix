@@ -79,6 +79,7 @@ in
     "macfuse"
     "qgis"
     "tuist"
+    "vlc"
   ]
   ++ optionals install_karabiner_via_homebrew [ "karabiner-elements" ];
 }
