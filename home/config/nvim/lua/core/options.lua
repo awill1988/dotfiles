@@ -19,8 +19,7 @@ for opt, val in pairs(opts) do
 end
 
 -- Set other options
-local colorscheme = require("helpers.colorscheme")
-vim.cmd.colorscheme(colorscheme)
+require("helpers.colorscheme").apply()
 
 -- Ensure cursor line number matches the theme with high visibility when scrolling
 local function setup_cursor_line_nr()

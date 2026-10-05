@@ -1,1 +1,1 @@
-"gruvbox-light"
+"gruvbox-dark"
