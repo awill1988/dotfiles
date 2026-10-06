@@ -324,7 +324,7 @@ rec {
         map (cmd: ''
           prefix_rule(
               pattern = [${lib.concatStringsSep ", " (toTokens cmd)}],
-              decision = "deny",
+              decision = "forbidden",
           )
         '') perms.commands.deny
       );

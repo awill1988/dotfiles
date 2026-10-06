@@ -3,18 +3,80 @@ model = "gpt-5.6-sol"
 model_reasoning_effort = "medium"
 approval_policy = "on-request"
 sandbox_mode = "danger-full-access"
-project_doc_fallback_filenames = ["CLAUDE.md", "GEMINI.md"]
+project_doc_fallback_filenames = ["CLAUDE.md", "AGY.md"]
+check_for_update_on_startup = false
+web_search = "live"
 
-[tools]
-websearch = true
-view_image = true
+[analytics]
+enabled = false
+
+[feedback]
+enabled = false
+
+[otel]
+exporter = "none"
+trace_exporter = "none"
+metrics_exporter = "none"
+log_user_prompt = false
+log_agent_responses = false
+log_guardian_assessments = false
+
+[cloud]
+skills = { enabled = false }
+
+[orchestrator]
+skills = { enabled = false }
+mcp = { enabled = false }
+
+[tool_suggest]
+discoverables = []
+disabled_tools = []
+
+[memories]
+generate_memories = false
+use_memories = false
+dedicated_tools = false
+disable_on_external_context = true
 
 [features]
-rmcp_client = true
+code_mode_host = true
 apps = false
+enable_mcp_apps = false
+codex_apps_mcp_2026_07_28 = false
 plugins = false
 remote_plugin = false
-code_mode_host = true
+plugin_sharing = false
+recommended_plugins = false
+tool_suggest = false
+skill_search = false
+skill_mcp_dependency_install = false
+standalone_web_search = true
+browser_use = false
+browser_use_external = false
+in_app_browser = false
+computer_use = false
+in_app_local_automation = false
+in_app_updates = false
+image_generation = false
+view_image = false
+memories = false
+external_agent_memory_import = false
+chronicle = false
+realtime_conversation = false
+in_app_dictation = false
+analytics_plan_history = false
+api_key_model_discovery = false
+runtime_metrics = false
+agent_message_board = false
+auth_elicitation = false
+tool_call_mcp_elicitation = false
+use_xaa = false
+bedrock_setup_wizard = false
+network_proxy = false
+respect_system_proxy = false
+system_proxy_fallback = false
+prevent_idle_sleep = false
+daemon_auto_start = false
 
 [mcp_servers.contextforge]
 command = "mcpgw-wrapper"
@@ -41,16 +103,6 @@ args = ["-y", "--package=icon-composer-mcp@latest", "--call", "node \"$(realpath
 inherit = "all"
 ignore_default_excludes = true
 experimental_use_profile = true
-
-[analytics]
-enabled = false
-
-[telemetry]
-enabled = false
-
-[update]
-auto_update = "disabled"
-check_for_updates = false
 
 [ui]
 enable_animations = false

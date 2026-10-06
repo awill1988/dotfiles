@@ -126,6 +126,12 @@ in
               ${pkgs.gnused}/bin/sed -i "/^\[features\]/a $feature = false" "$config_target"
             fi
           done
+
+          # Purge unrecognized/deprecated keys that trigger strict config warnings
+          ${pkgs.gnused}/bin/sed -i '/^[[:space:]]*rmcp_client[[:space:]]*=/d' "$config_target"
+          ${pkgs.gnused}/bin/sed -i '/^[[:space:]]*features\.rmcp_client[[:space:]]*=/d' "$config_target"
+          ${pkgs.gnused}/bin/sed -i '/^[[:space:]]*tools\.view_image[[:space:]]*=/d' "$config_target"
+          ${pkgs.gnused}/bin/sed -i '/^[[:space:]]*tools\.websearch[[:space:]]*=/d' "$config_target"
         fi
       '';
     })

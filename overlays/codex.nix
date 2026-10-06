@@ -2,28 +2,24 @@ final: prev:
 let
   version = "0.160.1";
 
-  # platform-specific binary info
-  # upstream switched linux artifacts from -gnu to -musl in the rust-v0.122.0+ releases
+  # platform-specific package info
+  # upstream switched from bare binary tarballs to complete package bundles in rust-v0.157.0+
   platform_info = {
     aarch64-darwin = {
       suffix = "aarch64-apple-darwin";
-      hash = "sha256-ZwrysEnZyVr7dNfaOF8wxQM9E6BxdQAd2JWMUZRJhNA=";
-      hostHash = "sha256-blAt9p2SIPowWww8fBe6jzGrHUWR/BQAhNu4I+gAx9s=";
+      hash = "sha256-9zUn7gnG24aay7N7cJhmsznqdO+R0t4lXpx07JYMYxQ=";
     };
     x86_64-darwin = {
       suffix = "x86_64-apple-darwin";
-      hash = "sha256-jZON25PEQksdRfFgaYTtUUxapw5GMwKmoiJ/unrwLbc=";
-      hostHash = "sha256-zQrmfhwsbKucBl4yh6VvBolhxVkuEUwczW6aSQm7oUc=";
+      hash = "sha256-qY8zDJsWUs7y7ce8LuTEeg/hn6CYtoY4G+PIhCq/CsA=";
     };
     x86_64-linux = {
       suffix = "x86_64-unknown-linux-musl";
-      hash = "sha256-kiZYG+WS0Y9+f3QKNS/bY6ph5F459+ubCdOIjIS7oz8=";
-      hostHash = "sha256-imkgfZdUWsdTtlhZdOHmekxRrl3qzwZRfbUSuyXg48I=";
+      hash = "sha256-NAgBVlkGpwKPa6qpq2hTrdrvIh8AFqFBenwf/dlsIfA=";
     };
     aarch64-linux = {
       suffix = "aarch64-unknown-linux-musl";
-      hash = "sha256-9U3FhSBCRFv0HaOqMRVvPLAvUsWhoEB03nPcVZj34fc=";
-      hostHash = "sha256-5eAn5mie/aLjVwqmABefDrsYYygDNQ4VLtbJuX3Pl0E=";
+      hash = "sha256-3/CVRDj6RVwhl92x9CHY1oYl2Y3mEPdr7bblvIN+o1s=";
     };
   };
 
@@ -31,14 +27,8 @@ let
   info = platform_info.${system} or (throw "unsupported system: ${system}");
 
   src = final.fetchurl {
-    url = "https://github.com/openai/codex/releases/download/rust-v${version}/codex-${info.suffix}.tar.gz";
+    url = "https://github.com/openai/codex/releases/download/rust-v${version}/codex-package-${info.suffix}.tar.gz";
     hash = info.hash;
-  };
-
-  # Host binary for Code Mode execution
-  hostSrc = final.fetchurl {
-    url = "https://github.com/openai/codex/releases/download/rust-v${version}/codex-code-mode-host-${info.suffix}.tar.gz";
-    hash = info.hostHash or "";
   };
 
 in
@@ -47,20 +37,21 @@ in
     pname = "codex";
     inherit version;
 
-    srcs = [
-      src
-      hostSrc
-    ];
+    inherit src;
     sourceRoot = ".";
     dontConfigure = true;
     dontBuild = true;
 
     installPhase = ''
       runHook preInstall
-      install -Dm755 codex-${info.suffix} $out/bin/codex
-      if [ -f codex-code-mode-host-${info.suffix} ]; then
-        install -Dm755 codex-code-mode-host-${info.suffix} $out/bin/codex-code-mode-host
+      mkdir -p $out
+      cp -R * $out/
+      chmod -R u+w $out
+      chmod 755 $out/bin/*
+      if [ -d $out/codex-path ]; then
+        chmod 755 $out/codex-path/*
       fi
+      ln -sf bin/codex $out/codex
       runHook postInstall
     '';
 
