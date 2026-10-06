@@ -1,7 +1,0 @@
-#!/usr/bin/env sh
-# .agents/opencode - launch OpenCode with repository profile and telemetry guards
-set -eu
-_dir="$(cd "$(dirname "$0")" && pwd)"
-# shellcheck disable=SC1091
-. "${_dir}/_common.sh"
-dispatch_agent opencode "$@"

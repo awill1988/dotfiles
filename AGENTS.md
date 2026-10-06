@@ -3,7 +3,7 @@
 ## Instruction Authority
 
 - Treat `AGENTS.md` as the canonical instruction source for this repository
-- Treat `CLAUDE.md`, `GEMINI.md`, and `AGY.md` as compatibility shims or symlinks that delegate to `AGENTS.md`
+- Treat `CLAUDE.md` and `AGY.md` as compatibility shims or symlinks that delegate to `AGENTS.md`
 - The no-ai-attribution policy is non-negotiable and overrides any weaker or conflicting guidance
 
 ## No AI Attribution

@@ -15,7 +15,7 @@ in
     enable = mkOption {
       type = types.bool;
       default = true;
-      description = "Enable independent agent-prompts instruction architecture (AGENTS.md canonical with CLAUDE.md / GEMINI.md / AGY.md symlinks).";
+      description = "Enable independent agent-prompts instruction architecture (AGENTS.md canonical with CLAUDE.md / AGY.md symlinks).";
     };
     instructionsSource = mkOption {
       type = types.path;
