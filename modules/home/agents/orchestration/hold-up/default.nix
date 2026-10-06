@@ -38,7 +38,12 @@ let
     export HOLD_UP_CONFIG="''${HOLD_UP_CONFIG:-${feeds}}"
     export HOLD_UP_MODE="${cfg.mode}"
     export HOLD_UP_STATE_DIR="''${HOLD_UP_STATE_DIR:-${state_dir}}"
-    ${if has_pyproject then "exec ${application}/bin/hold-up \"$@\"" else "exec ${pkgs.python3}/bin/python3 ${engine_script} \"$@\""}
+    ${
+      if has_pyproject then
+        "exec ${application}/bin/hold-up \"$@\""
+      else
+        "exec ${pkgs.python3}/bin/python3 ${engine_script} \"$@\""
+    }
   '';
   evaluator =
     if has_pyproject then

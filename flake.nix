@@ -27,7 +27,7 @@
     };
 
     hold-up = {
-      url = "github:awill1988/hold-up/5a1b78184a550e32d6d0c926db60257a18d2dc46";
+      url = "github:awill1988/hold-up/19f901e3529eaee8d95d186eedf7ae64eb2942dc";
       flake = false;
     };
 

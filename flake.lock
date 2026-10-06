@@ -274,17 +274,17 @@
     "hold-up": {
       "flake": false,
       "locked": {
-        "lastModified": 1791248076,
-        "narHash": "sha256-lNEECpsU496J66hDsv0kz6ni9C6QS/Ap75pWS92OAUM=",
+        "lastModified": 1791254397,
+        "narHash": "sha256-Q/DQUUlugeh/r7Tw82yDn5IZLttpBH2daRfFzrRK1Ss=",
         "owner": "awill1988",
         "repo": "hold-up",
-        "rev": "5a1b78184a550e32d6d0c926db60257a18d2dc46",
+        "rev": "19f901e3529eaee8d95d186eedf7ae64eb2942dc",
         "type": "github"
       },
       "original": {
         "owner": "awill1988",
         "repo": "hold-up",
-        "rev": "5a1b78184a550e32d6d0c926db60257a18d2dc46",
+        "rev": "19f901e3529eaee8d95d186eedf7ae64eb2942dc",
         "type": "github"
       }
     },
