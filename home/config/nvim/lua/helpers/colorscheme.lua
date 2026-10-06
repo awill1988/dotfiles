@@ -48,7 +48,28 @@ local function get_stylix_palette()
 	}
 end
 
+local function get_active_polarity()
+	local state_path = vim.fn.expand("~/.local/state/theme/polarity")
+	local state_content = read_file(state_path)
+	if state_content and state_content ~= "" then
+		local pol = state_content:gsub('["\r\n%s]', "")
+		if pol == "dark" or pol == "light" then
+			return pol
+		end
+	end
+	return nil
+end
+
 local function get_active_theme_file()
+	local state_path = vim.fn.expand("~/.local/state/theme/active-theme")
+	local state_content = read_file(state_path)
+	if state_content and state_content ~= "" then
+		local theme = state_content:gsub('["\r\n%s]', "")
+		if theme ~= "" then
+			return theme
+		end
+	end
+
 	local path = vim.fn.expand("~/projects/awill1988/dotfiles/home/active-theme.nix")
 	local content = read_file(path)
 	if not content then
@@ -162,20 +183,18 @@ function M.apply()
 	local polarity
 	local palette
 
+	local state_polarity = get_active_polarity()
+
 	if env_palette then
 		palette = env_palette
-		theme_name = env_theme or file_theme or "stylix"
-		polarity = vim.env.NVIM_THEME_POLARITY or detect_polarity(env_palette.base00, theme_name)
+		theme_name = file_theme or env_theme or "stylix"
+		polarity = state_polarity or vim.env.NVIM_THEME_POLARITY or detect_polarity(env_palette.base00, theme_name)
 	else
 		palette = stylix_data and stylix_data.palette
-		theme_name = env_theme or file_theme or (stylix_data and stylix_data.slug) or "gruvbox-dark"
-		if theme_name then
-			polarity = detect_polarity(palette and palette.base00, theme_name)
-		elseif palette and palette.base00 then
-			polarity = detect_polarity(palette.base00, theme_name)
-		else
-			polarity = detect_polarity(nil, theme_name)
-		end
+		theme_name = file_theme or env_theme or (stylix_data and stylix_data.slug) or "gruvbox-dark"
+		polarity = state_polarity
+			or (palette and palette.base00 and detect_polarity(palette.base00, theme_name))
+			or detect_polarity(nil, theme_name)
 	end
 	polarity = polarity or "dark"
 
@@ -255,6 +274,8 @@ local active_watchers = {}
 function M.setup_auto_sync()
 	local watch_paths = {
 		vim.fn.expand("~/.config/stylix/palette.json"),
+		vim.fn.expand("~/.local/state/theme/active-theme"),
+		vim.fn.expand("~/.local/state/theme/polarity"),
 		vim.fn.expand("~/projects/awill1988/dotfiles/home/active-theme.nix"),
 	}
 

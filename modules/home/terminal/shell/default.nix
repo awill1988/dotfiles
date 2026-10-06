@@ -39,7 +39,12 @@ in
             opacity = 0.9;
             option_as_alt = "Both";
           };
-          general.working_directory = "${config.home.homeDirectory}/projects";
+          general = {
+            working_directory = "${config.home.homeDirectory}/projects";
+            import = [
+              "${config.xdg.configHome}/alacritty/current-theme.toml"
+            ];
+          };
           scrolling.history = 10000;
           keyboard.bindings = [
             {
@@ -143,9 +148,37 @@ in
           fi
           export SSH_AUTH_SOCK="''${SSH_AUTH_SOCK:-$(${pkgs.gnupg}/bin/gpgconf --list-dirs agent-ssh-socket 2>/dev/null || true)}"
 
+          if [ -f "$HOME/.local/state/theme/env.zsh" ]; then
+            source "$HOME/.local/state/theme/env.zsh"
+          fi
+
           if command -v theme-switch >/dev/null 2>&1; then
             theme-switch sync-host --quiet 2>/dev/null || true
           fi
+
+          TRAPUSR1() {
+            if [ -f "$HOME/.local/state/theme/env.zsh" ]; then
+              source "$HOME/.local/state/theme/env.zsh"
+            fi
+            if (( $+functions[zle] )) && [ -n "''${WIDGET:-}" ]; then
+              zle reset-prompt 2>/dev/null || true
+            fi
+          }
+
+          _check_theme_polarity() {
+            local marker="$HOME/.local/state/theme/polarity"
+            if [ -f "$marker" ]; then
+              local current_pol
+              current_pol="$(<"$marker")"
+              if [ -n "$current_pol" ] && [ "$current_pol" != "''${THEME_POLARITY:-}" ]; then
+                if [ -f "$HOME/.local/state/theme/env.zsh" ]; then
+                  source "$HOME/.local/state/theme/env.zsh" 2>/dev/null || true
+                fi
+              fi
+            fi
+          }
+          autoload -Uz add-zsh-hook
+          add-zsh-hook precmd _check_theme_polarity
 
           if [ -t 0 ] && command -v ${pkgs.pass}/bin/pass >/dev/null 2>&1; then
             if [ -n "''${PASSWORD_STORE_DIR:-}" ] && [ ! -f "''${PASSWORD_STORE_DIR}/.gpg-id" ] && [ -n "''${KEY_ID:-}" ]; then
