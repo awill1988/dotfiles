@@ -101,7 +101,7 @@ let
       code = mkOption {
         type = types.str;
         default = "agy";
-        description = "Agent CLI program launched when 'code' is activated (e.g. agy, claude, gemini, codex)";
+        description = "Agent CLI program launched when 'code' is activated (e.g. agy, claude, codex)";
       };
       continuousLoop = {
         enable = mkOption {
@@ -150,23 +150,6 @@ let
           type = types.bool;
           default = false;
           description = "Enable Claude.ai organizational MCP servers";
-        };
-      };
-      gemini = {
-        enable = mkOption {
-          type = types.bool;
-          default = true;
-          description = "Enable Gemini configuration";
-        };
-        configDir = mkOption {
-          type = types.nullOr types.str;
-          default = null;
-          description = "Explicit custom config directory path for Gemini";
-        };
-        settings = mkOption {
-          type = types.attrs;
-          default = { };
-          description = "Gemini settings";
         };
       };
       codex = {

@@ -11,7 +11,8 @@ let
   baseline = cfg.baseline // {
     agents = cfg.baseline.agents // {
       codex = cfg.baseline.agents.codex // {
-        enable = if cfg.baseline.agents.codex.enable == null then true else cfg.baseline.agents.codex.enable;
+        enable =
+          if cfg.baseline.agents.codex.enable == null then true else cfg.baseline.agents.codex.enable;
       };
     };
   };
@@ -132,11 +133,6 @@ let
               enabled = true;
             }
             {
-              name = "gemini";
-              bin = "gemini";
-              enabled = true;
-            }
-            {
               name = "codex";
               bin = "codex";
               enabled = true;
@@ -179,57 +175,6 @@ let
     profile:
     pkgs.writeText "codex-rules-${profile.name}.rules" (
       permsLib.toCodexRules profile.agents.permissions
-    );
-
-  mkGeminiPolicy =
-    profile:
-    pkgs.writeText "gemini-policy-${profile.name}.toml" (
-      permsLib.toGeminiPolicy profile.agents.permissions
-    );
-
-  mkGeminiSettings =
-    profile:
-    pkgs.writeText "gemini-settings-${profile.name}.json" (
-      builtins.toJSON (
-        {
-          general = {
-            enableAutoUpdate = false;
-            enableNotifications = false;
-            defaultApprovalMode = "default";
-          };
-          ui = {
-            enableAnimations = false;
-            showSpinner = false;
-          };
-          context = {
-            fileName = [
-              "AGENTS.md"
-              "CLAUDE.md"
-              "CONTEXT.md"
-              "GEMINI.md"
-            ];
-          };
-          telemetry = {
-            enabled = false;
-            target = "local";
-            logPrompts = false;
-          };
-          privacy = {
-            usageStatisticsEnabled = false;
-          };
-          security = {
-            disableYoloMode = true;
-            disableAlwaysAllow = true;
-            enablePermanentToolApproval = false;
-            autoAddToPolicyByDefault = false;
-            environmentVariableRedaction = {
-              enabled = true;
-            };
-          };
-          tools = permsLib.toGeminiSettings profile.agents.permissions;
-        }
-        // profile.agents.gemini.settings
-      )
     );
 
   mkOpencodeConfig =
@@ -367,19 +312,6 @@ let
           }
 
           ${
-            if p.agents.gemini.configDir != null then
-              ''
-                GEMINI_CONFIG_DIR="${builtins.replaceStrings [ "~" ] [ "$HOME" ] p.agents.gemini.configDir}"
-                export GEMINI_CONFIG_DIR
-              ''
-            else
-              ''
-                GEMINI_CONFIG_DIR="${config.xdg.configHome}/profiles/${p.name}/gemini"
-                export GEMINI_CONFIG_DIR
-              ''
-          }
-
-          ${
             if p.agents.codex.configDir != null then
               ''
                 CODEX_CONFIG_DIR="${builtins.replaceStrings [ "~" ] [ "$HOME" ] p.agents.codex.configDir}"
@@ -501,7 +433,6 @@ in
 
   config = mkIf (cfg.profiles != { }) {
     programs.claude.enable = true;
-    programs.gemini.enable = true;
     programs.agy.enable = true;
     programs.opencode.enable = true;
     developer.profileRouter = profile-router;
@@ -513,8 +444,8 @@ in
         {
           name = ".local/bin/opencode-${p.name}";
           value = {
-            source = "${mkOpencodeProfileWrapper p}/bin/opencode-${p.name}";
             force = true;
+            source = "${mkOpencodeProfileWrapper p}/bin/opencode-${p.name}";
           };
         }
       ]) resolvedProfiles
@@ -524,7 +455,7 @@ in
       set -euo pipefail
       ${concatMapStringsSep "\n" (p: ''
         profile_dir="${config.xdg.configHome}/profiles/${p.name}"
-        mkdir -p "$profile_dir/gemini" "$profile_dir/antigravity" "$profile_dir/git"
+        mkdir -p "$profile_dir/antigravity" "$profile_dir/git"
 
         ${
           if p.agents.claude.configDir != null then
@@ -709,15 +640,6 @@ in
           install -m 600 "${mkCodexRules p}" "${config.xdg.configHome}/codex/rules/default.rules"
         ''}
 
-        mkdir -p "$profile_dir/gemini/policies"
-        install -m 600 "${mkGeminiPolicy p}" "$profile_dir/gemini/policies/permissions.toml"
-        install -m 600 "${mkGeminiSettings p}" "$profile_dir/gemini/settings.json"
-        ${optionalString (p.name == primaryProfile.name) ''
-          mkdir -p "${config.xdg.configHome}/gemini/policies"
-          install -m 600 "${mkGeminiPolicy p}" "${config.xdg.configHome}/gemini/policies/permissions.toml"
-          install -m 600 "${mkGeminiSettings p}" "${config.xdg.configHome}/gemini/settings.json"
-        ''}
-
         if [ ! -f "$claude_dest_dir/.claude.json" ]; then
           install -m 600 "${mkClaudeUserConfig p}" "$claude_dest_dir/.claude.json"
         else
@@ -766,7 +688,6 @@ in
         local profile="$1"
         export DEVELOPER_PROFILE="$profile"
         export CLAUDE_CONFIG_DIR="$HOME/.config/profiles/$profile/claude"
-        export GEMINI_CONFIG_DIR="$HOME/.config/profiles/$profile/gemini"
         export CODEX_CONFIG_DIR="$HOME/.config/profiles/$profile/codex"
         export CODEX_HOME="$CODEX_CONFIG_DIR"
         export AGY_CONFIG_DIR="$HOME/.config/profiles/$profile/antigravity"

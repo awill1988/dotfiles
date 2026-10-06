@@ -23,11 +23,6 @@ let
             enabled = true;
           }
           {
-            name = "gemini";
-            bin = "gemini";
-            enabled = true;
-          }
-          {
             name = "codex";
             bin = "codex";
             enabled = true;

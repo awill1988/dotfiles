@@ -60,9 +60,9 @@ function M.get_target_tmux_pane()
 		end
 	end
 
-	-- Look for an agent pane first (claude, gemini, agy, etc.)
+	-- Look for an agent pane first (claude, codex, agy, etc.)
 	for _, pane in ipairs(panes) do
-		if not pane.active and (pane.cmd:match("claude") or pane.cmd:match("gemini") or pane.cmd:match("agy") or pane.cmd:match("agent")) then
+		if not pane.active and (pane.cmd:match("claude") or pane.cmd:match("codex") or pane.cmd:match("agy") or pane.cmd:match("agent")) then
 			return pane.id
 		end
 	end

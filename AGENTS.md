@@ -22,7 +22,6 @@ For general coding standards and practices, see program-specific files:
 - `modules/home/agents/orchestration/agent-prompts/AGENTS.md`
 - `modules/home/agents/core/claude/CLAUDE.md`
 - `modules/home/agents/core/codex/AGENTS.override.md`
-- `modules/home/agents/core/gemini/GEMINI.md`
 
 ## Response Profile
 

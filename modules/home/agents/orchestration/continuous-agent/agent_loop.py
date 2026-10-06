@@ -192,7 +192,7 @@ def invoke_model(
         cmd = ["claude", "-p", prompt, "--dangerously-skip-permissions"]
     elif model == "codex":
         cmd = ["codex", "exec", prompt, "--dangerously-bypass-approvals-and-sandbox"]
-    elif model in ("agy", "gemini"):
+    elif model == "agy":
         cmd = ["agy", "-p", prompt, "--dangerously-skip-permissions"]
     else:
         raise ValueError(f"unsupported model: {model}")

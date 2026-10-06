@@ -82,7 +82,7 @@ in
     enableSidecar = mkOption {
       type = types.bool;
       default = true;
-      description = "Install sidecar.json definition in ~/.gemini/config/sidecars/disk_monitor/";
+      description = "Install sidecar.json definition in ~/.config/antigravity/sidecars/disk_monitor/";
     };
   };
 
@@ -102,11 +102,13 @@ in
       };
     };
 
-    xdg.configFile."gemini/sidecars/disk_monitor/sidecar.json" = mkIf cfg.enableSidecar {
+    xdg.configFile."antigravity/sidecars/disk_monitor/sidecar.json" = mkIf cfg.enableSidecar {
       source = ./sidecar.json;
     };
-    xdg.configFile."gemini/sidecars/disk_monitor/disk_monitor_harness.py" = mkIf cfg.enableSidecar {
-      source = ./disk_monitor_harness.py;
-    };
+    xdg.configFile."antigravity/sidecars/disk_monitor/disk_monitor_harness.py" =
+      mkIf cfg.enableSidecar
+        {
+          source = ./disk_monitor_harness.py;
+        };
   };
 }

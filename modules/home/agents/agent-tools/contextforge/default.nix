@@ -49,7 +49,7 @@ let
       "ADMIN_STATS_CACHE_OBSERVABILITY_TTL=30"
 
       # sqlite pool — sized for multi-agent + bridge load. previous 5/2 was
-      # too small: claude/codex/gemini wrappers + bridge probes exhausted the
+      # too small: claude/codex/agy wrappers + bridge probes exhausted the
       # pool, causing QueuePool timeouts and watchdog-triggered restarts.
       "DB_POOL_SIZE=20"
       "DB_MAX_OVERFLOW=10"

@@ -124,7 +124,6 @@ in
         "${config.home.homeDirectory}/.claude/skills"
         "${config.xdg.configHome}/claude-secondary/skills"
         "${config.xdg.configHome}/claude-secondary/.claude/skills"
-        "${config.xdg.configHome}/gemini/skills"
         "${config.home.homeDirectory}/.gemini/skills"
         "${config.xdg.configHome}/antigravity/skills"
         "${config.xdg.configHome}/antigravity-restricted/skills"

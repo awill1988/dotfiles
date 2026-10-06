@@ -55,10 +55,6 @@ in
                 local bin="$HOME/.local/bin/agy"
                 [ -x "$bin" ] && echo "$bin" || echo "agy"
                 ;;
-              gemini)
-                local bin="$HOME/.local/bin/gemini"
-                [ -x "$bin" ] && echo "$bin" || echo "gemini"
-                ;;
               codex)
                 local bin="$HOME/.local/bin/codex"
                 [ -x "$bin" ] && echo "$bin" || echo "codex"
