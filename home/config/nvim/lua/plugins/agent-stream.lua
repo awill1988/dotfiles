@@ -1,7 +1,7 @@
 return {
   {
     "awill1988/agent-stream.nvim",
-    commit = "8e56fa0afbe50f7201df7173f6f57c4fe7d97e43",
+    commit = "66bf6356ab5cb4bd1783c67a62f11ad627dca32e",
     lazy = false,
     opts = function()
       return {

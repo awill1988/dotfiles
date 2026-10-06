@@ -44,11 +44,17 @@ assert(vim.bo[buf].autoread == false)
 vim.fn.writefile({ "external", "edit" }, path)
 vim.cmd.checktime()
 assert(vim.wait(3000, function()
-  return stream.renderer.active_state[buf] ~= nil
+  return (stream.actions.optimistic and stream.actions.optimistic[buf] ~= nil)
+    or stream.renderer.active_state[buf] ~= nil
 end))
-assert(vim.api.nvim_buf_get_lines(buf, 0, 1, false)[1] == "original")
-vim.cmd.AgentStreamAccept()
-assert(vim.api.nvim_buf_get_lines(buf, 0, 1, false)[1] == "external")
+if stream.actions.optimistic and stream.actions.optimistic[buf] then
+  assert(stream.statusline(buf):find("agent:", 1, true))
+  assert(vim.api.nvim_buf_get_lines(buf, 0, 1, false)[1] == "external")
+else
+  assert(vim.api.nvim_buf_get_lines(buf, 0, 1, false)[1] == "original")
+  vim.cmd.AgentStreamAccept()
+  assert(vim.api.nvim_buf_get_lines(buf, 0, 1, false)[1] == "external")
+end
 stream.watcher.stop_all()
 vim.api.nvim_buf_delete(buf, { force = true })
 vim.fn.delete(path)

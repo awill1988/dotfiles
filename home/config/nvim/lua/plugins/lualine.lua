@@ -13,10 +13,15 @@ return {
 				lualine_x = {
 					{
 						function()
-							return require("agent-stream").statusline()
+							local ok, stream = pcall(require, "agent-stream")
+							if ok and type(stream.statusline) == "function" then
+								return stream.statusline()
+							end
+							return ""
 						end,
 						cond = function()
-							return require("agent-stream").statusline() ~= ""
+							local ok, stream = pcall(require, "agent-stream")
+							return ok and type(stream.statusline) == "function" and stream.statusline() ~= ""
 						end,
 					},
 				},
