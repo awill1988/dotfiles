@@ -26,8 +26,8 @@
       flake = false;
     };
 
-    claude-provider-status = {
-      url = "github:awill1988/claude-provider-status";
+    hold-up = {
+      url = "github:awill1988/hold-up/5a1b78184a550e32d6d0c926db60257a18d2dc46";
       flake = false;
     };
 
@@ -116,9 +116,12 @@
             # and emits a deprecation warning. instead, give home-manager its
             # own nixpkgs eval seeded with the same config + overlays as the
             # darwin one so cf2tf, pkgs-unstable, etc. remain visible to HM.
+            home-manager.backupFileExtension = "backup";
             home-manager.users.${primaryUser.username} = {
               nixpkgs = nixpkgsConfig;
-              imports = attrValues self.homeManagerModules ++ [ mac-app-util.homeManagerModules.default ];
+              imports =
+                attrValues (builtins.removeAttrs self.homeManagerModules [ "home-agent-provider-status" ])
+                ++ [ mac-app-util.homeManagerModules.default ];
               home.stateVersion = homeManagerStateVersion;
               home.user-info = config.users.primaryUser;
               programs.karabiner-elements.enable = true;
@@ -143,6 +146,7 @@
             nixpkgs = nixpkgsConfig;
             home-manager.useGlobalPkgs = true;
             home-manager.useUserPackages = true;
+            home-manager.backupFileExtension = "backup";
             users.users.${primaryUser.username} = {
               home =
                 if pkgs.stdenv.isDarwin then "/Users/${primaryUser.username}" else "/home/${primaryUser.username}";
@@ -154,7 +158,9 @@
             };
             home-manager.users.${primaryUser.username} = {
               nixpkgs = nixpkgsConfig;
-              imports = attrValues self.homeManagerModules ++ [ mac-app-util.homeManagerModules.default ];
+              imports =
+                attrValues (builtins.removeAttrs self.homeManagerModules [ "home-agent-provider-status" ])
+                ++ [ mac-app-util.homeManagerModules.default ];
               home.stateVersion = homeManagerStateVersion;
               home.user-info = config.users.primaryUser;
             };
@@ -213,7 +219,7 @@
             inherit (nixpkgsConfig) config overlays;
           };
           modules =
-            attrValues self.homeManagerModules
+            attrValues (builtins.removeAttrs self.homeManagerModules [ "home-agent-provider-status" ])
             ++ singleton (
               { config, pkgs, ... }:
               {
@@ -273,6 +279,13 @@
         users-primaryUser = import ./modules/users.nix;
       };
 
+      checks = forAllSystems (system: {
+        hold-up = import ./modules/home/agents/orchestration/hold-up/check.nix {
+          pkgs = import inputs.nixpkgs { inherit system; };
+          hold_up_src = inputs.hold-up;
+        };
+      });
+
       homeManagerModules = {
         home-config-files = import ./home/config-files.nix;
         home-fonts = import ./home/fonts.nix;
@@ -290,9 +303,10 @@
         home-agent-skills = import ./modules/home/agents/orchestration/agent-skills {
           golang_skills_src = inputs.golang-skills;
         };
-        home-agent-provider-status = import ./modules/home/agents/orchestration/provider-status {
-          provider_status_src = inputs.claude-provider-status;
+        home-agent-hold-up = import ./modules/home/agents/orchestration/hold-up {
+          hold_up_src = inputs.hold-up;
         };
+        home-agent-provider-status = self.homeManagerModules.home-agent-hold-up;
         home-agent-continuous = import ./modules/home/agents/orchestration/continuous-agent;
         home-agent-disk-monitor = import ./modules/home/agents/orchestration/disk-monitor;
         home-agent-tools = import ./modules/home/agents/agent-tools;

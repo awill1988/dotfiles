@@ -8,7 +8,13 @@ with lib;
 let
   permsLib = import ../../developer/permissions.nix { inherit lib; };
   cfg = config.developer;
-  baseline = cfg.baseline;
+  baseline = cfg.baseline // {
+    agents = cfg.baseline.agents // {
+      codex = cfg.baseline.agents.codex // {
+        enable = if cfg.baseline.agents.codex.enable == null then true else cfg.baseline.agents.codex.enable;
+      };
+    };
+  };
   profilesList = attrValues cfg.profiles;
 
   primaries = filter (p: p.isPrimary) profilesList;
@@ -101,41 +107,6 @@ let
           commit = "";
           pr = "";
           sessionUrl = false;
-        };
-        hooks = {
-          SessionStart = [
-            {
-              matcher = "";
-              hooks = [
-                {
-                  type = "command";
-                  command = "python3 ${config.home.homeDirectory}/.claude/hooks/vcs_status_hook.py --event SessionStart";
-                }
-              ];
-            }
-          ];
-          UserPromptSubmit = [
-            {
-              matcher = "";
-              hooks = [
-                {
-                  type = "command";
-                  command = "python3 ${config.home.homeDirectory}/.claude/hooks/vcs_status_hook.py --event UserPromptSubmit";
-                }
-              ];
-            }
-          ];
-          PostToolUseFailure = [
-            {
-              matcher = "Bash";
-              hooks = [
-                {
-                  type = "command";
-                  command = "python3 ${config.home.homeDirectory}/.claude/hooks/vcs_status_hook.py --event PostToolUseFailure";
-                }
-              ];
-            }
-          ];
         };
         permissions = permsLib.toClaudePermissions profile.agents.permissions;
       }

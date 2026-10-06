@@ -89,22 +89,6 @@
         "type": "github"
       }
     },
-    "claude-provider-status": {
-      "flake": false,
-      "locked": {
-        "lastModified": 1791245175,
-        "narHash": "sha256-b2JTb4zW3nn65B/CWaoas1dijtEg9aQDg5Bul9LoO4E=",
-        "owner": "awill1988",
-        "repo": "claude-provider-status",
-        "rev": "34c2d68ed5313c4f2d4951918108421773296691",
-        "type": "github"
-      },
-      "original": {
-        "owner": "awill1988",
-        "repo": "claude-provider-status",
-        "type": "github"
-      }
-    },
     "darwin": {
       "inputs": {
         "nixpkgs": [
@@ -284,6 +268,23 @@
       "original": {
         "owner": "cxuu",
         "repo": "golang-skills",
+        "type": "github"
+      }
+    },
+    "hold-up": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1791248076,
+        "narHash": "sha256-lNEECpsU496J66hDsv0kz6ni9C6QS/Ap75pWS92OAUM=",
+        "owner": "awill1988",
+        "repo": "hold-up",
+        "rev": "5a1b78184a550e32d6d0c926db60257a18d2dc46",
+        "type": "github"
+      },
+      "original": {
+        "owner": "awill1988",
+        "repo": "hold-up",
+        "rev": "5a1b78184a550e32d6d0c926db60257a18d2dc46",
         "type": "github"
       }
     },
@@ -515,10 +516,10 @@
     },
     "root": {
       "inputs": {
-        "claude-provider-status": "claude-provider-status",
         "darwin": "darwin",
         "flake-utils": "flake-utils",
         "golang-skills": "golang-skills",
+        "hold-up": "hold-up",
         "home-manager": "home-manager",
         "mac-app-util": "mac-app-util",
         "nixpkgs": "nixpkgs_5",

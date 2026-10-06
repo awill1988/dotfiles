@@ -171,8 +171,8 @@ let
       };
       codex = {
         enable = mkOption {
-          type = types.bool;
-          default = true;
+          type = types.nullOr types.bool;
+          default = null;
           description = "Enable Codex configuration";
         };
         configDir = mkOption {
