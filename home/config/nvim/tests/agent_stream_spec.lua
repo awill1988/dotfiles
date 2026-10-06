@@ -1,15 +1,17 @@
 local spec = require("plugins.agent-stream")[1]
 assert(spec.lazy == false)
-assert(spec.opts.manage_autoread == true)
-assert(spec.opts.auto_reload_unmodified == false)
-assert(spec.opts.rpc.enabled == false)
+local opts = type(spec.opts) == "function" and spec.opts() or spec.opts
+assert(opts.manage_autoread == true)
+assert(opts.auto_reload_unmodified == false)
+assert(opts.rpc.enabled == false)
 
 local stream = require("agent-stream")
-stream.setup(spec.opts)
+stream.setup(opts)
 vim.cmd("runtime plugin/agent-stream.lua")
 require("core.keymaps")
 assert(vim.fn.maparg(" aa", "n"):find("AgentStreamAccept", 1, true))
-assert(vim.fn.maparg(" ar", "n"):find("AgentStreamReject", 1, true))
+assert(vim.fn.maparg(" ar", "n"):find("AgentStreamResume", 1, true))
+assert(vim.fn.maparg(" ax", "n"):find("AgentStreamReject", 1, true))
 assert(vim.fn.maparg("]a", "n"):find("AgentStreamNextHunk", 1, true))
 
 local captured

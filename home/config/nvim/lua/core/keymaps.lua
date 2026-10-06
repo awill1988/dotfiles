@@ -1,7 +1,9 @@
 local map = require("helpers.keys").map
 
 map("n", "<leader>aa", "<cmd>AgentStreamAccept<cr>", "Accept external changes")
-map("n", "<leader>ar", "<cmd>AgentStreamReject<cr>", "Reject external changes")
+map("n", "<leader>ac", "<cmd>AgentStreamCancel<cr>", "Cancel agent task")
+map("n", "<leader>ar", "<cmd>AgentStreamResume<cr>", "Resume agent task")
+map("n", "<leader>ax", "<cmd>AgentStreamReject<cr>", "Reject manual external changes")
 map("n", "]a", "<cmd>AgentStreamNextHunk<cr>", "Next external change")
 map("n", "[a", "<cmd>AgentStreamPrevHunk<cr>", "Previous external change")
 
@@ -54,12 +56,7 @@ map("v", ">", ">gv")
 
 -- Switch between light and dark modes (system-wide & local)
 map("n", "<leader>ut", function()
-	if vim.o.background == "dark" then
-		vim.o.background = "light"
-	else
-		vim.o.background = "dark"
-	end
-	vim.fn.jobstart({ "theme-switch", "toggle-mode" })
+	require("helpers.colorscheme").toggle()
 end, "Toggle between light and dark themes")
 
 -- Clear after search

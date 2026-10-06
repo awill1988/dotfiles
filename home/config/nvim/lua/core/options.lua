@@ -20,6 +20,7 @@ end
 
 -- Set other options
 require("helpers.colorscheme").apply()
+require("helpers.colorscheme").setup_auto_sync()
 
 -- Ensure cursor line number matches the theme with high visibility when scrolling
 local function setup_cursor_line_nr()

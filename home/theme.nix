@@ -99,11 +99,60 @@ let
     set -euo pipefail
 
     ACTIVE_THEME_FILE="${config.home.homeDirectory}/projects/awill1988/dotfiles/home/active-theme.nix"
-    CURRENT="${active}"
+
+    get_current_theme() {
+      if [ -f "$ACTIVE_THEME_FILE" ]; then
+        tr -d '"' < "$ACTIVE_THEME_FILE" | tr -d '[:space:]'
+      else
+        echo "${active}"
+      fi
+    }
+
+    get_pair() {
+      case "$1" in
+        ${concatStringsSep "\n        " (
+          mapAttrsToList (name: meta: "${removeSuffix ".yaml" name}) echo \"${meta.pair}\" ;;") knownThemes
+        )}
+        *-dark) echo "''${1%-dark}-light" ;;
+        *-light) echo "''${1%-light}-dark" ;;
+        *) echo "$1" ;;
+      esac
+    }
+
+    get_polarity() {
+      case "$1" in
+        ${concatStringsSep "\n        " (
+          mapAttrsToList (
+            name: meta: "${removeSuffix ".yaml" name}) echo \"${meta.polarity}\" ;;"
+          ) knownThemes
+        )}
+        *light*|*latte*|*dawn*) echo "light" ;;
+        *) echo "dark" ;;
+      esac
+    }
+
+    notify_apps() {
+      target="''${1:-}"
+      pol="''${2:-}"
+      if command -v tmux >/dev/null 2>&1; then
+        tmux set-environment -g ACTIVE_THEME "$target" 2>/dev/null || true
+        tmux set-environment -g THEME_POLARITY "$pol" 2>/dev/null || true
+        tmux set-environment -g NVIM_THEME_POLARITY "$pol" 2>/dev/null || true
+      fi
+
+      for sock in /tmp/nvim*/0 "''${XDG_RUNTIME_DIR:-/tmp}"/nvim*/0 ~/.local/state/nvim/*.sock; do
+        if [ -S "$sock" ]; then
+          nvim --server "$sock" --remote-send '<Cmd>ThemeReload<CR>' 2>/dev/null || true
+        fi
+      done
+    }
+
+    CURRENT="$(get_current_theme)"
 
     case "''${1:-list}" in
       list)
-        echo "Active Theme: $CURRENT (${themeMeta.polarity} mode)"
+        pol="$(get_polarity "$CURRENT")"
+        echo "Active Theme: $CURRENT ($pol mode)"
         echo ""
         echo "Available local themes in home/themes/:"
         for f in ${themesDir}/*.yaml; do
@@ -121,16 +170,20 @@ let
           echo "error: theme '$target' not found in home/themes/ or base16-schemes" >&2
           exit 1
         fi
+        pol="$(get_polarity "$target")"
         printf '"%s"\n' "$target" > "$ACTIVE_THEME_FILE"
-        echo "Switched active theme to '$target'."
+        notify_apps "$target" "$pol"
+        echo "Switched active theme to '$target' ($pol mode)."
         echo "Run 'darwin-rebuild switch' or './result/activate' to apply system-wide."
         ;;
       toggle-mode)
-        pair="${themeMeta.pair}"
+        pair="$(get_pair "$CURRENT")"
         if [ "$pair" = "$CURRENT" ]; then
           echo "No distinct light/dark pair defined for '$CURRENT'."
         else
+          pol="$(get_polarity "$pair")"
           printf '"%s"\n' "$pair" > "$ACTIVE_THEME_FILE"
+          notify_apps "$pair" "$pol"
           echo "Toggled theme mode: '$CURRENT' -> '$pair'."
           echo "Run 'darwin-rebuild switch' or './result/activate' to apply system-wide."
         fi
@@ -164,18 +217,20 @@ let
         }
 
         host_mode="$(detect_host_mode)"
-        if [ "$host_mode" != "${themeMeta.polarity}" ]; then
-          pair="${themeMeta.pair}"
+        current_polarity="$(get_polarity "$CURRENT")"
+        if [ "$host_mode" != "$current_polarity" ]; then
+          pair="$(get_pair "$CURRENT")"
           if [ "$pair" != "$CURRENT" ]; then
             printf '"%s"\n' "$pair" > "$ACTIVE_THEME_FILE"
+            notify_apps "$pair" "$host_mode"
             if [ "$quiet" -eq 0 ]; then
-              echo "Host OS mode ($host_mode) differs from theme polarity (${themeMeta.polarity}). Switched to '$pair'."
+              echo "Host OS mode ($host_mode) differs from theme polarity ($current_polarity). Switched to '$pair'."
               echo "Run 'darwin-rebuild switch' or './result/activate' to apply system-wide."
             fi
           fi
         else
           if [ "$quiet" -eq 0 ]; then
-            echo "Theme '$CURRENT' (${themeMeta.polarity}) is already in sync with host OS mode ($host_mode)."
+            echo "Theme '$CURRENT' ($current_polarity) is already in sync with host OS mode ($host_mode)."
           fi
         fi
         ;;
