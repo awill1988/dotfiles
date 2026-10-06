@@ -5,6 +5,7 @@ return {
 			local wk = require("which-key")
 			wk.setup()
 			wk.add({
+				{ "<leader>a", group = "agent review" },
 				{ "<leader>f", group = "file" },
 				{ "<leader>d", group = "delete/close" },
 				{ "<leader>q", group = "quit/session" },

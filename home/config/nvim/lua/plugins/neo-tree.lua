@@ -4,6 +4,7 @@ return {
 		"nvim-neo-tree/neo-tree.nvim",
 		branch = "v3.x",
 		dependencies = {
+			"awill1988/agent-stream.nvim",
 			"nvim-lua/plenary.nvim",
 			"nvim-tree/nvim-web-devicons",
 			"MunifTanjim/nui.nvim",
@@ -144,8 +145,14 @@ return {
 				end,
 			})
 
+			local file_renderer = vim.deepcopy(require("neo-tree.defaults").renderers.file)
+			table.insert(file_renderer, { "agent_stream_badge" })
 			require("neo-tree").setup({
 				filesystem = {
+					components = {
+						agent_stream_badge = require("agent-stream.explorer.neo_tree").component,
+					},
+					renderers = { file = file_renderer },
 					follow_current_file = {
 						enabled = true, -- track current file and reveal in tree
 					},

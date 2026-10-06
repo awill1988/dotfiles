@@ -1,5 +1,10 @@
 local map = require("helpers.keys").map
 
+map("n", "<leader>aa", "<cmd>AgentStreamAccept<cr>", "Accept external changes")
+map("n", "<leader>ar", "<cmd>AgentStreamReject<cr>", "Reject external changes")
+map("n", "]a", "<cmd>AgentStreamNextHunk<cr>", "Next external change")
+map("n", "[a", "<cmd>AgentStreamPrevHunk<cr>", "Previous external change")
+
 -- Blazingly fast way out of insert mode
 map("i", "jk", "<esc>")
 

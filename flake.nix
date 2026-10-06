@@ -1,5 +1,5 @@
 {
-  description = "Adam's dotfiles";
+  description = "Developer Toolchain & Multi-Profile Nix Configuration";
 
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixos-25.11";
@@ -23,6 +23,11 @@
     # `nix flake update golang-skills`.
     golang-skills = {
       url = "github:cxuu/golang-skills";
+      flake = false;
+    };
+
+    claude-provider-status = {
+      url = "github:awill1988/claude-provider-status";
       flake = false;
     };
 
@@ -284,6 +289,9 @@
         home-agent-prompts = import ./modules/home/agents/orchestration/agent-prompts;
         home-agent-skills = import ./modules/home/agents/orchestration/agent-skills {
           golang_skills_src = inputs.golang-skills;
+        };
+        home-agent-provider-status = import ./modules/home/agents/orchestration/provider-status {
+          provider_status_src = inputs.claude-provider-status;
         };
         home-agent-continuous = import ./modules/home/agents/orchestration/continuous-agent;
         home-agent-disk-monitor = import ./modules/home/agents/orchestration/disk-monitor;

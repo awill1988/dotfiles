@@ -102,6 +102,41 @@ let
           pr = "";
           sessionUrl = false;
         };
+        hooks = {
+          SessionStart = [
+            {
+              matcher = "";
+              hooks = [
+                {
+                  type = "command";
+                  command = "python3 ${config.home.homeDirectory}/.claude/hooks/vcs_status_hook.py --event SessionStart";
+                }
+              ];
+            }
+          ];
+          UserPromptSubmit = [
+            {
+              matcher = "";
+              hooks = [
+                {
+                  type = "command";
+                  command = "python3 ${config.home.homeDirectory}/.claude/hooks/vcs_status_hook.py --event UserPromptSubmit";
+                }
+              ];
+            }
+          ];
+          PostToolUseFailure = [
+            {
+              matcher = "Bash";
+              hooks = [
+                {
+                  type = "command";
+                  command = "python3 ${config.home.homeDirectory}/.claude/hooks/vcs_status_hook.py --event PostToolUseFailure";
+                }
+              ];
+            }
+          ];
+        };
         permissions = permsLib.toClaudePermissions profile.agents.permissions;
       }
     );
