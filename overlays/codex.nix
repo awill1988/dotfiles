@@ -1,29 +1,29 @@
 final: prev:
 let
-  version = "0.154.0";
+  version = "0.160.1";
 
   # platform-specific binary info
   # upstream switched linux artifacts from -gnu to -musl in the rust-v0.122.0+ releases
   platform_info = {
     aarch64-darwin = {
       suffix = "aarch64-apple-darwin";
-      hash = "sha256-NEMQoKWRwbGS4E/v8wQyGmmQfJSYuqrDMcp+FuvO+dc=";
-      hostHash = "sha256-UA7ioC6lmK5RkFLn19jiAdHbAZhvMMIU70FDZF3Ib60=";
+      hash = "sha256-ZwrysEnZyVr7dNfaOF8wxQM9E6BxdQAd2JWMUZRJhNA=";
+      hostHash = "sha256-blAt9p2SIPowWww8fBe6jzGrHUWR/BQAhNu4I+gAx9s=";
     };
     x86_64-darwin = {
       suffix = "x86_64-apple-darwin";
-      hash = "sha256-EhnIN9j4E7STpCTBJcADi12coWJ5vG0/5s4Dej4Ypuc=";
-      hostHash = "sha256-oPphQeWR9E3C2GpYnP55chIxe/ufo6bHMTHk27kzh/4=";
+      hash = "sha256-jZON25PEQksdRfFgaYTtUUxapw5GMwKmoiJ/unrwLbc=";
+      hostHash = "sha256-zQrmfhwsbKucBl4yh6VvBolhxVkuEUwczW6aSQm7oUc=";
     };
     x86_64-linux = {
       suffix = "x86_64-unknown-linux-musl";
-      hash = "sha256-1+GLJZeujyQvXzHunpDe70jbye3WNNmGj7ZDXQjAfwI=";
-      hostHash = "sha256-po33zKI8bafN4XVnfffeYcc6I0rdEzOhJUuG1kGvAfc=";
+      hash = "sha256-kiZYG+WS0Y9+f3QKNS/bY6ph5F459+ubCdOIjIS7oz8=";
+      hostHash = "sha256-imkgfZdUWsdTtlhZdOHmekxRrl3qzwZRfbUSuyXg48I=";
     };
     aarch64-linux = {
       suffix = "aarch64-unknown-linux-musl";
-      hash = "sha256-WDtI3zKAQhO9zTOMLlrbBrNDQIIfp1enJswKUk+jPCc=";
-      hostHash = "sha256-IK76MCwgIrSW4ykRv5VKX3bH/XSca9ufvXEeMrZty/o=";
+      hash = "sha256-9U3FhSBCRFv0HaOqMRVvPLAvUsWhoEB03nPcVZj34fc=";
+      hostHash = "sha256-5eAn5mie/aLjVwqmABefDrsYYygDNQ4VLtbJuX3Pl0E=";
     };
   };
 
