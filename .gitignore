@@ -2,3 +2,5 @@
 result
 result-*
 .idea/
+__pycache__/
+*.pyc

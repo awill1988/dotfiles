@@ -528,7 +528,8 @@
         "pyproject-nix": "pyproject-nix",
         "rust-overlay": "rust-overlay",
         "stylix": "stylix",
-        "uv2nix": "uv2nix"
+        "uv2nix": "uv2nix",
+        "whip-it": "whip-it"
       }
     },
     "rust-overlay": {
@@ -785,6 +786,18 @@
         "repo": "uv2nix",
         "type": "github"
       }
+    },
+    "whip-it": {
+      "flake": false,
+      "locked": {
+        "path": "../whip-it",
+        "type": "path"
+      },
+      "original": {
+        "path": "../whip-it",
+        "type": "path"
+      },
+      "parent": []
     }
   },
   "root": "root",
