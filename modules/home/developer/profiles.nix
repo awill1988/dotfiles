@@ -160,6 +160,7 @@ let
             enableAnimations = false;
             showSpinner = false;
           };
+          model = "Gemini 3.8 Flash (High)";
           permissions = permsLib.toAgyPermissions profile.agents.permissions;
           mcpServers = {
             contextforge = {

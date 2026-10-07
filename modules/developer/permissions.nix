@@ -52,6 +52,7 @@ rec {
       "C:/Users/*/.kube"
       "C:/Windows/System32/config"
     ];
+    unix = lib.unique (sensitivePaths.common ++ sensitivePaths.darwin ++ sensitivePaths.linux);
     all = lib.unique (
       sensitivePaths.common ++ sensitivePaths.darwin ++ sensitivePaths.linux ++ sensitivePaths.windows
     );
@@ -193,7 +194,7 @@ rec {
     filesystem = {
       allowRead = [ "*" ];
       allowWrite = [ ];
-      sensitive = sensitivePaths.all;
+      sensitive = sensitivePaths.unix;
     };
   };
 
@@ -251,12 +252,16 @@ rec {
       denyMcp = map toClaudeMcp perms.mcp.deny;
 
       # Sensitive path reads should never be auto-approved
+      unixSensitive = lib.filter (
+        p: !(lib.hasPrefix "%" p) && !(lib.hasInfix "\\" p) && !(lib.hasPrefix "C:" p)
+      ) (perms.filesystem.sensitive or [ ]);
+
       sensitiveDenyReads = lib.flatten (
         map (p: [
           "Read(${p})"
           "Read(${p}/*)"
           "Read(${p}/**)"
-        ]) (perms.filesystem.sensitive or [ ])
+        ]) unixSensitive
       );
     in
     {
@@ -271,26 +276,31 @@ rec {
       rawAllowCommands = map toAgyCommand perms.commands.allow;
       allowCommands = lib.unique (lib.flatten rawAllowCommands);
       allowMcp = map toAgyMcp perms.mcp.allow;
-      allowRead = if (perms.filesystem.allowRead or [ ]) != [ ] then [ "read(*)" ] else [ ];
-      allowWrite = if (perms.filesystem.allowWrite or [ ]) != [ ] then [ "write(*)" ] else [ ];
+      allowRead = if (perms.filesystem.allowRead or [ ]) != [ ] then [ "read_file(*)" ] else [ ];
+      allowWrite = if (perms.filesystem.allowWrite or [ ]) != [ ] then [ "write_file(*)" ] else [ ];
 
       rawDenyCommands = map toAgyCommand perms.commands.deny;
       denyCommands = lib.unique (lib.flatten rawDenyCommands);
       denyMcp = map toAgyMcp perms.mcp.deny;
 
+      # Filter out Windows paths that trigger parse failures in AGY permission grant store
+      unixSensitive = lib.filter (
+        p: !(lib.hasPrefix "%" p) && !(lib.hasInfix "\\" p) && !(lib.hasPrefix "C:" p)
+      ) (perms.filesystem.sensitive or [ ]);
+
       # Sensitive reads require interactive user permission via "ask"
       sensitiveAskReads = lib.flatten (
         map (p: [
-          "read(${p})"
-          "read(${p}/*)"
-          "read(${p}/**)"
+          "read_file(${p})"
+          "read_file(${p}/*)"
+          "read_file(${p}/**)"
           "command(cat ${p})"
           "command(cat ${p}/*)"
           "command(head ${p})"
           "command(head ${p}/*)"
           "command(tail ${p})"
           "command(tail ${p}/*)"
-        ]) (perms.filesystem.sensitive or [ ])
+        ]) unixSensitive
       );
     in
     {

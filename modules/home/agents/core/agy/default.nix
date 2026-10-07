@@ -43,6 +43,7 @@ let
         enableAnimations = false;
         showSpinner = false;
       };
+      model = "Gemini 3.8 Flash (High)";
       permissions = permsLib.toAgyPermissions (
         if config ? developer && config.developer ? baseline then
           config.developer.baseline.agents.permissions
@@ -84,6 +85,7 @@ let
         enableAnimations = false;
         showSpinner = false;
       };
+      model = "Gemini 3.8 Flash (High)";
       permissions = permsLib.toAgyPermissions (
         if config ? developer && config.developer.profiles ? work then
           config.developer.profiles.work.agents.permissions
@@ -98,7 +100,7 @@ let
     }
   );
 
-  claude_instructions_source = ../claude/CLAUDE.md;
+  agy_instructions_source = ../../orchestration/agent-prompts/AGENTS.md;
 
   agy_settings_reset = pkgs.writeShellScriptBin "agy-settings-reset" ''
     set -euo pipefail
@@ -156,6 +158,7 @@ let
     export AGY_UI_ANIMATIONS_DISABLED=true
     export OTEL_SDK_DISABLED=true
     export DO_NOT_TRACK=1
+    export CASCADE_DEFAULT_MODEL_OVERRIDE="gemini-3.8-flash"
 
     run_agy() {
       if [ -n "''${AGY_CONFIG_DIR:-}" ] && [ -f "''${AGY_CONFIG_DIR}/settings.json" ]; then
@@ -166,9 +169,9 @@ let
         else
           ${pkgs.jq}/bin/jq -s '
             .[0] as $target | .[1] as $source | ($target * $source)
-            | .permissions.allow = (((($target.permissions.allow // []) + ($source.permissions.allow // [])) | unique))
+            | .permissions.allow = (((($target.permissions.allow // []) + ($source.permissions.allow // [])) | map(select((startswith("read(") or startswith("write(")) | not)) | unique))
             | .permissions.deny = (((($target.permissions.deny // []) + ($source.permissions.deny // [])) | unique))
-            | .permissions.ask = (((($target.permissions.ask // []) + ($source.permissions.ask // [])) | unique))
+            | .permissions.ask = (((($target.permissions.ask // []) + ($source.permissions.ask // [])) | map(select((startswith("read(") or contains("\\") or contains("%")) | not)) | unique))
           ' "$target" "''${AGY_CONFIG_DIR}/settings.json" > "$target.tmp"
           ${pkgs.coreutils}/bin/chmod 600 "$target.tmp"
           ${pkgs.coreutils}/bin/mv "$target.tmp" "$target"
@@ -237,9 +240,9 @@ in
         else
           ${pkgs.jq}/bin/jq -s '
             .[0] as $target | .[1] as $source | ($target * $source)
-            | .permissions.allow = (((($target.permissions.allow // []) + ($source.permissions.allow // [])) | unique))
+            | .permissions.allow = (((($target.permissions.allow // []) + ($source.permissions.allow // [])) | map(select((startswith("read(") or startswith("write(")) | not)) | unique))
             | .permissions.deny = (((($target.permissions.deny // []) + ($source.permissions.deny // [])) | unique))
-            | .permissions.ask = (((($target.permissions.ask // []) + ($source.permissions.ask // [])) | unique))
+            | .permissions.ask = (((($target.permissions.ask // []) + ($source.permissions.ask // [])) | map(select((startswith("read(") or contains("\\") or contains("%")) | not)) | unique))
           ' "$target" "$source" > "$target.tmp"
           chmod 600 "$target.tmp"
           mv "$target.tmp" "$target"
@@ -251,12 +254,13 @@ in
       seed_agy_settings "${primary_settings_src}" "${home_dir}/.gemini/antigravity-cli/settings.json"
     '';
 
-    xdg.configFile."antigravity/AGY.md".source = claude_instructions_source;
-    xdg.configFile."antigravity-restricted/AGY.md".source = claude_instructions_source;
+    xdg.configFile."antigravity/AGY.md".source = agy_instructions_source;
+    xdg.configFile."antigravity-restricted/AGY.md".source = agy_instructions_source;
 
     home.sessionVariables = {
       ANTIGRAVITY_AGENT = "1";
       AGY_MISSION_CONTROL = "1";
+      CASCADE_DEFAULT_MODEL_OVERRIDE = "gemini-3.8-flash";
     };
 
     programs.zsh.shellAliases = {

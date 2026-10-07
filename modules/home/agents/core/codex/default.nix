@@ -9,7 +9,7 @@ let
   codex_config_dir = "${config.xdg.configHome}/codex";
   local_skills_dir = "${config.home.homeDirectory}/.local/share/agent-skills";
   config_source = ./config.toml;
-  agents_override_source = ./AGENTS.override.md;
+  agents_override_source = ../../orchestration/agent-prompts/AGENTS.md;
   permsLib = import ../../../../developer/permissions.nix { inherit lib; };
   baseline_permissions =
     if config ? developer && config.developer ? baseline then

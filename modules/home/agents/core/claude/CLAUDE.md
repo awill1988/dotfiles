@@ -2,8 +2,8 @@ See @README.md for supporting documentation.
 
 ## Highest Priority Policy
 
-- Treat `CLAUDE.md` as the canonical instruction source for repositories that provide it
-- Treat `AGENTS.md` and `AGY.md` as compatibility shims unless a repository explicitly says otherwise
+- Treat `AGENTS.md` as the canonical instruction source for repositories that provide it
+- Treat `CLAUDE.md` and `AGY.md` as compatibility shims or symlinks that delegate to `AGENTS.md`
 - Never attribute work to any AI system in commits, pull requests, code comments, release notes, changelogs, or contributor metadata
 - Never add AI-related footers or signatures such as `Co-Authored-By`, `Generated-By`, `Assisted-By`, or `🤖 Reviewed with Claude Code`
 - Before creating or editing commit or PR text, verify it contains no AI attribution
