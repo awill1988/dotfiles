@@ -790,14 +790,19 @@
     "whip-it": {
       "flake": false,
       "locked": {
-        "path": "../whip-it",
-        "type": "path"
+        "lastModified": 1791494360,
+        "narHash": "sha256-114rxRovdmqqQSK5kj413wS8VLjD0qoNGrFina0I4No=",
+        "ref": "main",
+        "rev": "d452a6ff451a4eb19dc847ea567323a6ff74dbe5",
+        "revCount": 17,
+        "type": "git",
+        "url": "ssh://git@github.com/awill1988/whip-it.git"
       },
       "original": {
-        "path": "../whip-it",
-        "type": "path"
-      },
-      "parent": []
+        "ref": "main",
+        "type": "git",
+        "url": "ssh://git@github.com/awill1988/whip-it.git"
+      }
     }
   },
   "root": "root",

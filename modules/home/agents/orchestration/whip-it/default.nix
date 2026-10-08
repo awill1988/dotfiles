@@ -7,32 +7,23 @@
 }:
 let
   cfg = config.programs.whip-it;
-  has_pyproject = builtins.pathExists "${whip_it_src}/pyproject.toml";
-  application =
-    if has_pyproject then
-      pkgs.python3Packages.buildPythonApplication {
-        pname = "whip-it";
-        version = "0.1.0";
-        src = whip_it_src;
-        pyproject = true;
-        build-system = [ pkgs.python3Packages.poetry-core ];
-        pythonImportsCheck = [ "whipit" ];
-      }
-    else
-      null;
-  engine_script = "${whip_it_src}/scripts/whip_it.py";
+  application = pkgs.rustPlatform.buildRustPackage {
+    pname = "whip-it";
+    version = "0.1.0";
+    src = whip_it_src;
+    cargoLock.lockFile = "${whip_it_src}/Cargo.lock";
+    buildNoDefaultFeatures = true;
+    postInstall = ''
+      ${pkgs.python3}/bin/python3 scripts/verify_release.py --executable "$out/bin/whip-it"
+    '';
+  };
   state_dir = "${config.home.homeDirectory}/.local/state/whip-it";
   package = pkgs.writeShellScriptBin "whip-it" ''
     export WHIP_IT_MODE="${cfg.mode}"
     export WHIP_IT_MAX_SUBAGENTS="${toString cfg.defaultMaxSubagents}"
     export WHIP_IT_AUTO_CLAMP="${if cfg.autoClamp then "true" else "false"}"
     export WHIP_IT_STATE_DIR="''${WHIP_IT_STATE_DIR:-${state_dir}}"
-    ${
-      if has_pyproject then
-        "exec ${application}/bin/whip-it \"$@\""
-      else
-        "exec ${pkgs.python3}/bin/python3 ${engine_script} \"$@\""
-    }
+    exec ${application}/bin/whip-it "$@"
   '';
   home_dir = config.home.homeDirectory;
   expand_home = path: if lib.hasPrefix "~/" path then home_dir + lib.removePrefix "~" path else path;
@@ -66,21 +57,19 @@ let
     client: profile:
     let
       enabled = cfg.enable && eligible client profile;
-      profile_name = if profile == null then "default" else profile.name;
+      mk_handler = event: {
+        type = "command";
+        command = lib.escapeShellArgs [
+          "${package}/bin/whip-it"
+          "--client"
+          client
+          "--event"
+          event
+        ];
+      };
       mk_group = event: matcher: {
         inherit matcher;
-        hooks = [
-          {
-            type = "command";
-            command = lib.escapeShellArgs [
-              "${package}/bin/whip-it"
-              "--client"
-              client
-              "--event"
-              event
-            ];
-          }
-        ];
+        hooks = [ (mk_handler event) ];
       };
       tool_matcher =
         if client == "claude" then
@@ -92,13 +81,16 @@ let
       prompt_event = if client == "antigravity" then "PreInvocation" else "UserPromptSubmit";
     in
     {
-      hooks = lib.optionalAttrs enabled {
-        ${prompt_event} = [ (mk_group prompt_event "") ];
+      ${if client == "antigravity" then "whip-it" else "hooks"} = lib.optionalAttrs enabled {
+        ${prompt_event} = [
+          (if client == "antigravity" then mk_handler prompt_event else mk_group prompt_event "")
+        ];
         PreToolUse = [ (mk_group "PreToolUse" tool_matcher) ];
         PostToolUse = [ (mk_group "PostToolUse" tool_matcher) ];
       };
     };
   target = client: profile: directory: {
+    inherit client;
     path = "${directory}/${if client == "claude" then "settings.json" else "hooks.json"}";
     desired = mk_hooks client profile;
     legacy = { };
@@ -138,6 +130,12 @@ let
 in
 {
   options.programs.whip-it = {
+    package = lib.mkOption {
+      type = lib.types.package;
+      readOnly = true;
+      default = package;
+      description = "Configured native executable for isolated installation.";
+    };
     enable = lib.mkOption {
       type = lib.types.bool;
       default = true;

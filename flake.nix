@@ -32,7 +32,7 @@
     };
 
     whip-it = {
-      url = "path:../whip-it";
+      url = "git+ssh://git@github.com/awill1988/whip-it.git?ref=main";
       flake = false;
     };
 

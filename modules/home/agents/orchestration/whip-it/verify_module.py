@@ -1,9 +1,9 @@
 """verify evaluated whip-it module artifacts without activating a user profile."""
 
 import json
-from pathlib import Path
 import shlex
 import sys
+from pathlib import Path
 
 cases = json.loads(Path(sys.argv[1]).read_text())
 for name, case in cases.items():
@@ -13,7 +13,7 @@ for name, case in cases.items():
     assert len(paths) == len(specs), name
 
     if not case["enabled"]:
-        assert all(not spec["desired"]["hooks"] for spec in specs), name
+        assert all(not any(spec["desired"].values()) for spec in specs), name
         continue
 
     if name == "custom":
@@ -22,7 +22,8 @@ for name, case in cases.items():
         assert case["autoClamp"] is True
 
     for path, spec in paths.items():
-        hooks = spec["desired"]["hooks"]
+        client = spec["client"]
+        hooks = spec["desired"]["whip-it" if client == "antigravity" else "hooks"]
         if not hooks:
             continue
         client = (
@@ -34,8 +35,14 @@ for name, case in cases.items():
         )
         assert "PreToolUse" in hooks, f"Missing PreToolUse for {path} ({name})"
         for event, groups in hooks.items():
-            assert len(groups) == 1 and len(groups[0]["hooks"]) == 1, f"Invalid group in {path}"
-            command = shlex.split(groups[0]["hooks"][0]["command"])
+            assert len(groups) == 1, f"Invalid group in {path}"
+            if client == "antigravity" and event == "PreInvocation":
+                assert "hooks" not in groups[0] and "matcher" not in groups[0]
+                handler = groups[0]
+            else:
+                assert len(groups[0]["hooks"]) == 1, f"Invalid group in {path}"
+                handler = groups[0]["hooks"][0]
+            command = shlex.split(handler["command"])
             assert command[0].startswith("/nix/store/") and command[0].endswith("/bin/whip-it"), (
                 f"Invalid binary in {command}"
             )

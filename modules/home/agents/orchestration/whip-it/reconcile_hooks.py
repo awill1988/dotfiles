@@ -3,14 +3,14 @@
 
 import argparse
 import copy
-from contextlib import ExitStack, contextmanager
 import fcntl
 import hashlib
 import json
 import os
-from pathlib import Path
 import sys
 import tempfile
+from contextlib import ExitStack, contextmanager
+from pathlib import Path
 
 
 def read_object(path):
@@ -73,7 +73,15 @@ def atomic_write(path, value, expected=UNSPECIFIED):
             temporary.unlink(missing_ok=True)
 
 
-def records(document):
+def records(document, named=False):
+    if named:
+        result = []
+        for name, events in document.items():
+            if not isinstance(events, dict):
+                raise ValueError("named hook must be an object")
+            event_lists = {key: value for key, value in events.items() if key != "enabled"}
+            result.extend({**record, "name": name} for record in records({"hooks": event_lists}))
+        return result
     hooks = document.get("hooks", {})
     if not isinstance(hooks, dict):
         raise ValueError("hooks must be an object")
@@ -82,6 +90,9 @@ def records(document):
         if not isinstance(groups, list):
             raise ValueError(f"hooks.{event} must be an array")
         for group in groups:
+            if isinstance(group, dict) and "command" in group:
+                result.append({"event": event, "group": None, "handler": group})
+                continue
             if not isinstance(group, dict) or not isinstance(group.get("hooks"), list):
                 raise ValueError(f"invalid matcher group in hooks.{event}")
             for handler in group["hooks"]:
@@ -97,12 +108,40 @@ def records(document):
     return result
 
 
-def merge_hooks(target, desired, owned):
+def merge_hooks(target, desired, owned, named=False):
+    if named:
+        result = copy.deepcopy(target)
+        for name in set(target) | set(desired):
+            current = target.get(name, {})
+            wanted = desired.get(name, {})
+            scoped = [
+                {key: value for key, value in record.items() if key != "name"}
+                for record in owned
+                if record.get("name", "hooks") == name
+            ]
+            merged = merge_hooks(
+                {"hooks": {k: v for k, v in current.items() if k != "enabled"}},
+                {"hooks": {k: v for k, v in wanted.items() if k != "enabled"}},
+                scoped,
+            ).get("hooks", {})
+            if "enabled" in current:
+                merged["enabled"] = current["enabled"]
+            if "enabled" in wanted:
+                merged["enabled"] = wanted["enabled"]
+            if merged:
+                result[name] = merged
+            else:
+                result.pop(name, None)
+        return result
     result = copy.deepcopy(target)
     hooks = result.get("hooks", {})
     for event, groups in list(hooks.items()):
         kept_groups = []
         for group in groups:
+            if "command" in group:
+                if {"event": event, "group": None, "handler": group} not in owned:
+                    kept_groups.append(group)
+                continue
             metadata = {key: value for key, value in group.items() if key != "hooks"}
             kept = [
                 handler
@@ -132,28 +171,31 @@ def prepare_target(spec):
     target = read_object(path)
     desired = spec["desired"]
     previous = read_object(manifest_path)
+    named = spec.get("client") == "antigravity"
     try:
-        records(target)
-        current_records = records(desired)
+        records(target, named)
+        current_records = records(desired, named)
         previous_records = previous.get("records", [])
         if manifest_snapshot is not None and (
-            type(previous.get("version")) is not int or previous["version"] != 1
+            type(previous.get("version")) is not int or previous["version"] not in (1, 2)
         ):
             raise ValueError("unsupported ownership manifest version")
         if not isinstance(previous_records, list) or any(
             not isinstance(record, dict)
-            or set(record) != {"event", "group", "handler"}
+            or set(record)
+            not in ({"event", "group", "handler"}, {"event", "group", "handler", "name"})
+            or ("name" in record and (not named or not isinstance(record["name"], str)))
             or not isinstance(record["event"], str)
-            or not isinstance(record["group"], dict)
-            or "hooks" in record["group"]
+            or (record["group"] is not None and not isinstance(record["group"], dict))
+            or (isinstance(record["group"], dict) and "hooks" in record["group"])
             or not isinstance(record["handler"], dict)
             or not isinstance(record["handler"].get("command"), str)
             or record["handler"].get("type") != "command"
             for record in previous_records
         ):
             raise ValueError("invalid ownership manifest")
-        owned = previous_records + current_records + records(spec.get("legacy", {}))
-        merged = merge_hooks(target, desired, owned)
+        owned = previous_records + current_records + records(spec.get("legacy", {}), named)
+        merged = merge_hooks(target, desired, owned, named)
     except (ValueError, AttributeError, TypeError) as error:
         raise ValueError(f"cannot reconcile {path}: {error}") from error
     assert_unchanged(path, target_snapshot)
@@ -212,7 +254,10 @@ def reconcile(specs):
             atomic_write(path, merged, target_snapshot)
             atomic_write(
                 manifest_path,
-                {"version": 1, "records": current_records},
+                {
+                    "version": 2 if any("name" in r for r in current_records) else 1,
+                    "records": current_records,
+                },
                 manifest_snapshot,
             )
 
