@@ -31,6 +31,11 @@
       flake = false;
     };
 
+    whip-it = {
+      url = "git+ssh://git@github.com/awill1988/whip-it.git?ref=main";
+      flake = false;
+    };
+
     stylix = {
       url = "github:danth/stylix/release-25.11";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -284,6 +289,10 @@
           pkgs = import inputs.nixpkgs { inherit system; };
           hold_up_src = inputs.hold-up;
         };
+        whip-it = import ./modules/home/agents/orchestration/whip-it/check.nix {
+          pkgs = import inputs.nixpkgs { inherit system; };
+          whip_it_src = inputs.whip-it;
+        };
       });
 
       homeManagerModules = {
@@ -304,6 +313,9 @@
         };
         home-agent-hold-up = import ./modules/home/agents/orchestration/hold-up {
           hold_up_src = inputs.hold-up;
+        };
+        home-agent-whip-it = import ./modules/home/agents/orchestration/whip-it {
+          whip_it_src = inputs.whip-it;
         };
         home-agent-provider-status = self.homeManagerModules.home-agent-hold-up;
         home-agent-continuous = import ./modules/home/agents/orchestration/continuous-agent;
