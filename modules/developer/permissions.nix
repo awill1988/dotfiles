@@ -267,6 +267,8 @@ rec {
     {
       allow = allowCommands ++ allowMcp;
       deny = lib.unique (denyCommands ++ denyMcp ++ sensitiveDenyReads);
+      disableAutoMode = "disable";
+      defaultMode = "default";
     };
 
   # Translates general permissions into AGY settings permissions block

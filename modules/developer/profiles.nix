@@ -151,6 +151,11 @@ let
           default = false;
           description = "Enable Claude.ai organizational MCP servers";
         };
+        disableAutoMode = mkOption {
+          type = types.bool;
+          default = true;
+          description = "Completely disable auto-mode in Claude Code CLI";
+        };
       };
       codex = {
         enable = mkOption {

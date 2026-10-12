@@ -35,6 +35,9 @@ let
       export DISABLE_TELEMETRY=1
       export DISABLE_GROWTHBOOK=1
       export DISABLE_ERROR_REPORTING=1
+      ${lib.optionalString cfg.disableAutoMode ''
+        export CLAUDE_CODE_DISABLE_PROACTIVITY=1
+      ''}
 
       ${
         if config.developer.profileRouter != null then
@@ -64,6 +67,11 @@ in
       type = lib.types.package;
       default = base_package;
       description = "Claude package to install.";
+    };
+    disableAutoMode = lib.mkOption {
+      type = lib.types.bool;
+      default = true;
+      description = "Completely disable auto-mode in Claude Code CLI";
     };
   };
 

@@ -72,45 +72,55 @@ let
   mkClaudeSettings =
     profile:
     pkgs.writeText "claude-settings-${profile.name}.json" (
-      builtins.toJSON {
-        env = {
-          CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC = "1";
-          DISABLE_NON_ESSENTIAL_MODEL_CALLS = "1";
-          CLAUDE_CODE_MAX_OUTPUT_TOKENS = "128000";
-          ENABLE_CLAUDEAI_MCP_SERVERS =
-            if profile.agents.claude.enableOrganizationalMcp then "true" else "false";
-          DISABLE_AUTOUPDATER = "1";
-          DISABLE_UPDATES = "1";
-          CLAUDE_CODE_DISABLE_AUTO_MEMORY = "1";
-          CLAUDE_CODE_DISABLE_FEEDBACK_SURVEY = "1";
-          DISABLE_TELEMETRY = "1";
-          DISABLE_GROWTHBOOK = "1";
-          DISABLE_ERROR_REPORTING = "1";
-          DO_NOT_TRACK = "1";
-        };
-        autoUpdaterStatus = "disabled";
-        axScreenReader = false;
-        prefersReducedMotion = true;
-        spinnerTipsEnabled = false;
-        autoMemoryEnabled = false;
-        effortLevel = profile.agents.claude.effortLevel;
-        telemetry = {
-          enabled = false;
-          analytics = false;
-          statsig.enabled = false;
-        };
-        feedback = {
-          prompt = false;
-          surveys.enabled = false;
-        };
-        feedbackSurveyRate = 0;
-        attribution = {
-          commit = "";
-          pr = "";
-          sessionUrl = false;
-        };
-        permissions = permsLib.toClaudePermissions profile.agents.permissions;
-      }
+      builtins.toJSON (
+        {
+          env = {
+            CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC = "1";
+            DISABLE_NON_ESSENTIAL_MODEL_CALLS = "1";
+            CLAUDE_CODE_MAX_OUTPUT_TOKENS = "128000";
+            ENABLE_CLAUDEAI_MCP_SERVERS =
+              if profile.agents.claude.enableOrganizationalMcp then "true" else "false";
+            DISABLE_AUTOUPDATER = "1";
+            DISABLE_UPDATES = "1";
+            CLAUDE_CODE_DISABLE_AUTO_MEMORY = "1";
+            CLAUDE_CODE_DISABLE_FEEDBACK_SURVEY = "1";
+            DISABLE_TELEMETRY = "1";
+            DISABLE_GROWTHBOOK = "1";
+            DISABLE_ERROR_REPORTING = "1";
+            DO_NOT_TRACK = "1";
+          };
+          autoUpdaterStatus = "disabled";
+          axScreenReader = false;
+          prefersReducedMotion = true;
+          spinnerTipsEnabled = false;
+          autoMemoryEnabled = false;
+          effortLevel = profile.agents.claude.effortLevel;
+          telemetry = {
+            enabled = false;
+            analytics = false;
+            statsig.enabled = false;
+          };
+          feedback = {
+            prompt = false;
+            surveys.enabled = false;
+          };
+          feedbackSurveyRate = 0;
+          attribution = {
+            commit = "";
+            pr = "";
+            sessionUrl = false;
+          };
+          permissions =
+            (permsLib.toClaudePermissions profile.agents.permissions)
+            // (lib.optionalAttrs profile.agents.claude.disableAutoMode {
+              disableAutoMode = "disable";
+              defaultMode = "default";
+            });
+        }
+        // lib.optionalAttrs profile.agents.claude.disableAutoMode {
+          disableAutoMode = "disable";
+        }
+      )
     );
 
   mkAgySettings =
@@ -558,7 +568,7 @@ in
         else
           ${pkgs.jq}/bin/jq -s '
             .[0] as $target | .[1] as $source
-            | (($target * $source) | del(.env.CLAUDE_AX_SCREEN_READER))
+            | (($target * $source) | del(.env.CLAUDE_AX_SCREEN_READER) | del(.autoMode))
             | .permissions.allow = (((($target.permissions.allow // []) + ($source.permissions.allow // [])) | unique))
             | .permissions.deny = (((($target.permissions.deny // []) + ($source.permissions.deny // [])) | unique))
           ' "$claude_dest_dir/settings.json" "${mkClaudeSettings p}" > "$claude_dest_dir/settings.json.tmp"
@@ -574,7 +584,7 @@ in
             else
               ${pkgs.jq}/bin/jq -s '
                 .[0] as $target | .[1] as $source
-                | (($target * $source) | del(.env.CLAUDE_AX_SCREEN_READER))
+                | (($target * $source) | del(.env.CLAUDE_AX_SCREEN_READER) | del(.autoMode))
                 | .permissions.allow = (((($target.permissions.allow // []) + ($source.permissions.allow // [])) | unique))
                 | .permissions.deny = (((($target.permissions.deny // []) + ($source.permissions.deny // [])) | unique))
               ' "$base_claude_dir/settings.json" "${mkClaudeSettings p}" > "$base_claude_dir/settings.json.tmp"
