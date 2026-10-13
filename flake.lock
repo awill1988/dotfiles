@@ -455,16 +455,16 @@
     "prompts": {
       "flake": false,
       "locked": {
-        "lastModified": 1791852740,
+        "lastModified": 1791853695,
         "narHash": "sha256-5Uyuw4nD9lZQ4EOkTXnV/CRZIbf9lFuVwaF9IQKQ13s=",
         "owner": "awill1988",
         "repo": "prompts",
-        "rev": "ef235c2b7fa65c6828890962691358affbb21381",
+        "rev": "4084cd51219c660d8b26090546c50d289dae267c",
         "type": "github"
       },
       "original": {
         "owner": "awill1988",
-        "ref": "refactor/shared-instructions",
+        "ref": "main",
         "repo": "prompts",
         "type": "github"
       }

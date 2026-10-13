@@ -17,7 +17,7 @@
 
     flake-utils.url = "github:numtide/flake-utils";
     prompts = {
-      url = "github:awill1988/prompts/refactor/shared-instructions";
+      url = "github:awill1988/prompts/main";
       flake = false;
     };
     mac-app-util.url = "github:hraban/mac-app-util";
