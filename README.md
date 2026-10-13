@@ -172,8 +172,10 @@ published prompts commit alone never changes installed instructions.
 All consumers use `modules.agents.agent-prompts.instructionsSource`, whose
 default comes from the pinned input. The module honors resolved client
 `configDir` settings and runs after profile-directory setup. Installed canonical
-files have mode `0600`; client instruction filenames are aliases to the shared
-installed canonical file. Activation does not fetch from Git.
+files have mode `0600`; profile client filenames are aliases to the shared
+installed canonical file. Global Codex and AGY links remain managed by Home
+Manager and reference the same pinned source, preserving generation rollback.
+Activation does not fetch from Git.
 
 ### Migration and rollback
 
@@ -190,8 +192,8 @@ For a prompt-only rollback, restore the preceding `prompts` lock entry through a
 reviewed commit, rebuild, and activate. For the initial cutover, activate the
 previous Darwin/Home Manager generation to restore its installation behavior.
 Backups preserve local edits; the installer does not merge them into repository
-policy. Disabling installation stops further updates and does not delete
-previously installed files or migration backups.
+policy. Disabling the module removes its Home Manager-managed global links and
+stops updating profile copies; it does not delete profile files or backups.
 
 ### ContextForge ownership
 
