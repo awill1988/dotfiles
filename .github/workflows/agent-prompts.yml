@@ -1,0 +1,26 @@
+name: Agent Prompt Contracts
+
+on:
+  pull_request:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  contracts:
+    name: prompt-contracts-${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-14]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: cachix/install-nix-action@v31
+      - name: Build pinned prompt module contracts
+        run: nix build --impure --no-link --file modules/home/agents/orchestration/agent-prompts/ci.nix

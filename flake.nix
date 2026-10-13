@@ -16,6 +16,10 @@
     };
 
     flake-utils.url = "github:numtide/flake-utils";
+    prompts = {
+      url = "github:awill1988/prompts/main";
+      flake = false;
+    };
     mac-app-util.url = "github:hraban/mac-app-util";
 
     hold-up = {
@@ -277,6 +281,13 @@
       };
 
       checks = forAllSystems (system: {
+        git-signing = import ./modules/home/vcs/git/check.nix {
+          pkgs = import inputs.nixpkgs { inherit system; };
+        };
+        agent-prompts = import ./modules/home/agents/orchestration/agent-prompts/check.nix {
+          pkgs = import inputs.nixpkgs { inherit system; };
+          prompts_src = inputs.prompts;
+        };
         hold-up = import ./modules/home/agents/orchestration/hold-up/check.nix {
           pkgs = import inputs.nixpkgs { inherit system; };
           hold_up_src = inputs.hold-up;
@@ -299,7 +310,9 @@
         home-agent-codex = import ./modules/home/agents/core/codex;
         home-agent-agy = import ./modules/home/agents/core/agy;
         home-agent-opencode = import ./modules/home/agents/core/opencode;
-        home-agent-prompts = import ./modules/home/agents/orchestration/agent-prompts;
+        home-agent-prompts = import ./modules/home/agents/orchestration/agent-prompts {
+          prompts_src = inputs.prompts;
+        };
         home-agent-skills = import ./modules/home/agents/orchestration/agent-skills;
         home-agent-hold-up = import ./modules/home/agents/orchestration/hold-up {
           hold_up_src = inputs.hold-up;

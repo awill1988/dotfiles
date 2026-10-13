@@ -100,8 +100,6 @@ let
     }
   );
 
-  agy_instructions_source = ../../orchestration/agent-prompts/AGENTS.md;
-
   agy_settings_reset = pkgs.writeShellScriptBin "agy-settings-reset" ''
     set -euo pipefail
 
@@ -253,9 +251,6 @@ in
       seed_agy_settings "${restricted_settings_src}" "${agy_restricted_home}/settings.json"
       seed_agy_settings "${primary_settings_src}" "${home_dir}/.gemini/antigravity-cli/settings.json"
     '';
-
-    xdg.configFile."antigravity/AGY.md".source = agy_instructions_source;
-    xdg.configFile."antigravity-restricted/AGY.md".source = agy_instructions_source;
 
     home.sessionVariables = {
       ANTIGRAVITY_AGENT = "1";

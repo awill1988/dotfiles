@@ -9,7 +9,6 @@ let
   codex_config_dir = "${config.xdg.configHome}/codex";
   local_skills_dir = "${config.home.homeDirectory}/.local/share/agent-skills";
   config_source = ./config.toml;
-  agents_override_source = ../../orchestration/agent-prompts/AGENTS.md;
   permsLib = import ../../../../developer/permissions.nix { inherit lib; };
   baseline_permissions =
     if config ? developer && config.developer ? baseline then
@@ -82,10 +81,6 @@ in
       home.file.".local/bin/codex".source = "${codex_wrapper}/bin/codex";
       home.file.".local/bin/codex-code-mode-host".source = "${cfg.package}/bin/codex-code-mode-host";
 
-      xdg.configFile."codex/AGENTS.override.md" = {
-        source = agents_override_source;
-        force = true;
-      };
       xdg.configFile."codex/rules/default.rules" = {
         text = default_rules;
         force = true;

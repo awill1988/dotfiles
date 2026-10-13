@@ -144,17 +144,15 @@ let
         continue
       fi
 
-      if [ "$remote_sha" = "$zero" ]; then
-        if [ -n "$remote_name" ] && ${pkgs.git}/bin/git for-each-ref --format='%(refname)' "refs/remotes/$remote_name" 2>/dev/null | ${pkgs.gnugrep}/bin/grep -q .; then
-          commits="$(${pkgs.git}/bin/git rev-list "$local_sha" --not --remotes="$remote_name")"
-        elif ${pkgs.git}/bin/git for-each-ref --format='%(refname)' refs/remotes/ 2>/dev/null | ${pkgs.gnugrep}/bin/grep -q .; then
-          commits="$(${pkgs.git}/bin/git rev-list "$local_sha" --not --remotes)"
-        else
-          commits="$(${pkgs.git}/bin/git rev-list "$local_sha")"
-        fi
-      else
-        commits="$(${pkgs.git}/bin/git rev-list "$remote_sha..$local_sha")"
+      revisions=("$local_sha")
+      if [ "$remote_sha" != "$zero" ]; then
+        revisions+=("^$remote_sha")
       fi
+      # Existing remote history is not introduced by this push.
+      if [ -n "$remote_name" ]; then
+        revisions+=(--not "--remotes=$remote_name")
+      fi
+      commits="$(${pkgs.git}/bin/git rev-list "''${revisions[@]}")"
 
       for commit in $commits; do
         sig_status="$(${pkgs.git}/bin/git log -1 --format='%G?' "$commit" 2>/dev/null || echo "N")"
