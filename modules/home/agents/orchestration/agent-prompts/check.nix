@@ -28,6 +28,10 @@ let
             };
             xdg.configHome = lib.mkOption { default = "/home/example/.config"; };
             xdg.stateHome = lib.mkOption { default = "/home/example/.local/state"; };
+            xdg.configFile = lib.mkOption {
+              type = lib.types.attrs;
+              default = { };
+            };
             programs = lib.genAttrs [ "claude" "codex" "agy" "opencode" ] (_: {
               enable = lib.mkOption { default = true; };
             });
@@ -59,6 +63,7 @@ let
         {
           manifest = config.modules.agents.agent-prompts.installationManifest;
           activation = config.home.activation;
+          global_files = config.xdg.configFile;
         }
       )
       {

@@ -107,6 +107,24 @@ class InstallationTests(unittest.TestCase):
         install(self.manifest)
         self.assertEqual((target/self.alias.name).read_text(), self.source.read_text())
 
+    def test_shared_global_directory_preserves_generation_link(self):
+        target = self.root/'global'
+        target.mkdir()
+        global_file = target/self.alias.name
+        global_file.symlink_to(self.source)
+        self.alias.parent.symlink_to(target)
+        self.manifest['managed_files'] = [str(global_file)]
+        install(self.manifest)
+        self.assertEqual(global_file.readlink(), self.source)
+
+    def test_global_generation_must_match_source(self):
+        self.alias.parent.mkdir()
+        self.alias.write_text('previous generation')
+        self.manifest['managed_files'] = [str(self.alias)]
+        with self.assertRaises(ValueError):
+            install(self.manifest)
+        self.assertFalse(self.canonical.exists())
+
     def test_invalid_alias_target(self):
         self.manifest['aliases'][str(self.alias)] = str(self.root/'unknown')
         with self.assertRaises(ValueError):

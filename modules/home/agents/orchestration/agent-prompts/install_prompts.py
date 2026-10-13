@@ -17,6 +17,13 @@ def validate(manifest):
         raise ValueError('instructions must be nonempty utf-8 text')
     files = [Path(path) for path in manifest['files']]
     aliases = {Path(path): Path(target) for path, target in manifest['aliases'].items()}
+    managed = {Path(path).parent.resolve() / Path(path).name for path in manifest.get('managed_files', [])}
+    # Home Manager owns global links across generations, including shared config directories.
+    for path in list(aliases):
+        if path.parent.resolve() / path.name in managed:
+            if path.read_bytes() != content:
+                raise ValueError(f'global instructions are not installed from the expected source: {path}')
+            del aliases[path]
     backup_dir = Path(manifest['backup_dir'])
     destinations = files + list(aliases)
     if len(set(destinations)) != len(destinations):

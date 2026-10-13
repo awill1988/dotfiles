@@ -53,23 +53,22 @@ let
       )
     ) (builtins.attrNames clients)
   ) profiles;
-  global_aliases =
-    lib.concatMap
-      (
-        name:
-        lib.optionals (enabled name) (
-          map (filename: "${config_home}/${clients.${name}.directory}/${filename}") clients.${name}.filenames
-        )
-      )
-      [
-        "codex"
-        "agy"
-      ]
-    ++ lib.optional (enabled "agy") "${config_home}/antigravity-restricted/AGY.md";
+  global_files =
+    lib.optionalAttrs (enabled "codex") {
+      "codex/AGENTS.override.md" = {
+        source = cfg.instructionsSource;
+        force = true;
+      };
+    }
+    // lib.optionalAttrs (enabled "agy") {
+      "antigravity/AGY.md".source = cfg.instructionsSource;
+      "antigravity-restricted/AGY.md".source = cfg.instructionsSource;
+    };
   manifest = {
     source = toString cfg.instructionsSource;
     files = [ canonical ] ++ map (p: "${config_home}/profiles/${p.name}/AGENTS.md") profiles;
-    aliases = lib.genAttrs (lib.unique (profile_aliases ++ global_aliases)) (_: canonical);
+    aliases = lib.genAttrs (lib.unique profile_aliases) (_: canonical);
+    managed_files = map (name: "${config_home}/${name}") (builtins.attrNames global_files);
     backup_dir = "${config.xdg.stateHome}/agent-prompts/backups";
   };
   manifest_file = pkgs.writeText "agent-prompts-manifest.json" (builtins.toJSON manifest);
@@ -94,6 +93,7 @@ in
   };
 
   config = lib.mkIf cfg.enable {
+    xdg.configFile = global_files;
     home.activation.ensureAgentPrompts =
       lib.hm.dag.entryAfter [ "writeBoundary" "linkGeneration" "ensureProfileDirs" ]
         ''
