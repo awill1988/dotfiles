@@ -452,6 +452,23 @@
         "type": "github"
       }
     },
+    "prompts": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1791852137,
+        "narHash": "sha256-Y2qMVsWnr89UjBf10NafmyFkIcnmc0v5hkz9RSKs6Ok=",
+        "owner": "awill1988",
+        "repo": "prompts",
+        "rev": "564829dbc77e1751efd365d148c7ce4b5f9b5327",
+        "type": "github"
+      },
+      "original": {
+        "owner": "awill1988",
+        "ref": "refactor/shared-instructions",
+        "repo": "prompts",
+        "type": "github"
+      }
+    },
     "pyproject-build-systems": {
       "inputs": {
         "nixpkgs": [
@@ -507,6 +524,7 @@
         "mac-app-util": "mac-app-util",
         "nixpkgs": "nixpkgs_5",
         "nixpkgs-unstable": "nixpkgs-unstable",
+        "prompts": "prompts",
         "pyproject-build-systems": "pyproject-build-systems",
         "pyproject-nix": "pyproject-nix",
         "rust-overlay": "rust-overlay",
