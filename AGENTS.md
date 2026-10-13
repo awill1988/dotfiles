@@ -18,10 +18,11 @@
 - Planning multiple queries in parallel is fine, but each must wait for the previous to complete before executing
 - This applies to all SQL-capable MCP tools (Snowflake, Postgres, and any future database tools)
 
-For general coding standards and practices, see program-specific files:
-- `modules/home/agents/orchestration/agent-prompts/AGENTS.md`
-- `modules/home/agents/core/claude/CLAUDE.md`
-- `modules/home/agents/core/codex/AGENTS.override.md`
+Shared coding standards and technology policies are maintained in
+[`awill1988/prompts`](https://github.com/awill1988/prompts), through its
+`instructions/AGENTS.md` interface. This repository owns installation,
+identity routing, credentials, and permissions. See the README's shared
+instructions section for the Nix cutover and update procedure.
 
 ## Response Profile
 
@@ -95,4 +96,3 @@ sudo ./result/sw/bin/darwin-rebuild switch --flake .#macbook-personal
 - Primary agent orchestrator is `agy` with peers `claude` and `codex`
 - Corporate/work repositories (`~/projects/arro/*`) resolve to the `work` profile and must exclusively use `claude-secondary` (`CLAUDE_CONFIG_DIR=~/.config/claude-secondary`)
 - Autonomous continuous loops (`agent-loop` / `loop`) adhere to active profile boundaries and isolate iterations into Git worktrees (`wt switch -c`)
-
