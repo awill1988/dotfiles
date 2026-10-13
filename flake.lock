@@ -455,11 +455,11 @@
     "prompts": {
       "flake": false,
       "locked": {
-        "lastModified": 1791852454,
-        "narHash": "sha256-2kayY0SOADHWNJ3ussL9P6PcxESvphI45+/bCbPFeYg=",
+        "lastModified": 1791852740,
+        "narHash": "sha256-5Uyuw4nD9lZQ4EOkTXnV/CRZIbf9lFuVwaF9IQKQ13s=",
         "owner": "awill1988",
         "repo": "prompts",
-        "rev": "4c02c7ac211fbb8a51d14f617a2a531599e6949c",
+        "rev": "ef235c2b7fa65c6828890962691358affbb21381",
         "type": "github"
       },
       "original": {
