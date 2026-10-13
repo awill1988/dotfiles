@@ -114,7 +114,8 @@ def main():
     parser.add_argument('--dry-run', action='store_true')
     args = parser.parse_args()
     changes = install(json.loads(args.manifest.read_text()), args.dry_run)
-    print(f'instruction destinations updated: {len(changes)}')
+    action = 'would update' if args.dry_run else 'updated'
+    print(f'instruction destinations {action}: {len(changes)}')
 
 
 if __name__ == '__main__':
