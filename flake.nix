@@ -18,14 +18,6 @@
     flake-utils.url = "github:numtide/flake-utils";
     mac-app-util.url = "github:hraban/mac-app-util";
 
-    # vendored agent skills (installed via the agent-skills module, not the
-    # claude code plugin marketplace); pinned in flake.lock, bumped with
-    # `nix flake update golang-skills`.
-    golang-skills = {
-      url = "github:cxuu/golang-skills";
-      flake = false;
-    };
-
     hold-up = {
       url = "github:awill1988/hold-up/19f901e3529eaee8d95d186eedf7ae64eb2942dc";
       flake = false;
@@ -308,9 +300,7 @@
         home-agent-agy = import ./modules/home/agents/core/agy;
         home-agent-opencode = import ./modules/home/agents/core/opencode;
         home-agent-prompts = import ./modules/home/agents/orchestration/agent-prompts;
-        home-agent-skills = import ./modules/home/agents/orchestration/agent-skills {
-          golang_skills_src = inputs.golang-skills;
-        };
+        home-agent-skills = import ./modules/home/agents/orchestration/agent-skills;
         home-agent-hold-up = import ./modules/home/agents/orchestration/hold-up {
           hold_up_src = inputs.hold-up;
         };
