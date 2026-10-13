@@ -281,6 +281,9 @@
       };
 
       checks = forAllSystems (system: {
+        git-signing = import ./modules/home/vcs/git/check.nix {
+          pkgs = import inputs.nixpkgs { inherit system; };
+        };
         agent-prompts = import ./modules/home/agents/orchestration/agent-prompts/check.nix {
           pkgs = import inputs.nixpkgs { inherit system; };
           prompts_src = inputs.prompts;
