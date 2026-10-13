@@ -139,3 +139,66 @@ nix fmt
 # Validate flake outputs & overlays
 nix flake check
 ```
+
+## Shared Instructions
+
+[`awill1988/prompts`](https://github.com/awill1988/prompts) owns shared engineering
+and technology policies. Every developer profile receives the same document.
+This repository retains identity routing, permitted tools, credentials, and
+installation. Profile-specific configuration remains in `userinfo.nix`; changing
+shared instructions does not expand authorized accounts or clients.
+
+The non-flake `prompts` input provides shared instructions through its
+`instructions/AGENTS.md` interface, replacing three client instruction copies.
+Repository-local `AGENTS.md`, `CLAUDE.md`, and `AGY.md` remain repository guidance.
+
+### Update and verification
+
+Update only the prompt input from a merged prompts revision:
+
+```sh
+nix flake update prompts
+nix build .#checks.aarch64-darwin.agent-prompts
+nix flake check
+nix build .#darwinConfigurations.macbook-personal.system
+```
+
+On Linux, use `checks.x86_64-linux.agent-prompts` and build
+`homeConfigurations.wsl-debian-personal.activationPackage`. Review and commit
+the lock change before activating through the platform procedure above. A
+published prompts commit alone never changes installed instructions.
+
+All consumers use `modules.agents.agent-prompts.instructionsSource`, whose
+default comes from the pinned input. The module honors resolved client
+`configDir` settings and runs after profile-directory setup. Installed canonical
+files have mode `0600`; profile client filenames are aliases to the shared
+installed canonical file. Global Codex and AGY links remain managed by Home
+Manager and reference the same pinned source, preserving generation rollback.
+Activation does not fetch from Git.
+
+### Migration and rollback
+
+The cutover validates destinations before replacing files and backs up displaced
+content under `$XDG_STATE_HOME/agent-prompts/backups` (normally
+`~/.local/state/agent-prompts/backups`). Each backup directory includes `path.txt`
+identifying the original destination. Repeated activation is idempotent.
+
+After activation, compare installed content and aliases with the locked source
+for every enabled client and configured profile. Keep the previous generation
+available until these checks pass.
+
+For a prompt-only rollback, restore the preceding `prompts` lock entry through a
+reviewed commit, rebuild, and activate. For the initial cutover, activate the
+previous Darwin/Home Manager generation to restore its installation behavior.
+Backups preserve local edits; the installer does not merge them into repository
+policy. Disabling the module removes its Home Manager-managed global links and
+stops updating profile copies; it does not delete profile files or backups.
+
+### ContextForge ownership
+
+The gateway server registry is
+`modules/home/agents/agent-tools/contextforge/mcp-servers.toml`. Update that file,
+rebuild the Darwin configuration, and run `contextforge-mcp-sync`. Bridge secrets
+remain in `~/.config/contextforge/mcpgw-bridge.env`. Use `mcpgw-status`,
+`mcpgw-bridges`, and `mcpgw-setup` for gateway diagnostics and repair. These
+machine-specific operations are not embedded in the shared prompt policy.
