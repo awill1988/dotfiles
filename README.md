@@ -148,14 +148,13 @@ This repository retains identity routing, permitted tools, credentials, and
 installation. Profile-specific configuration remains in `userinfo.nix`; changing
 shared instructions does not expand authorized accounts or clients.
 
-The external-prompts cutover replaces three client instruction copies with the
-non-flake `prompts` input and its `instructions/AGENTS.md` interface. Until that
-cutover merges, the existing local instruction installation remains active.
+The non-flake `prompts` input provides shared instructions through its
+`instructions/AGENTS.md` interface, replacing three client instruction copies.
 Repository-local `AGENTS.md`, `CLAUDE.md`, and `AGY.md` remain repository guidance.
 
 ### Update and verification
 
-After the cutover, update only the prompt input from a merged prompts revision:
+Update only the prompt input from a merged prompts revision:
 
 ```sh
 nix flake update prompts
