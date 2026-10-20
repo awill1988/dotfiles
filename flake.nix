@@ -408,6 +408,7 @@
             codex
             agy
             claude
+            harness2
             ;
         }
       );

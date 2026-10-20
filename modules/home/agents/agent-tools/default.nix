@@ -37,6 +37,11 @@ in
       default = true;
       description = "Install github-mcp-server tool.";
     };
+    enableHarness2 = mkOption {
+      type = types.bool;
+      default = true;
+      description = "Install harness2 recursive agent harnessing CLI tools.";
+    };
   };
 
   config = mkIf cfg.enable {
@@ -50,6 +55,7 @@ in
     home.packages =
       (optional cfg.enableDrawioMcp pkgs.drawio-mcp)
       ++ (optional cfg.enableFivetranMcp pkgs.fivetran-mcp-server)
-      ++ (optional cfg.enableGithubMcp pkgs.github-mcp-server);
+      ++ (optional cfg.enableGithubMcp pkgs.github-mcp-server)
+      ++ (optional cfg.enableHarness2 pkgs.harness2);
   };
 }

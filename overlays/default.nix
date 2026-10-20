@@ -8,6 +8,7 @@
   opencode = import ./opencode.nix;
   agy = import ./agy.nix;
   github-mcp-server = import ./github-mcp-server.nix;
+  harness2 = import ./harness2.nix;
   hunyuan3d-2 = import ./hunyuan3d-2.nix;
   mtkclient = import ./mtkclient.nix;
   libsecret = final: prev: {
