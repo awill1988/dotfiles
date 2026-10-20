@@ -11,6 +11,7 @@
   harness2 = import ./harness2.nix;
   hunyuan3d-2 = import ./hunyuan3d-2.nix;
   mtkclient = import ./mtkclient.nix;
+  niro = import ./niro.nix;
   libsecret = final: prev: {
     libsecret = prev.libsecret.override { withIntrospection = false; };
   };

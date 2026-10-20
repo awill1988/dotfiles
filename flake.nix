@@ -409,6 +409,7 @@
             agy
             claude
             harness2
+            niro
             ;
         }
       );

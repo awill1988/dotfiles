@@ -9,7 +9,11 @@ let
 in
 pkgs.runCommand "git-signing-contracts"
   {
-    nativeBuildInputs = [ pkgs.python3 pkgs.git pkgs.openssh ];
+    nativeBuildInputs = [
+      pkgs.python3
+      pkgs.git
+      pkgs.openssh
+    ];
     PRE_PUSH_HOOK = hook;
   }
   ''
