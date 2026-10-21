@@ -123,6 +123,16 @@
               "43015"
             ];
           };
+          # official customer.io server (us region, streamable http). per-user
+          # oauth only: an account admin enables mcp under workspace settings,
+          # then /mcp in claude authenticates with your own customer.io login.
+          customerio = {
+            command = "mcp-remote-wrapper";
+            args = [
+              "https://mcp.customer.io/mcp"
+              "43016"
+            ];
+          };
           grafana = {
             command = "uvx";
             args = [ "mcp-grafana" ];
