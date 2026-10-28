@@ -12,12 +12,15 @@ if [[ ! -f "$uuid_file" ]]; then
 fi
 uuid="$(cat "$uuid_file")"
 
-export MCP_SERVER_URL="http://@GATEWAY_HOST@:@GATEWAY_PORT@/servers/$uuid/mcp"
+export MCP_SERVER_URL="http://@GATEWAY_HOST@:@GATEWAY_PORT@/servers/$uuid/mcp/"
 
 # load jwt token for virtual server auth (acquired by setup service)
 token_file="@DATA_DIR@/gateway-token"
 if [[ -f "$token_file" ]]; then
   export MCP_AUTH="Bearer $(cat "$token_file")"
+else
+  echo "error: gateway token missing; run mcpgw-setup" >&2
+  exit 1
 fi
 
-exec @GATEWAY_PYTHON@ -m mcpgateway.wrapper
+exec @REMOTE_BIN@ "$MCP_SERVER_URL" --auth none --header 'Authorization: ${MCP_AUTH}'

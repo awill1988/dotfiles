@@ -28,7 +28,7 @@ import orjson
 from pydantic import BaseModel, Field
 
 # First-Party
-from mcpgateway.plugins.framework import (
+from cpex.framework import (
     Plugin,
     PluginConfig,
     PluginContext,

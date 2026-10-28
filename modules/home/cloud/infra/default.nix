@@ -28,6 +28,7 @@ in
       sqlite
       mariadb.client
       postgresql
+      (snowflake-cli.overridePythonAttrs { doCheck = false; })
       jsonnet
       qemu
       protobuf

@@ -46,7 +46,7 @@ def expand_value(value, missing):
     if isinstance(value, str):
         for match in pattern.findall(value):
             env_name = match[0] or match[1]
-            if os.environ.get(env_name) is None:
+            if not os.environ.get(env_name):
                 missing.add(env_name)
         return os.path.expandvars(value)
     if isinstance(value, dict):

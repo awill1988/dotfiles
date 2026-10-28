@@ -1,13 +1,17 @@
 import jwt
-import warnings
+import os
+import time
+import uuid
 
-warnings.filterwarnings("ignore")
 print(
     jwt.encode(
         {
             "sub": "admin@example.com",
             "iss": "mcpgateway",
             "aud": "mcpgateway-api",
+            "iat": int(time.time()),
+            "jti": str(uuid.uuid4()),
+            "teams": None,
             "user": {
                 "email": "admin@example.com",
                 "full_name": "Local Admin",
@@ -15,7 +19,7 @@ print(
                 "auth_provider": "local",
             },
         },
-        "my-test-key",
+        os.environ["JWT_SECRET_KEY"],
         algorithm="HS256",
     )
 )

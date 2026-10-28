@@ -28,17 +28,44 @@ while ! curl -sf --max-time 5 "$url/health" >/dev/null 2>&1; do
 done
 echo "gateway healthy"
 
+set -a
+. "@CONFIG_DIR@/gateway.env"
+. "@CONFIG_DIR@/gateway-secrets.env"
+set +a
+
+# Persistent stdio clients and management calls share the locally signed token.
+if [[ ! -f "$token_file" ]]; then
+  token="$(@GATEWAY_PYTHON@ "@GENERATE_TOKEN_PY@" 2>/dev/null)" || {
+    echo "warning: failed to generate jwt, wrapper may not authenticate" >&2
+    exit 1
+  }
+
+  if [[ -n "$token" ]]; then
+    tmp="$(mktemp)"
+    echo "$token" > "$tmp"
+    chmod 600 "$tmp"
+    mv "$tmp" "$token_file"
+    echo "gateway token generated (saved to $token_file)"
+  fi
+else
+  echo "gateway token already exists: $token_file"
+fi
+
+gateway_curl() {
+  command curl -H "Authorization: Bearer $(cat "$token_file")" "$@"
+}
+
 # ensure virtual server exists — validate saved uuid against live gateway
 first_run=1
 needs_create=0
 if [[ -f "$uuid_file" ]]; then
   saved_uuid="$(cat "$uuid_file")"
-  if curl -sf --max-time 5 "$url/servers/$saved_uuid" >/dev/null 2>&1; then
+  if gateway_curl -sf --max-time 5 "$url/v1/servers/$saved_uuid" >/dev/null 2>&1; then
     echo "virtual server verified: $saved_uuid"
     first_run=0
   else
     echo "virtual server stale (db recreated?), removing $uuid_file"
-    rm -f "$uuid_file" "$token_file"
+    rm -f "$uuid_file"
     needs_create=1
   fi
 else
@@ -46,12 +73,12 @@ else
 fi
 
 if [[ "$needs_create" -eq 1 ]]; then
-  response="$(curl -sf --max-time 10 -X POST \
+  response="$(gateway_curl -sf --max-time 10 -X POST \
     -H "Content-Type: application/json" \
-    -d '{"server": {"name": "contextforge-all", "tools": "all"}}' \
-    "$url/servers" 2>/dev/null)" || {
+    -d '{"server": {"name": "contextforge-all", "associatedTools": []}}' \
+    "$url/v1/servers" 2>/dev/null)" || {
     # 409 means it already exists — fetch the existing uuid
-    uuid="$(curl -sf --max-time 10 "$url/servers" 2>/dev/null \
+    uuid="$(gateway_curl -sf --max-time 10 "$url/v1/servers?limit=0" 2>/dev/null \
       | jq -r '.[] | select(.name == "contextforge-all") | .id // empty')"
     if [[ -z "$uuid" ]]; then
       echo "error: failed to create or find virtual server" >&2
@@ -79,33 +106,15 @@ if [[ "$needs_create" -eq 1 ]]; then
   echo "gateway db may have been recreated, run contextforge-mcp-sync to re-register servers"
 fi
 
-# generate a non-expiring jwt for the wrapper
-# the /mcp endpoint requires bearer auth even with AUTH_REQUIRED=false;
-# since this is local dev with a known secret, we mint a static token
-if [[ ! -f "$token_file" ]]; then
-  token="$(@GATEWAY_PYTHON@ "@GENERATE_TOKEN_PY@" 2>/dev/null)" || {
-    echo "warning: failed to generate jwt, wrapper may not authenticate" >&2
-    exit 0
-  }
-
-  if [[ -n "$token" ]]; then
-    tmp="$(mktemp)"
-    echo "$token" > "$tmp"
-    chmod 600 "$tmp"
-    mv "$tmp" "$token_file"
-    echo "gateway token generated (saved to $token_file)"
-  fi
-else
-  echo "gateway token already exists: $token_file"
-fi
-
 # source secrets so env var expansion in headers works (CONTEXT7_API_KEY, etc.)
 # load ~/.env first (user-level secrets), then bridge env (overrides)
 for env_file in "$HOME/.env" "@CONFIG_DIR@/mcpgw-bridge.env"; do
   if [[ -f "$env_file" ]]; then
     set -a
+    set +u
     # shellcheck disable=SC1090
     . "$env_file"
+    set -u
     set +a
   fi
 done
@@ -136,9 +145,9 @@ if [[ "$first_run" -eq 1 ]]; then
     sleep 3
   fi
   echo "syncing mcp servers..."
-  @SYNC_BIN@ || echo "warning: sync failed" >&2
+  @SYNC_BIN@
 else
   # subsequent runs: lightweight reconcile (skips tool discovery when nothing new)
   echo "reconciling mcp servers..."
-  @SYNC_BIN@ --reconcile || echo "warning: reconcile failed" >&2
+  @SYNC_BIN@ --reconcile
 fi

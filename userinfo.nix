@@ -141,6 +141,21 @@
               GRAFANA_SERVICE_ACCOUNT_TOKEN = "\${GRAFANA_SERVICE_ACCOUNT_TOKEN}";
             };
           };
+          snowflake = {
+            command = "uvx";
+            args = [
+              "snowflake-labs-mcp"
+              "--service-config-file"
+              "~/.config/mcp/snowflake-mcp-config.yaml"
+            ];
+            env = {
+              SNOWFLAKE_ACCOUNT = "\${SNOWFLAKE_ACCOUNT}";
+              SNOWFLAKE_USER = "\${SNOWFLAKE_USER}";
+              SNOWFLAKE_PASSWORD = "\${SNOWFLAKE_PASSWORD}";
+              SNOWFLAKE_WAREHOUSE = "\${SNOWFLAKE_WAREHOUSE}";
+              SNOWFLAKE_ROLE = "\${SNOWFLAKE_ROLE}";
+            };
+          };
         };
       };
       agents.opencode = {

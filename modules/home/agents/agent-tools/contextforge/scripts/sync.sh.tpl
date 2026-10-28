@@ -68,6 +68,20 @@ if ! curl -sf --max-time 5 "$gateway_url/health" >/dev/null 2>&1; then
   exit 1
 fi
 
+token_file="@DATA_DIR@/gateway-token"
+if [[ ! -s "$token_file" ]]; then
+  echo "error: gateway token missing; run mcpgw-setup" >&2
+  exit 1
+fi
+
+gateway_curl() {
+  command curl -H "Authorization: Bearer $(cat "$token_file")" "$@"
+}
+
+list_resources() {
+  python3 "@LIST_RESOURCES_PY@" "$gateway_url" "$1" "$token_file"
+}
+
 is_http_transport() {
   case "$1" in
     http|streamablehttp|streamable_http|sse)
@@ -82,8 +96,8 @@ is_http_transport() {
 gateway_array_filter='if type == "object" then .gateways // [] else . end'
 
 refresh_gateway_state() {
-  gateways_json="$(curl -sf --max-time 10 "$gateway_url/gateways" 2>/dev/null || echo '[]')"
-  all_tools_json="$(curl -sf --max-time 10 "$gateway_url/tools" 2>/dev/null || echo '[]')"
+  gateways_json="$(list_resources gateways)"
+  all_tools_json="$(list_resources tools)"
 }
 
 probe_mcp_endpoint() {
@@ -105,7 +119,7 @@ wait_for_stable_tools() {
   local max_polls="${1:-15}"
   local prev_count=0 stable_rounds=0
   for _ in $(seq 1 "$max_polls"); do
-    cur_count="$(curl -sf --max-time 5 "$gateway_url/tools" 2>/dev/null \
+    cur_count="$(list_resources tools \
       | @JQ@ 'length' 2>/dev/null || echo 0)"
     if (( cur_count > 0 && cur_count == prev_count )); then
       (( stable_rounds++ )) || true
@@ -120,13 +134,13 @@ wait_for_stable_tools() {
   done
 }
 
-gateways_json="$(curl -sf --max-time 10 "$gateway_url/gateways" 2>/dev/null || true)"
+gateways_json="$(list_resources gateways)"
 if [[ -z "$gateways_json" ]]; then
   echo "gateway sync: failed to fetch gateways"
   exit 1
 fi
 
-all_tools_json="$(curl -sf --max-time 10 "$gateway_url/tools" 2>/dev/null || echo '[]')"
+all_tools_json="$(list_resources tools)"
 
 bridge_fail_marker="$(mktemp)"
 rm -f "$bridge_fail_marker"
@@ -214,7 +228,7 @@ rm -f "$new_reg_marker"
       if [[ -n "$duplicate_ids" ]]; then
         while IFS= read -r dup_id; do
           [[ -n "$dup_id" ]] || continue
-          curl -sf --max-time 5 -X DELETE "$gateway_url/gateways/$dup_id" >/dev/null 2>&1 || true
+          gateway_curl -sf --max-time 5 -X DELETE "$gateway_url/v1/gateways/$dup_id" >/dev/null 2>&1 || true
         done <<< "$duplicate_ids"
         refresh_gateway_state
         echo "  $name: removed duplicate gateway entries"
@@ -241,7 +255,7 @@ rm -f "$new_reg_marker"
 
     if [[ -n "$check_url" ]] && probe_mcp_endpoint "$check_url" "$auth_headers"; then
       if [[ -n "$gw_id" ]]; then
-        curl -sf --max-time 5 -X DELETE "$gateway_url/gateways/$gw_id" >/dev/null 2>&1 || true
+        gateway_curl -sf --max-time 5 -X DELETE "$gateway_url/v1/gateways/$gw_id" >/dev/null 2>&1 || true
       fi
       refresh_gateway_state
       echo "  $name: stale (0 tools), re-registering"
@@ -284,11 +298,11 @@ rm -f "$new_reg_marker"
     ' )"
 
   resp_file="$(mktemp)"
-  http_code="$(curl -s --max-time 30 -o "$resp_file" -w '%{http_code}' \
+  http_code="$(gateway_curl -s --max-time 30 -o "$resp_file" -w '%{http_code}' \
     -X POST \
     -H "Content-Type: application/json" \
     -d "$body" \
-    "$gateway_url/gateways" 2>&1)" || http_code="000"
+    "$gateway_url/v1/gateways" 2>&1)" || http_code="000"
   resp_body="$(cat "$resp_file" 2>/dev/null || true)"
   rm -f "$resp_file"
 
@@ -296,7 +310,7 @@ rm -f "$new_reg_marker"
     echo "  $name: ok (registered)"
     touch "$new_reg_marker"
   elif [[ "$http_code" == "409" ]]; then
-    echo "  $name: ok (already exists)"
+    echo "  $name: conflict (registration rejected; inspect gateway diagnostics)" >&2
   elif [[ "$http_code" == "503" ]]; then
     reason="$(echo "$resp_body" | @JQ@ -r '.message // empty' 2>/dev/null)"
     echo "  $name: unreachable${reason:+ — $reason}"
@@ -334,8 +348,8 @@ if [[ -f "$uuid_file" ]]; then
   # retry gateways that ended up with 0 tools — bridge subprocess may have been
   # initializing when the gateway tried async discovery during registration.
   # deleting and re-registering triggers a fresh discovery attempt.
-  retry_gateways_json="$(curl -sf --max-time 10 "$gateway_url/gateways" 2>/dev/null || echo '[]')"
-  retry_tools_json="$(curl -sf --max-time 10 "$gateway_url/tools" 2>/dev/null || echo '[]')"
+  retry_gateways_json="$(list_resources gateways)"
+  retry_tools_json="$(list_resources tools)"
   retry_marker="$(mktemp)"
   rm -f "$retry_marker"
 
@@ -356,7 +370,7 @@ if [[ -f "$uuid_file" ]]; then
       if curl -sf --max-time 3 -X POST -H "Content-Type: application/json" -d '{}' \
           "$bridge_url" >/dev/null 2>&1; then
         echo "  $name: retry (0 tools, bridge healthy)"
-        curl -sf --max-time 5 -X DELETE "$gateway_url/gateways/$gw_id" >/dev/null 2>&1 || true
+        gateway_curl -sf --max-time 5 -X DELETE "$gateway_url/v1/gateways/$gw_id" >/dev/null 2>&1 || true
 
         register_url="$bridge_url"
         gateway_transport="$(echo "$server" | @JQ@ -r '.gateway_transport // empty')"
@@ -374,9 +388,9 @@ if [[ -f "$uuid_file" ]]; then
           + (if $auth_type != "" then {auth_type: $auth_type} else {} end)
           + (if ($auth_headers | length) > 0 then {auth_headers: $auth_headers} else {} end)')"
 
-        http_code="$(curl -s --max-time 30 -o /dev/null -w '%{http_code}' \
+        http_code="$(gateway_curl -s --max-time 30 -o /dev/null -w '%{http_code}' \
           -X POST -H "Content-Type: application/json" -d "$body" \
-          "$gateway_url/gateways" 2>&1)" || http_code="000"
+          "$gateway_url/v1/gateways" 2>&1)" || http_code="000"
 
         if [[ "$http_code" =~ ^2[0-9][0-9]$ ]]; then
           echo "  $name: re-registered"
@@ -392,27 +406,17 @@ if [[ -f "$uuid_file" ]]; then
     wait_for_stable_tools 10
   fi
 
-  # fetch tools, apply exclude_tools policy from config, output filtered ids + summary.
-  # /tools is hard-capped at 50 in v0.9.0 (cursor pagination broken); use /admin/tools
-  # which supports per_page and returns {data: [...], pagination: {...}}.
-  token_file="@DATA_DIR@/gateway-token"
-  auth_header=""
-  if [[ -f "$token_file" ]]; then
-    auth_header="Authorization: Bearer $(cat "$token_file")"
-  fi
-  tool_output="$(curl -sf --max-time 10 -H "$auth_header" \
-    "$gateway_url/admin/tools?per_page=500" 2>/dev/null \
-    | python3 "@FILTER_TOOLS_PY@" "$config_file")" || tool_output='{"ids":[],"excluded":[]}'
+  tool_output="$(list_resources tools | python3 "@FILTER_TOOLS_PY@" "$config_file")"
 
   tool_ids="$(echo "$tool_output" | @JQ@ -c '.ids')"
   tool_count="$(echo "$tool_output" | @JQ@ '.ids | length')"
   excluded_list="$(echo "$tool_output" | @JQ@ -r '.excluded | join(", ")')"
 
-  if (( tool_count > 0 )); then
-    http_code="$(curl -s --max-time 10 -o /dev/null -w '%{http_code}' \
+  if [[ -n "$tool_ids" ]]; then
+    http_code="$(gateway_curl -s --max-time 10 -o /dev/null -w '%{http_code}' \
       -X PUT -H "Content-Type: application/json" \
       -d "{\"associatedTools\": $tool_ids}" \
-      "$gateway_url/servers/$uuid" 2>/dev/null)" || http_code="000"
+      "$gateway_url/v1/servers/$uuid" 2>/dev/null)" || http_code="000"
     if [[ "$http_code" =~ ^2[0-9][0-9]$ ]]; then
       echo ""
       echo "virtual server: $tool_count tools associated"

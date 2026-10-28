@@ -9,10 +9,15 @@ export PYTHONPATH="@PLUGINS_DIR@:${PYTHONPATH:-}"
 set -a
 # shellcheck disable=SC1091
 . "@CONFIG_DIR@/gateway.env"
+@GATEWAY_PYTHON@ "@INIT_SECRETS_PY@" "@CONFIG_DIR@/gateway-secrets.env"
+. "@CONFIG_DIR@/gateway-secrets.env"
 set +a
 
 # ensure sqlite data dir exists
 mkdir -p "@DATA_DIR@"
+
+# Bootstrap applies Alembic migrations and seeds the administrator before serving.
+@GATEWAY_PYTHON@ -m mcpgateway.bootstrap_db
 
 # --- watchdog configuration ---
 health_url="http://${HOST}:${PORT}/health"

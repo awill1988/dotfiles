@@ -15,7 +15,7 @@ let
 
   db_path = "${data_dir}/gateway.db";
 
-  # nix-built virtualenv with mcp-contextforge-gateway + snowflake-labs-mcp
+  # nix-built gateway and stdio client bridge
   # (all C extensions pre-compiled at build time — no runtime uvx compilation)
   gateway_venv = pkgs.contextforge-gateway-env;
 
@@ -56,15 +56,17 @@ let
       "DB_POOL_TIMEOUT=10"
       "DB_POOL_RECYCLE=1800"
 
-      # tool invocation timeout — must exceed the bridge response-timeout (120s)
-      # plus http overhead. snowflake bridge is the slowest path.
       "TOOL_TIMEOUT=130"
 
       "ENVIRONMENT=${cfg.environment}"
-      "AUTH_REQUIRED=false"
+      "AUTH_REQUIRED=true"
+      # Local stdio clients retain their token for the lifetime of the process.
+      "REQUIRE_TOKEN_EXPIRATION=false"
+      "SSRF_ALLOW_LOCALHOST=true"
+      # The stdio bridges still negotiate the initialize-based protocol era.
+      "MCP_CLIENT_CONNECT_MODE=legacy"
+      "MCP_INBOUND_PROTOCOL_MODE=legacy"
       "SECURE_COOKIES=false"
-      "PLATFORM_ADMIN_PASSWORD=Local!Dev#2026"
-      "DEFAULT_USER_PASSWORD=Local!Dev#2026"
       "PASSWORD_CHANGE_ENFORCEMENT_ENABLED=false"
       "ADMIN_REQUIRE_PASSWORD_CHANGE_ON_BOOTSTRAP=false"
       "DETECT_DEFAULT_PASSWORD_ON_LOGIN=false"
@@ -157,16 +159,6 @@ let
           max_entries: 1000
   '';
 
-  # snowflake mcp service config (enables query_manager for sql execution)
-  # command: true allows ALTER SESSION (agents set STATEMENT_TIMEOUT_IN_SECONDS)
-  snowflake_mcp_config = pkgs.writeText "snowflake-mcp-config.yaml" ''
-    sql_statement_permissions:
-      - select: true
-      - command: true
-    other_services:
-      query_manager: true
-  '';
-
   mcp_servers_source = ../../../../../mcp-servers.toml;
 
   qgis_mcp_plugin_src = "${
@@ -203,10 +195,6 @@ let
   );
 
   postgres_mcp_py = pkgs.writeText "postgres-mcp.py" (builtins.readFile ./scripts/postgres_mcp.py);
-  snowflake_bridge_py = pkgs.writeText "snowflake-bridge.py" (
-    builtins.readFile ./scripts/snowflake_bridge.py
-  );
-
   postgres_mcp_python = pkgs.python3.withPackages (ps: [
     ps.mcp
     (ps.psycopg.overridePythonAttrs (old: {
@@ -261,6 +249,8 @@ let
           "@CONFIG_DIR@"
           "@DATA_DIR@"
           "@MCPGATEWAY_BIN@"
+          "@GATEWAY_PYTHON@"
+          "@INIT_SECRETS_PY@"
         ]
         [
           "${pkgs.bash}/bin/bash"
@@ -269,6 +259,8 @@ let
           config_dir
           data_dir
           "${gateway_venv}/bin/mcpgateway"
+          "${gateway_venv}/bin/python"
+          "${./scripts/init-secrets.py}"
         ]
         (builtins.readFile ./scripts/gateway.sh.tpl);
     executable = true;
@@ -288,7 +280,6 @@ let
           "@HOST@"
           "@PORT@"
           "@PARSE_TOML_PY@"
-          "@SNOWFLAKE_BRIDGE_PY@"
           "@GATEWAY_PYTHON@"
         ]
         [
@@ -311,7 +302,6 @@ let
           cfg.host
           (toString cfg.port)
           "${bridge_supervisor_parse_toml_py}"
-          "${snowflake_bridge_py}"
           "${gateway_venv}/bin/python"
         ]
         (builtins.readFile ./scripts/bridge-supervisor.sh.tpl);
@@ -332,6 +322,7 @@ let
           "@DATA_DIR@"
           "@PARSE_TOML_PY@"
           "@FILTER_TOOLS_PY@"
+          "@LIST_RESOURCES_PY@"
         ]
         [
           "${pkgs.bash}/bin/bash"
@@ -347,6 +338,7 @@ let
           data_dir
           "${sync_parse_toml_py}"
           "${sync_filter_tools_py}"
+          "${./scripts/list-resources.py}"
         ]
         (builtins.readFile ./scripts/sync.sh.tpl);
     executable = true;
@@ -406,7 +398,7 @@ let
           "@DATA_DIR@"
           "@GATEWAY_HOST@"
           "@GATEWAY_PORT@"
-          "@GATEWAY_PYTHON@"
+          "@REMOTE_BIN@"
         ]
         [
           "${pkgs.bash}/bin/bash"
@@ -414,7 +406,7 @@ let
           data_dir
           cfg.host
           (toString cfg.port)
-          "${gateway_venv}/bin/python"
+          "${gateway_venv}/bin/fastmcp-remote"
         ]
         (builtins.readFile ./scripts/client-wrapper.sh.tpl);
     executable = true;
@@ -516,11 +508,6 @@ in
       force = true;
     };
 
-    xdg.configFile."mcp/snowflake-mcp-config.yaml" = {
-      source = snowflake_mcp_config;
-      force = true;
-    };
-
     home.file."${qgis_plugin_dir}" = {
       source = qgis_mcp_plugin_src;
     };
@@ -529,7 +516,7 @@ in
     # macOS Background Activity display). must run before setupLaunchAgents so
     # the executables exist when launchd first loads the plists.
     home.activation.contextforge_wrappers = lib.mkIf is_darwin (
-      lib.hm.dag.entryBetween [ "setupLaunchAgents" ] [ "writeBoundary" ] ''
+      lib.hm.dag.entryBetween [ "setupLaunchAgents" ] [ "linkGeneration" "contextforge_setup" ] ''
         mkdir -p "${libexec_dir}"
         for pair in \
           "contextforge-gateway:${gateway_script}" \
@@ -563,22 +550,21 @@ in
       ''
     );
 
-    # 3b. post-activation (darwin): ensure all contextforge agents are loaded and running.
-    # unconditionally bootstraps any agent that isn't loaded (catches setupLaunchAgents
-    # failures and first installs). retries transient launchctl bootstrap failures.
-    # does NOT cycle already-running agents — the setup service handles re-syncing
-    # state, and launchd KeepAlive handles gateway restarts.
+    # Stable launchd paths hide configuration changes from Home Manager's plist
+    # comparison. Restart after linking files so every process reads this generation.
     home.activation.contextforge_ensure_agents = lib.mkIf is_darwin (
-      lib.hm.dag.entryAfter [ "setupLaunchAgents" ] ''
+      lib.hm.dag.entryAfter [ "setupLaunchAgents" "linkGeneration" ] ''
         uid="$(id -u)"
         domain="gui/$uid"
         agent_dir="$HOME/Library/LaunchAgents"
+        for label in com.contextforge.setup com.contextforge.bridge-supervisor com.contextforge.gateway; do
+          /bin/launchctl bootout "$domain/$label" 2>/dev/null || true
+        done
         for label in com.contextforge.gateway com.contextforge.bridge-supervisor com.contextforge.setup; do
           plist="$agent_dir/$label.plist"
           [[ -f "$plist" ]] || continue
-          if ! /bin/launchctl print "$domain/$label" >/dev/null 2>&1; then
             loaded=0
-            for attempt in 1 2 3; do
+            for attempt in 1 2 3 4 5; do
               if /bin/launchctl bootstrap "$domain" "$plist" 2>/dev/null; then
                 loaded=1
                 break
@@ -586,9 +572,9 @@ in
               sleep 2
             done
             if [[ "$loaded" -eq 0 ]]; then
-              echo "warning: failed to bootstrap $label after 3 attempts" >&2
+              echo "error: failed to bootstrap $label after 5 attempts" >&2
+              exit 1
             fi
-          fi
         done
 
         # kick setup to re-validate state and sync (runs in background)
@@ -784,96 +770,9 @@ in
                     echo "health: $health"
                   }
 
-                  # contextforge manual repair/re-setup tool
-                  # cleans stale state, re-creates virtual server + token, re-syncs gateways
+                  # Reconcile the virtual server and token using the service setup path.
                   function mcpgw-setup() {
-                    local url="http://${cfg.host}:${toString cfg.port}"
-                    local data_dir="${data_dir}"
-                    local uuid_file="$data_dir/virtual-server-id"
-                    local token_file="$data_dir/gateway-token"
-
-                    echo "==> manual repair/re-setup for contextforge"
-                    echo ""
-
-                    # clean stale state so everything is recreated fresh
-                    rm -f "$uuid_file" "$token_file"
-                    echo "==> cleared stale uuid and token"
-
-                    echo ""
-                    echo "==> waiting for gateway health..."
-                    local attempts=0
-                    while ! curl -sf --max-time 5 "$url/health" >/dev/null 2>&1; do
-                      attempts=$((attempts + 1))
-                      if [[ $attempts -ge 30 ]]; then
-                        echo "error: gateway not healthy after 30 attempts" >&2
-                        return 1
-                      fi
-                      sleep 1
-                    done
-                    echo "gateway is healthy"
-
-                    echo ""
-                    echo "==> creating virtual server with all tools..."
-                    local response uuid
-                    response="$(curl -sf --max-time 10 -X POST \
-                      -H "Content-Type: application/json" \
-                      -d '{"server": {"name": "contextforge-all", "tools": "all"}}' \
-                      "$url/servers" 2>/dev/null)" || {
-                      # 409 means it already exists — fetch the existing uuid
-                      uuid="$(curl -sf --max-time 10 "$url/servers" 2>/dev/null \
-                        | ${pkgs.jq}/bin/jq -r '.[] | select(.name == "contextforge-all") | .id // empty')"
-                      if [[ -z "$uuid" ]]; then
-                        echo "error: failed to create or find virtual server" >&2
-                        return 1
-                      fi
-                      echo "virtual server already exists: $uuid"
-                    }
-
-                    if [[ -z "''${uuid:-}" ]]; then
-                      uuid="$(echo "$response" | ${pkgs.jq}/bin/jq -r '.id // .uuid // empty')"
-                      if [[ -z "$uuid" ]]; then
-                        echo "error: no uuid returned from server creation" >&2
-                        echo "response: $response"
-                        return 1
-                      fi
-                    fi
-
-                    local tmp
-                    tmp="$(mktemp)"
-                    echo "$uuid" > "$tmp"
-                    mv "$tmp" "$uuid_file"
-                    echo "virtual server uuid: $uuid"
-                    echo "saved to $uuid_file"
-
-                    echo ""
-                    echo "==> generating gateway token..."
-                    local token
-                    token="$(${gateway_venv}/bin/python -c "
-            import jwt, warnings
-            warnings.filterwarnings('ignore')
-            print(jwt.encode(
-                {'sub': 'admin@example.com', 'iss': 'mcpgateway', 'aud': 'mcpgateway-api',
-                 'user': {'email': 'admin@example.com', 'full_name': 'Local Admin',
-                          'is_admin': True, 'auth_provider': 'local'}},
-                'my-test-key', algorithm='HS256'))
-            " 2>/dev/null)" || {
-                      echo "warning: failed to generate token" >&2
-                    }
-
-                    if [[ -n "''${token:-}" ]]; then
-                      tmp="$(mktemp)"
-                      echo "$token" > "$tmp"
-                      chmod 600 "$tmp"
-                      mv "$tmp" "$token_file"
-                      echo "gateway token saved to $token_file"
-                    fi
-
-                    echo ""
-                    echo "==> re-registering mcp servers with gateway..."
-                    contextforge-mcp-sync || echo "warning: sync failed, run contextforge-mcp-sync manually" >&2
-
-                    echo ""
-                    echo "==> done! verify with: mcpgw-status"
+                    "${pkgs.bash}/bin/bash" "${setup_script}"
                   }
 
                   # contextforge bridge status checker
@@ -937,8 +836,10 @@ in
                     local url="http://${cfg.host}:${toString cfg.port}"
                     python3 - "$url" "$name" "${config_dir}/mcp-servers.toml" <<'PYENABLE'
       import sys, json, urllib.request, tomllib
+      from pathlib import Path
 
       url, target_name, config_path = sys.argv[1], sys.argv[2], sys.argv[3]
+      auth = {"Authorization": "Bearer " + Path("${data_dir}/gateway-token").read_text().strip()}
       with open(config_path, "rb") as f:
           data = tomllib.load(f)
 
@@ -952,7 +853,7 @@ in
       transport = "STREAMABLEHTTP" if port else (server.get("transport") or "HTTP").upper()
 
       payload = {"name": target_name, "url": server_url, "transport": transport}
-      req = urllib.request.Request(f"{url}/gateways", data=json.dumps(payload).encode(), headers={"Content-Type": "application/json"})
+      req = urllib.request.Request(f"{url}/v1/gateways", data=json.dumps(payload).encode(), headers={**auth, "Content-Type": "application/json"})
       try:
           with urllib.request.urlopen(req) as resp:
               print(f"==> enabled server '{target_name}' in contextforge gateway (status {resp.status})")
@@ -975,17 +876,19 @@ in
                     local url="http://${cfg.host}:${toString cfg.port}"
                     python3 - "$url" "$name" <<'PYDISABLE'
       import sys, json, urllib.request
+      from pathlib import Path
 
       url, target_name = sys.argv[1], sys.argv[2]
+      auth = {"Authorization": "Bearer " + Path("${data_dir}/gateway-token").read_text().strip()}
       try:
-          with urllib.request.urlopen(f"{url}/gateways") as resp:
+          with urllib.request.urlopen(urllib.request.Request(f"{url}/v1/gateways?limit=0", headers=auth)) as resp:
               gateways = json.loads(resp.read().decode())
           target = next((g for g in gateways if g.get("name") == target_name), None)
           if not target:
               print(f"==> server '{target_name}' is not currently active in gateway")
               sys.exit(0)
           gw_id = target["id"]
-          req = urllib.request.Request(f"{url}/gateways/{gw_id}", method="DELETE")
+          req = urllib.request.Request(f"{url}/v1/gateways/{gw_id}", method="DELETE", headers=auth)
           with urllib.request.urlopen(req) as resp:
               print(f"==> disabled/removed server '{target_name}' from contextforge gateway")
       except Exception as e:
