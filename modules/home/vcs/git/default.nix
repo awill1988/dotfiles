@@ -215,17 +215,16 @@ let
     exit 0
   '';
 
-  gitIncludeIfs = listToAttrs (
-    concatMap (
-      p:
-      map (prefix: {
-        name = "includeIf \"gitdir:${prefix}/\"";
-        value = {
-          path = "${config.xdg.configHome}/profiles/${p.name}/git/config";
-        };
-      }) p.pathPrefixes
-    ) resolvedProfilesList
-  );
+  # rendered through `programs.git.includes`, which home-manager emits after
+  # `settings`. as plain `settings` keys they sort before `[user]`, so the
+  # primary profile's identity overrode every per-directory profile.
+  gitIncludeIfs = concatMap (
+    p:
+    map (prefix: {
+      condition = "gitdir:${prefix}/";
+      path = "${config.xdg.configHome}/profiles/${p.name}/git/config";
+    }) p.pathPrefixes
+  ) resolvedProfilesList;
 in
 {
   options.modules.vcs.git = {
@@ -301,8 +300,9 @@ in
           program = "${git-ssh-sign}/bin/git-ssh-sign";
           allowedSignersFile = "${config.xdg.configHome}/git/allowed_signers";
         };
-      }
-      // gitIncludeIfs;
+      };
+
+      includes = gitIncludeIfs;
 
       ignores = [
         "[._]*.s[a-v][a-z]"
