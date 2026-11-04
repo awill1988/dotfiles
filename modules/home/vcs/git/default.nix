@@ -225,6 +225,16 @@ let
       path = "${config.xdg.configHome}/profiles/${p.name}/git/config";
     }) p.pathPrefixes
   ) resolvedProfilesList;
+
+  arro-prs = pkgs.writeShellApplication {
+    name = "arro-prs";
+    runtimeInputs = with pkgs; [
+      gh
+      jq
+      coreutils
+    ];
+    text = builtins.readFile ./arro-prs.sh;
+  };
 in
 {
   options.modules.vcs.git = {
@@ -263,6 +273,7 @@ in
           in
           {
             ccommit = aicommits_lowercase;
+            arro-prs = "!arro-prs";
           };
         color.ui = "auto";
         commit.verbose = true;
@@ -432,6 +443,7 @@ in
       gh
       act
       maestro
+      arro-prs
     ];
 
     home.activation.generate-allowed-signers = mkIf (enableSigning && useSsh) (

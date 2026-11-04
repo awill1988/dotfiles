@@ -361,6 +361,8 @@ in
     };
 
     home.shellAliases = {
+      arro-prs = "arro-prs";
+      aprs = "arro-prs";
       terraform = "tofu";
       switch-yubikey = ''gpg-connect-agent "scd serialno" "learn --force" /bye'';
       wanip = "dig @resolver4.opendns.com myip.opendns.com +short";
