@@ -97,6 +97,12 @@ let
       description = "Environment variables";
     };
 
+    sessionEnv = mkOption {
+      type = types.attrsOf types.str;
+      default = { };
+      description = "Environment variables exported in every shell, independent of cwd routing";
+    };
+
     agents = {
       code = mkOption {
         type = types.str;

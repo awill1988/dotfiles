@@ -449,6 +449,9 @@ in
     developer.profileRouter = profile-router;
     developer.resolvedProfiles = listToAttrs (map (p: nameValuePair p.name p) resolvedProfiles);
     home.packages = [ profile-router ] ++ (map mkOpencodeProfileWrapper resolvedProfiles);
+    # unlike `env`, which profile-router exports only on a cwd match, these reach every
+    # shell; conflicting values across profiles fail evaluation rather than one winning
+    home.sessionVariables = mkMerge (map (p: p.sessionEnv) resolvedProfiles);
 
     home.file = listToAttrs (
       concatMap (p: [

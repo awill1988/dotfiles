@@ -51,6 +51,10 @@
     work = {
       identity.email = "adam@arrofinance.com";
       pathPrefixes = [ "~/projects/arro" ];
+      # read by the arro claude plugin; $HOME rather than ~ so it expands on every shell
+      sessionEnv = {
+        ARRO_ENGINEERING_PATH = "$HOME/projects/arro/arro-engineering";
+      };
       aws = {
         profile = "arro-staging";
         region = "us-west-2";
