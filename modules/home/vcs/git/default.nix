@@ -232,6 +232,7 @@ let
       gh
       jq
       coreutils
+      gawk
     ];
     text = builtins.readFile ./arro-prs.sh;
   };

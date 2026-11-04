@@ -3,6 +3,10 @@ set -euo pipefail
 
 # Default configuration: tabpay organization
 ORG="tabpay"
+BATCH_SIZE=40
+MAX_RETRIES=5
+BASE_DELAY=1.0
+MAX_DELAY=16.0
 EXCLUDE_ME=false
 ONLY_ME=false
 EXCLUDE_BOTS=false
@@ -24,6 +28,7 @@ grouped by contributor and sorted in descending order by last commit timestamp.
 
 Options:
   -o, --org <org>            GitHub organization name (default: tabpay)
+  -b, --batch-size <size>    GraphQL batch page size (default: 40)
   -c, --contributor <user>   Filter by contributor username
       --exclude-me, --not-me Exclude PRs authored by the current GitHub user
       --only-me              Show only PRs authored by the current GitHub user
@@ -44,6 +49,14 @@ while [[ $# -gt 0 ]]; do
         exit 1
       fi
       ORG="$2"
+      shift 2
+      ;;
+    -b|--batch-size)
+      if [[ $# -lt 2 ]] || ! [[ "$2" =~ ^[0-9]+$ ]]; then
+        echo "error: --batch-size requires a positive integer argument" >&2
+        exit 1
+      fi
+      BATCH_SIZE="$2"
       shift 2
       ;;
     -c|--contributor)
@@ -103,11 +116,11 @@ fi
 # Detect current authenticated user login
 CURRENT_USER="$(gh api user --jq '.login' 2>/dev/null || echo "")"
 
-# GraphQL query to paginate open PRs in organization
+# GraphQL query to fetch a batch of open PRs in organization
 # shellcheck disable=SC2016
 GRAPHQL_QUERY='
-query($endCursor: String, $searchQuery: String!) {
-  search(query: $searchQuery, type: ISSUE, first: 50, after: $endCursor) {
+query($endCursor: String, $searchQuery: String!, $batchSize: Int!) {
+  search(query: $searchQuery, type: ISSUE, first: $batchSize, after: $endCursor) {
     pageInfo {
       hasNextPage
       endCursor
@@ -146,13 +159,109 @@ query($endCursor: String, $searchQuery: String!) {
 
 SEARCH_QUERY="org:${ORG} is:pr is:open"
 
-if [[ "$OUTPUT_JSON" == false ]]; then
-  echo "Fetching open pull requests for organization '${ORG}'..." >&2
-fi
+calculate_jitter_delay() {
+  local attempt="$1"
+  local base="$2"
+  local max="$3"
+  awk -v att="$attempt" -v b="$base" -v m="$max" -v r="$RANDOM" 'BEGIN {
+    srand(r);
+    exp_delay = b * (2 ^ (att - 1));
+    if (exp_delay > m) exp_delay = m;
+    jitter_delay = (exp_delay * 0.5) + (rand() * exp_delay * 0.5);
+    printf "%.2f", jitter_delay;
+  }'
+}
 
-RAW_DATA="$(gh api graphql --paginate --slurp \
-  -f query="$GRAPHQL_QUERY" \
-  -F searchQuery="$SEARCH_QUERY")"
+fetch_graphql_batch() {
+  local cursor="$1"
+  local attempt=1
+  local delay
+  local err_file
+  local resp
+
+  err_file="$(mktemp)"
+
+  while (( attempt <= MAX_RETRIES )); do
+    local gh_args=(
+      api graphql
+      -f query="$GRAPHQL_QUERY"
+      -F searchQuery="$SEARCH_QUERY"
+      -F batchSize="$BATCH_SIZE"
+    )
+    if [[ -n "$cursor" ]]; then
+      gh_args+=(-F endCursor="$cursor")
+    fi
+
+    if resp="$(gh "${gh_args[@]}" 2>"$err_file")"; then
+      rm -f "$err_file"
+      echo "$resp"
+      return 0
+    fi
+
+    local err_msg
+    err_msg="$(cat "$err_file")"
+
+    # Match 5xx HTTP codes or transient transport errors
+    if echo "$err_msg" | grep -Eq 'HTTP 5[0-9]{2}|Bad Gateway|Service Unavailable|Gateway Timeout|Internal Server Error|connection refused|timeout|read: connection reset'; then
+      if (( attempt >= MAX_RETRIES )); then
+        echo "error: GitHub GraphQL API returned 5xx server error after $MAX_RETRIES attempts: $err_msg" >&2
+        rm -f "$err_file"
+        return 1
+      fi
+
+      # Adaptively reduce batch size on 502 / 504 timeouts
+      if echo "$err_msg" | grep -Eq 'HTTP 502|HTTP 504|Gateway Timeout|Bad Gateway' && (( BATCH_SIZE > 15 )); then
+        BATCH_SIZE=$(( BATCH_SIZE / 2 ))
+        echo "Warning: Received 5xx from GitHub. Reducing batch size to ${BATCH_SIZE}." >&2
+      fi
+
+      delay="$(calculate_jitter_delay "$attempt" "$BASE_DELAY" "$MAX_DELAY")"
+      echo "Warning: GitHub API 5xx error ($err_msg). Retrying in ${delay}s with jitter (attempt ${attempt}/${MAX_RETRIES})..." >&2
+      sleep "$delay"
+      attempt=$(( attempt + 1 ))
+    else
+      echo "error: GitHub API request failed: $err_msg" >&2
+      rm -f "$err_file"
+      return 1
+    fi
+  done
+
+  rm -f "$err_file"
+  return 1
+}
+
+NODES_FILE="$(mktemp)"
+cleanup_nodes() {
+  rm -f "$NODES_FILE"
+}
+trap cleanup_nodes EXIT
+
+PAGE_CURSOR=""
+BATCH_NUM=1
+
+while true; do
+  if [[ "$OUTPUT_JSON" == false ]]; then
+    if [[ -z "$PAGE_CURSOR" ]]; then
+      echo "Fetching pull requests for organization '${ORG}' (batch size: ${BATCH_SIZE})..." >&2
+    else
+      echo "Fetching batch ${BATCH_NUM}..." >&2
+    fi
+  fi
+
+  PAGE_DATA="$(fetch_graphql_batch "$PAGE_CURSOR")" || exit 1
+
+  # Stream batch nodes into accumulator file
+  echo "$PAGE_DATA" | jq -c '.data.search.nodes[]' >> "$NODES_FILE"
+
+  HAS_NEXT="$(echo "$PAGE_DATA" | jq -r '.data.search.pageInfo.hasNextPage // false')"
+  PAGE_CURSOR="$(echo "$PAGE_DATA" | jq -r '.data.search.pageInfo.endCursor // ""')"
+
+  if [[ "$HAS_NEXT" != "true" ]] || [[ -z "$PAGE_CURSOR" ]]; then
+    break
+  fi
+
+  BATCH_NUM=$(( BATCH_NUM + 1 ))
+done
 
 # Setup color definitions
 if [[ "$USE_COLOR" == true ]]; then
@@ -177,7 +286,7 @@ else
   C_CYAN=""
 fi
 
-PROCESSED_JSON="$(echo "$RAW_DATA" | jq \
+PROCESSED_JSON="$(jq -s \
   --arg me "$CURRENT_USER" \
   --argjson exclude_me "$EXCLUDE_ME" \
   --argjson only_me "$ONLY_ME" \
@@ -188,7 +297,7 @@ PROCESSED_JSON="$(echo "$RAW_DATA" | jq \
   def is_bot(login):
     (login == "dependabot" or (login | endswith("[bot]")) or (login | startswith("app/")));
 
-  [.[].data.search.nodes[]]
+  .
   | map({
       repo: .repository.nameWithOwner,
       number: .number,
@@ -215,7 +324,7 @@ PROCESSED_JSON="$(echo "$RAW_DATA" | jq \
     })
   | sort_by(.latest_commit)
   | reverse
-')"
+' "$NODES_FILE")"
 
 if [[ "$OUTPUT_JSON" == true ]]; then
   echo "$PROCESSED_JSON"
