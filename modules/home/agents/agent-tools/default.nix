@@ -9,13 +9,14 @@ let
   cfg = config.modules.agents.agent-tools;
 
   # snowflake mcp service config (enables query_manager for sql execution)
-  # command: true allows ALTER SESSION and EXPLAIN; describe/show allow schema inspection
+  # alter: true allows ALTER SESSION; command: true allows EXPLAIN; describe/show allow schema inspection
   snowflake_mcp_config = pkgs.writeText "snowflake-mcp-config.yaml" ''
     sql_statement_permissions:
       - select: true
       - describe: true
       - show: true
       - command: true
+      - alter: true
     other_services:
       query_manager: true
   '';
