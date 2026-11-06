@@ -291,6 +291,10 @@ let
             pkgs.nodejs
             pkgs.curl
             pkgs.coreutils
+            # uvx builds sdists (pycairo for inkscape-mcp) whose meson lookup
+            # needs pkg-config; PKG_CONFIG_PATH in mcp-servers.toml points it at
+            # homebrew's cairo
+            pkgs.pkg-config
             pkgs.drawio-mcp
             pkgs.fivetran-mcp-server
             postgres_mcp

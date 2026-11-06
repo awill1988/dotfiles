@@ -44,14 +44,6 @@ bridge = { port = 4452 }
 gateway_register = true
 
 [[servers]]
-name = "postgres"
-transport = "stdio"
-command = "contextforge-postgres-mcp"
-args = ["${POSTGRES_URL:-postgresql://postgres:postgres@localhost:5432/postgres}"]
-bridge = { port = 4453 }
-gateway_register = true
-
-[[servers]]
 name = "yourmood-ai-mercury"
 transport = "stdio"
 command = "/Users/adam/Library/Developer/Xcode/DerivedData/Workshop-eitcafffbqbnhheyyxfdldfqsjlr/Build/Products/Debug/MCPBridge"
@@ -117,7 +109,7 @@ gateway_register = true
 name = "grafana"
 transport = "stdio"
 command = "uvx"
-args = ["mcp-grafana", "-disable-admin", "-disable-agento11y", "-disable-annotations", "-disable-api", "-disable-asserts", "-disable-assistant", "-disable-athena", "-disable-clickhouse", "-disable-cloudwatch", "-disable-config", "-disable-dashboard", "-disable-elasticsearch", "-disable-examples", "-disable-folder", "-disable-graphite", "-disable-incident", "-disable-influxdb", "-disable-navigation", "-disable-oncall", "-disable-plugin", "-disable-provisioning", "-disable-proxied", "-disable-pyroscope", "-disable-quickwit", "-disable-rendering", "-disable-runpanelquery", "-disable-sift", "-disable-snapshot", "-disable-snowflake", "-disable-write"]
+args = ["mcp-grafana@2.2.0", "-disable-admin", "-disable-agento11y", "-disable-annotations", "-disable-api", "-disable-asserts", "-disable-assistant", "-disable-athena", "-disable-clickhouse", "-disable-cloudwatch", "-disable-config", "-disable-dashboard", "-disable-elasticsearch", "-disable-examples", "-disable-folder", "-disable-graphite", "-disable-incident", "-disable-influxdb", "-disable-navigation", "-disable-oncall", "-disable-plugin", "-disable-provisioning", "-disable-proxied", "-disable-pyroscope", "-disable-quickwit", "-disable-rendering", "-disable-runpanelquery", "-disable-snapshot", "-disable-snowflake", "-disable-write"]
 env = { GRAFANA_URL = "$GRAFANA_URL", GRAFANA_SERVICE_ACCOUNT_TOKEN = "$GRAFANA_SERVICE_ACCOUNT_TOKEN" }
 bridge = { port = 4459 }
 [[servers]]
