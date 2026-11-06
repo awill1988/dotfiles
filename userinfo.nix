@@ -161,6 +161,13 @@
               SNOWFLAKE_ROLE = "\${SNOWFLAKE_ROLE}";
             };
           };
+          postgres = {
+            command = "contextforge-postgres-mcp";
+            env = {
+              AWS_PROFILE = "arro-production";
+              AWS_REGION = "us-west-2";
+            };
+          };
         };
       };
       agents.opencode = {

@@ -210,6 +210,18 @@ let
     text = ''
       #!${pkgs.bash}/bin/bash
       set -euo pipefail
+      export PATH="${
+        lib.makeBinPath [
+          pkgs.awscli2
+          pkgs.ssm-session-manager-plugin
+          pkgs.aws-vault
+        ]
+      }:$PATH"
+      export AWS_CONFIG_FILE="''${AWS_CONFIG_FILE:-${config.xdg.configHome}/aws/config}"
+      export AWS_SHARED_CREDENTIALS_FILE="''${AWS_SHARED_CREDENTIALS_FILE:-${config.xdg.configHome}/aws/credentials}"
+      export AWS_SSO_SESSION_CACHE_DIR="''${AWS_SSO_SESSION_CACHE_DIR:-${config.xdg.cacheHome}/aws/sso/cache}"
+      export AWS_PROFILE="''${AWS_PROFILE:-arro-production}"
+      export AWS_REGION="''${AWS_REGION:-us-west-2}"
       exec ${postgres_mcp_python}/bin/python "${postgres_mcp_py}" "$@"
     '';
     executable = true;
