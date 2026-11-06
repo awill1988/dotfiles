@@ -54,6 +54,7 @@
       # read by the arro claude plugin; $HOME rather than ~ so it expands on every shell
       sessionEnv = {
         ARRO_ENGINEERING_PATH = "$HOME/projects/arro/arro-engineering";
+        ARRO_REPOS_PATH = "$HOME/projects/arro";
       };
       aws = {
         profile = "arro-staging";

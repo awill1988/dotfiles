@@ -66,7 +66,7 @@ let
         peers = [
           {
             name = "claude-secondary";
-            bin = "claude";
+            bin = "claude-secondary";
             enabled = true;
           }
         ];

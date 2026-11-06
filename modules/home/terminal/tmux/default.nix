@@ -32,8 +32,10 @@ in
         continuum
       ];
       extraConfig = ''
-        # force zsh for new panes
+        # force zsh for new panes and allow hm-session-vars.sh to re-source in new panes
         set -g default-command "${pkgs.zsh}/bin/zsh"
+        set-environment -gu __HM_SESS_VARS_SOURCED
+        set-environment -gu __HM_ZSH_SESS_VARS_SOURCED
         # gpakosz-inspired ergonomics
         set -g prefix2 C-a
         bind C-a send-prefix -2

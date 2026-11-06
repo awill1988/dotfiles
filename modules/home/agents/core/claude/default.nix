@@ -55,6 +55,19 @@ let
       }
     '';
   };
+  claude_secondary_wrapper = pkgs.writeShellApplication {
+    name = "claude-secondary";
+    runtimeInputs = with pkgs; [
+      coreutils
+    ];
+    text = ''
+      export DEVELOPER_PROFILE="work"
+      export CLAUDE_CONFIG_DIR="${config.xdg.configHome}/claude-secondary"
+      export ARRO_ENGINEERING_PATH="$HOME/projects/arro/arro-engineering"
+      export ARRO_REPOS_PATH="$HOME/projects/arro"
+      exec "${claude_wrapper}/bin/claude" "$@"
+    '';
+  };
 in
 {
   options.programs.claude = {
@@ -76,11 +89,19 @@ in
   };
 
   config = lib.mkIf cfg.enable {
-    home.packages = [ claude_wrapper ];
+    home.packages = [
+      claude_wrapper
+      claude_secondary_wrapper
+    ];
 
     # symlink for native install method check (expects ~/.local/bin/claude)
     home.file.".local/bin/claude" = {
       source = "${claude_wrapper}/bin/claude";
+      force = true;
+    };
+
+    home.file.".local/bin/claude-secondary" = {
+      source = "${claude_secondary_wrapper}/bin/claude-secondary";
       force = true;
     };
 

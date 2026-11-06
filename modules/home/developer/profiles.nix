@@ -69,12 +69,27 @@ let
       }
     );
 
+  expandHome =
+    str:
+    builtins.replaceStrings
+      [
+        "~/"
+        "$HOME/"
+        "\${HOME}/"
+      ]
+      [
+        "${config.home.homeDirectory}/"
+        "${config.home.homeDirectory}/"
+        "${config.home.homeDirectory}/"
+      ]
+      (if str == "~" || str == "$HOME" || str == "\${HOME}" then config.home.homeDirectory else str);
+
   mkClaudeSettings =
     profile:
     pkgs.writeText "claude-settings-${profile.name}.json" (
       builtins.toJSON (
         {
-          env = {
+          env = (mapAttrs (_: expandHome) (profile.sessionEnv // profile.env)) // {
             CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC = "1";
             DISABLE_NON_ESSENTIAL_MODEL_CALLS = "1";
             CLAUDE_CODE_MAX_OUTPUT_TOKENS = "128000";
@@ -131,7 +146,7 @@ let
           [
             {
               name = "claude-secondary";
-              bin = "claude";
+              bin = "claude-secondary";
               enabled = true;
             }
           ]
@@ -291,6 +306,14 @@ let
 
       export DEVELOPER_PROFILE="$active_profile"
 
+      ${concatMapStringsSep "\n" (
+        p:
+        concatMapStringsSep "\n" (k: ''
+          ${k}="${builtins.replaceStrings [ "~" ] [ "$HOME" ] p.sessionEnv.${k}}"
+          export ${k}
+        '') (attrNames p.sessionEnv)
+      ) resolvedProfiles}
+
       ${concatMapStringsSep "\n" (p: ''
         if [ "$active_profile" = "${p.name}" ]; then
           CODE_AGENT="${p.agents.code}"
@@ -398,7 +421,7 @@ let
             export GIT_COMMITTER_EMAIL
           ''}
           ${concatMapStringsSep "\n" (k: ''
-            ${k}="${p.env.${k}}"
+            ${k}="${builtins.replaceStrings [ "~" ] [ "$HOME" ] p.env.${k}}"
             export ${k}
           '') (attrNames p.env)}
         fi

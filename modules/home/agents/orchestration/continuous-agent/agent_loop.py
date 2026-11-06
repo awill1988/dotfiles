@@ -187,7 +187,9 @@ def invoke_model(
     extra_env = {}
     if model == "claude-secondary":
         extra_env["CLAUDE_CONFIG_DIR"] = os.path.expanduser("~/.config/claude-secondary")
-        cmd = ["claude", "-p", prompt, "--dangerously-skip-permissions"]
+        extra_env["ARRO_ENGINEERING_PATH"] = os.path.expanduser("~/projects/arro/arro-engineering")
+        extra_env["ARRO_REPOS_PATH"] = os.path.expanduser("~/projects/arro")
+        cmd = ["claude-secondary", "-p", prompt, "--dangerously-skip-permissions"]
     elif model == "claude":
         cmd = ["claude", "-p", prompt, "--dangerously-skip-permissions"]
     elif model == "codex":
