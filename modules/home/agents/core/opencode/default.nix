@@ -17,6 +17,8 @@ let
       endpoint = cfg.localEndpoint;
       model = cfg.model;
       offlineOnly = true;
+      autoupdate = false;
+      share = "disabled";
       telemetry = {
         enabled = false;
       };
@@ -34,10 +36,20 @@ let
     runtimeInputs = with pkgs; [ coreutils ];
     text = ''
       export OPENCODE_TELEMETRY_ENABLED=false
+      export OPENCODE_TELEMETRY_DISABLED=1
+      export OPENCODE_DISABLE_TELEMETRY=1
+      export OPENCODE_NO_TELEMETRY=1
       export OPENCODE_OFFLINE_ONLY=1
       export OPENCODE_DISABLE_AUTO_UPDATE=1
+      export OPENCODE_DISABLE_AUTOUPDATE=1
+      export OPENCODE_DISABLE_FREE_MODELS=1
       export OPENCODE_UI_ANIMATIONS_DISABLED=1
+      export BUN_ENABLE_CRASH_REPORTING=0
+      export SENTRY_DSN=""
       export OTEL_SDK_DISABLED=true
+      export OTEL_TRACES_EXPORTER=none
+      export OTEL_METRICS_EXPORTER=none
+      export OTEL_LOGS_EXPORTER=none
       export DO_NOT_TRACK=1
 
       if [ "''${PROFILE_ROUTER_ACTIVE:-0}" = "1" ]; then
@@ -76,6 +88,11 @@ in
 
   config = lib.mkIf cfg.enable {
     programs.opencode.package = lib.mkForce opencode_wrapper;
+
+    home.file.".local/bin/opencode" = {
+      source = "${opencode_wrapper}/bin/opencode";
+      force = true;
+    };
 
     home.sessionVariables = {
       OPENCODE_CONFIG_DIR = lib.mkDefault opencode_config_dir;

@@ -1,25 +1,25 @@
 final: prev:
 let
-  version = "0.160.1";
+  version = "0.167.0";
 
   # platform-specific package info
   # upstream switched from bare binary tarballs to complete package bundles in rust-v0.157.0+
   platform_info = {
     aarch64-darwin = {
       suffix = "aarch64-apple-darwin";
-      hash = "sha256-9zUn7gnG24aay7N7cJhmsznqdO+R0t4lXpx07JYMYxQ=";
+      hash = "sha256-r0XtRdlA15mICWIsHAKW0wmO19f61pUoRCLCKL1FRRc=";
     };
     x86_64-darwin = {
       suffix = "x86_64-apple-darwin";
-      hash = "sha256-qY8zDJsWUs7y7ce8LuTEeg/hn6CYtoY4G+PIhCq/CsA=";
+      hash = "sha256-PXxMgylttjtRCOE2Esd/PlAgtsXy/ABL7kE6XMkt6Jk=";
     };
     x86_64-linux = {
       suffix = "x86_64-unknown-linux-musl";
-      hash = "sha256-NAgBVlkGpwKPa6qpq2hTrdrvIh8AFqFBenwf/dlsIfA=";
+      hash = "sha256-O7916D3mtYrtKPLPbjOtQj7DH9RwChRXuUvlV+pafG4=";
     };
     aarch64-linux = {
       suffix = "aarch64-unknown-linux-musl";
-      hash = "sha256-3/CVRDj6RVwhl92x9CHY1oYl2Y3mEPdr7bblvIN+o1s=";
+      hash = "sha256-DeJh7PHn8wKKeVLwP8ogk/dJJ304WQt4uzL4VndWu7c=";
     };
   };
 

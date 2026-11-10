@@ -59,9 +59,13 @@ let
   mkClaudeUserConfig =
     profile:
     let
-      filteredMcpServers = lib.filterAttrs (
-        name: _: !builtins.elem name profile.agents.claude.excludeMcpServers
-      ) profile.agents.claude.mcpServers;
+      filteredMcpServers =
+        lib.mapAttrs (_: server: lib.filterAttrs (k: v: !(k == "disabledTools" && v == [ ])) server)
+          (
+            lib.filterAttrs (
+              name: _: !builtins.elem name profile.agents.claude.excludeMcpServers
+            ) profile.agents.claude.mcpServers
+          );
     in
     pkgs.writeText "claude-user-config-${profile.name}.json" (
       builtins.toJSON {
@@ -92,13 +96,36 @@ let
           env = (mapAttrs (_: expandHome) (profile.sessionEnv // profile.env)) // {
             CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC = "1";
             DISABLE_NON_ESSENTIAL_MODEL_CALLS = "1";
+            CLAUDE_CODE_ENABLE_TELEMETRY = "0";
+            CLAUDE_CODE_DISABLE_FEATURE_FLAGS = "1";
+            CLAUDE_CODE_AUTO_MODE_SERVER = "0";
+            CLAUDE_CODE_ATTRIBUTION_HEADER = "0";
+            CLAUDE_CODE_SUPPRESS_SESSION_ATTRIBUTION = "1";
             CLAUDE_CODE_MAX_OUTPUT_TOKENS = "128000";
             ENABLE_CLAUDEAI_MCP_SERVERS =
               if profile.agents.claude.enableOrganizationalMcp then "true" else "false";
             DISABLE_AUTOUPDATER = "1";
             DISABLE_UPDATES = "1";
+            DISABLE_UPGRADE_COMMAND = "1";
+            DISABLE_BUG_COMMAND = "1";
+            DISABLE_FEEDBACK_COMMAND = "1";
             CLAUDE_CODE_DISABLE_AUTO_MEMORY = "1";
+            CLAUDE_CODE_DISABLE_ORG_MEMORY = "1";
             CLAUDE_CODE_DISABLE_FEEDBACK_SURVEY = "1";
+            CLAUDE_CODE_SEND_FEEDBACK = "0";
+            CLAUDE_CODE_DISABLE_TERMINAL_TITLE = "1";
+            CLAUDE_CODE_DISABLE_AWAY_SUMMARY = "1";
+            CLAUDE_CODE_DISABLE_OFFICIAL_MARKETPLACE_AUTOINSTALL = "1";
+            CLAUDE_CODE_PACKAGE_MANAGER_AUTO_UPDATE = "0";
+            BUN_ENABLE_CRASH_REPORTING = "0";
+            ENABLE_LSP_TOOL = "1";
+            CLAUDE_CODE_BASH_SANDBOX_SHOW_INDICATOR = "1";
+            CLAUDE_CODE_NO_FLICKER = "1";
+            CLAUDE_CODE_USE_NATIVE_FILE_SEARCH = "1";
+            OTEL_SDK_DISABLED = "true";
+            OTEL_TRACES_EXPORTER = "none";
+            OTEL_METRICS_EXPORTER = "none";
+            OTEL_LOGS_EXPORTER = "none";
             DISABLE_TELEMETRY = "1";
             DISABLE_GROWTHBOOK = "1";
             DISABLE_ERROR_REPORTING = "1";
@@ -184,6 +211,7 @@ let
           ui = {
             enableAnimations = false;
             showSpinner = false;
+            seasonalThemes = false;
           };
           model = "Gemini 3.8 Flash (High)";
           permissions = permsLib.toAgyPermissions profile.agents.permissions;
@@ -212,6 +240,8 @@ let
           endpoint = profile.agents.opencode.localEndpoint;
           model = profile.agents.opencode.model;
           offlineOnly = (profile.agents.opencode.provider == "local");
+          autoupdate = false;
+          share = "disabled";
           telemetry = {
             enabled = false;
           };
@@ -256,10 +286,20 @@ let
         export OPENCODE_CACHE_DIR="${target_dir}/cache"
         export OPENCODE_STATE_DIR="${target_dir}/state"
         export OPENCODE_TELEMETRY_ENABLED=false
+        export OPENCODE_TELEMETRY_DISABLED=1
+        export OPENCODE_DISABLE_TELEMETRY=1
+        export OPENCODE_NO_TELEMETRY=1
         export OPENCODE_OFFLINE_ONLY=${if p.agents.opencode.provider == "local" then "true" else "false"}
         export OPENCODE_DISABLE_AUTO_UPDATE=1
+        export OPENCODE_DISABLE_AUTOUPDATE=1
+        export OPENCODE_DISABLE_FREE_MODELS=1
         export OPENCODE_UI_ANIMATIONS_DISABLED=1
+        export BUN_ENABLE_CRASH_REPORTING=0
+        export SENTRY_DSN=""
         export OTEL_SDK_DISABLED=true
+        export OTEL_TRACES_EXPORTER=none
+        export OTEL_METRICS_EXPORTER=none
+        export OTEL_LOGS_EXPORTER=none
         export DO_NOT_TRACK=1
 
         exec "${pkgs.opencode}/bin/opencode" "$@"
@@ -585,9 +625,7 @@ in
           fi
         ''}
 
-        if [ ! -f "$codex_dest_dir/config.toml" ]; then
-          install -m 600 "${./../agents/core/codex/config.toml}" "$codex_dest_dir/config.toml"
-        fi
+        install -m 600 "${./../agents/core/codex/config.toml}" "$codex_dest_dir/config.toml"
 
         if [ ! -f "$claude_dest_dir/settings.json" ]; then
           install -m 600 "${mkClaudeSettings p}" "$claude_dest_dir/settings.json"
@@ -627,6 +665,7 @@ in
         else
           ${pkgs.jq}/bin/jq -s '
             .[0] as $target | .[1] as $source | ($target * $source)
+            | del(.permissions.allowAllPathCommands, .permissions.allowReadTools, .permissions.allowedMcpTools, .permissions.allowedShellCommands)
             | .permissions.allow = (((($target.permissions.allow // []) + ($source.permissions.allow // [])) | unique))
             | .permissions.deny = (((($target.permissions.deny // []) + ($source.permissions.deny // [])) | unique))
             | .permissions.ask = (((($target.permissions.ask // []) + ($source.permissions.ask // [])) | unique))
@@ -643,6 +682,7 @@ in
             else
               ${pkgs.jq}/bin/jq -s '
                 .[0] as $target | .[1] as $source | ($target * $source)
+                | del(.permissions.allowAllPathCommands, .permissions.allowReadTools, .permissions.allowedMcpTools, .permissions.allowedShellCommands)
                 | .permissions.allow = (((($target.permissions.allow // []) + ($source.permissions.allow // [])) | unique))
                 | .permissions.deny = (((($target.permissions.deny // []) + ($source.permissions.deny // [])) | unique))
                 | .permissions.ask = (((($target.permissions.ask // []) + ($source.permissions.ask // [])) | unique))
@@ -661,6 +701,7 @@ in
           else
             ${pkgs.jq}/bin/jq -s '
               .[0] as $target | .[1] as $source | ($target * $source)
+              | del(.permissions.allowAllPathCommands, .permissions.allowReadTools, .permissions.allowedMcpTools, .permissions.allowedShellCommands)
               | .permissions.allow = (((($target.permissions.allow // []) + ($source.permissions.allow // [])) | unique))
               | .permissions.deny = (((($target.permissions.deny // []) + ($source.permissions.deny // [])) | unique))
               | .permissions.ask = (((($target.permissions.ask // []) + ($source.permissions.ask // [])) | unique))
@@ -680,8 +721,9 @@ in
         if [ ! -f "$claude_dest_dir/.claude.json" ]; then
           install -m 600 "${mkClaudeUserConfig p}" "$claude_dest_dir/.claude.json"
         else
-          ${pkgs.jq}/bin/jq -s '.[0] + {mcpServers: (.[0].mcpServers // {}) + .[1].mcpServers}' \
-            "$claude_dest_dir/.claude.json" "${mkClaudeUserConfig p}" > "$claude_dest_dir/.claude.json.tmp"
+          ${pkgs.jq}/bin/jq -s '
+            .[0] + {mcpServers: ((.[0].mcpServers // {}) + .[1].mcpServers | with_entries(.value |= del(.disabledTools)))}
+          ' "$claude_dest_dir/.claude.json" "${mkClaudeUserConfig p}" > "$claude_dest_dir/.claude.json.tmp"
           chmod 600 "$claude_dest_dir/.claude.json.tmp"
           mv "$claude_dest_dir/.claude.json.tmp" "$claude_dest_dir/.claude.json"
         fi
@@ -692,8 +734,9 @@ in
             if [ ! -f "$primary_claude_base/.claude.json" ]; then
               install -m 600 "${mkClaudeUserConfig p}" "$primary_claude_base/.claude.json"
             else
-              ${pkgs.jq}/bin/jq -s '.[0] + {mcpServers: (.[0].mcpServers // {}) + .[1].mcpServers}' \
-                "$primary_claude_base/.claude.json" "${mkClaudeUserConfig p}" > "$primary_claude_base/.claude.json.tmp"
+              ${pkgs.jq}/bin/jq -s '
+                .[0] + {mcpServers: ((.[0].mcpServers // {}) + .[1].mcpServers | with_entries(.value |= del(.disabledTools)))}
+              ' "$primary_claude_base/.claude.json" "${mkClaudeUserConfig p}" > "$primary_claude_base/.claude.json.tmp"
               chmod 600 "$primary_claude_base/.claude.json.tmp"
               mv "$primary_claude_base/.claude.json.tmp" "$primary_claude_base/.claude.json"
             fi

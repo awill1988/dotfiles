@@ -38,10 +38,20 @@ let
         fi
 
         export CODEX_DISABLE_TELEMETRY=1
+        export CODEX_DISABLE_ANALYTICS=1
+        export CODEX_DISABLE_FEEDBACK=1
         export CODEX_DISABLE_AUTO_UPDATE=1
         export CODEX_DISABLE_UPDATE_CHECK=1
+        export CODEX_DISABLE_ERROR_REPORTING=1
         export CODEX_DISABLE_ANIMATIONS=1
+        export OPENAI_LOG=error
+        export RUST_BACKTRACE=0
+        export GOTELEMETRY=off
+        export SENTRY_DSN=""
         export OTEL_SDK_DISABLED=true
+        export OTEL_TRACES_EXPORTER=none
+        export OTEL_METRICS_EXPORTER=none
+        export OTEL_LOGS_EXPORTER=none
         export DO_NOT_TRACK=1
 
         exec "${cfg.package}/bin/codex" "$@"
@@ -98,36 +108,7 @@ in
           rm -f "$config_target"
         fi
 
-        if [[ ! -e "$config_target" ]]; then
-          install -m 600 "${config_source}" "$config_target"
-        else
-          if grep -q '^model = "gpt-5\.4"$' "$config_target"; then
-            ${pkgs.gnused}/bin/sed -i 's/^model = "gpt-5\.4"$/model = "gpt-5.5"/' "$config_target"
-          fi
-          if ! grep -q 'code_mode_host' "$config_target"; then
-            if grep -q '^\[features\]' "$config_target"; then
-              ${pkgs.gnused}/bin/sed -i '/^\[features\]/a code_mode_host = true' "$config_target"
-            else
-              echo -e "\n[features]\ncode_mode_host = true" >> "$config_target"
-            fi
-          else
-            ${pkgs.gnused}/bin/sed -i 's/^code_mode_host = false/code_mode_host = true/' "$config_target"
-          fi
-
-          for feature in apps plugins remote_plugin; do
-            if grep -q "^$feature[[:space:]]*=" "$config_target"; then
-              ${pkgs.gnused}/bin/sed -i "s/^$feature[[:space:]]*=.*/$feature = false/" "$config_target"
-            else
-              ${pkgs.gnused}/bin/sed -i "/^\[features\]/a $feature = false" "$config_target"
-            fi
-          done
-
-          # Purge unrecognized/deprecated keys that trigger strict config warnings
-          ${pkgs.gnused}/bin/sed -i '/^[[:space:]]*rmcp_client[[:space:]]*=/d' "$config_target"
-          ${pkgs.gnused}/bin/sed -i '/^[[:space:]]*features\.rmcp_client[[:space:]]*=/d' "$config_target"
-          ${pkgs.gnused}/bin/sed -i '/^[[:space:]]*tools\.view_image[[:space:]]*=/d' "$config_target"
-          ${pkgs.gnused}/bin/sed -i '/^[[:space:]]*tools\.websearch[[:space:]]*=/d' "$config_target"
-        fi
+        install -m 600 "${config_source}" "$config_target"
       '';
     })
   ];

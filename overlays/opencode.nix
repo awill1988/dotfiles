@@ -49,7 +49,19 @@ in
             makeWrapper ${nodejs}/bin/node $out/bin/opencode \
               --add-flags "$out/libexec/opencode/opencode.js" \
               --set OPENCODE_TELEMETRY_ENABLED false \
-              --set OPENCODE_OFFLINE_ONLY true
+              --set OPENCODE_TELEMETRY_DISABLED 1 \
+              --set OPENCODE_DISABLE_TELEMETRY 1 \
+              --set OPENCODE_NO_TELEMETRY 1 \
+              --set OPENCODE_OFFLINE_ONLY true \
+              --set OPENCODE_DISABLE_AUTO_UPDATE 1 \
+              --set OPENCODE_DISABLE_AUTOUPDATE 1 \
+              --set OPENCODE_DISABLE_FREE_MODELS 1 \
+              --set BUN_ENABLE_CRASH_REPORTING 0 \
+              --set OTEL_SDK_DISABLED true \
+              --set OTEL_TRACES_EXPORTER none \
+              --set OTEL_METRICS_EXPORTER none \
+              --set OTEL_LOGS_EXPORTER none \
+              --set DO_NOT_TRACK 1
             runHook postInstall
           '';
 

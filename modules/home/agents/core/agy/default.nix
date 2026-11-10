@@ -42,6 +42,7 @@ let
       ui = {
         enableAnimations = false;
         showSpinner = false;
+        seasonalThemes = false;
       };
       model = "Gemini 3.8 Flash (High)";
       permissions = permsLib.toAgyPermissions (
@@ -84,6 +85,7 @@ let
       ui = {
         enableAnimations = false;
         showSpinner = false;
+        seasonalThemes = false;
       };
       model = "Gemini 3.8 Flash (High)";
       permissions = permsLib.toAgyPermissions (
@@ -148,13 +150,30 @@ let
 
     # Privacy Lockdown (Mandatory Dark Mode)
     export AGY_TELEMETRY_ENABLED=false
+    export AGY_TELEMETRY_DISABLED=1
     export ANTIGRAVITY_TELEMETRY_ENABLED=false
     export ANTIGRAVITY_DATA_COLLECTION=opt-out
+    export GEMINI_TELEMETRY_ENABLED=false
+    export GEMINI_TELEMETRY_LOG_PROMPTS=false
     export GOTELEMETRY=off
     export AGY_CLI_DISABLE_TELEMETRY=true
     export AGY_CLI_DISABLE_UPDATE_CHECK=true
+    export AGY_CLI_DISABLE_AUTO_UPDATE=true
+    export AGY_DISABLE_AUTO_UPDATE=1
+    export AGY_NO_UPDATE_NOTIFIER=1
+    export NO_UPDATE_NOTIFIER=1
+    export GOOGLE_CLOUD_SDK_TELEMETRY_DISABLED=1
+    export CLOUDSDK_CORE_DISABLE_USAGE_REPORTING=true
+    export NEXT_TELEMETRY_DISABLED=1
+    export ANTIGRAVITY_SENTRY_SAMPLE_RATE=0
+    export PROFILING_TELEMETRY_SAMPLE_RATE=0
+    export SENTRY_DSN=""
     export AGY_UI_ANIMATIONS_DISABLED=true
+    export AGY_CLI_FAST_PROMPT_EDITOR=true
     export OTEL_SDK_DISABLED=true
+    export OTEL_TRACES_EXPORTER=none
+    export OTEL_METRICS_EXPORTER=none
+    export OTEL_LOGS_EXPORTER=none
     export DO_NOT_TRACK=1
     export CASCADE_DEFAULT_MODEL_OVERRIDE="gemini-3.8-flash"
 
@@ -167,6 +186,7 @@ let
         else
           ${pkgs.jq}/bin/jq -s '
             .[0] as $target | .[1] as $source | ($target * $source)
+            | del(.permissions.allowAllPathCommands, .permissions.allowReadTools, .permissions.allowedMcpTools, .permissions.allowedShellCommands)
             | .permissions.allow = (((($target.permissions.allow // []) + ($source.permissions.allow // [])) | map(select((startswith("read(") or startswith("write(")) | not)) | unique))
             | .permissions.deny = (((($target.permissions.deny // []) + ($source.permissions.deny // [])) | unique))
             | .permissions.ask = (((($target.permissions.ask // []) + ($source.permissions.ask // [])) | map(select((startswith("read(") or contains("\\") or contains("%")) | not)) | unique))
@@ -238,6 +258,7 @@ in
         else
           ${pkgs.jq}/bin/jq -s '
             .[0] as $target | .[1] as $source | ($target * $source)
+            | del(.permissions.allowAllPathCommands, .permissions.allowReadTools, .permissions.allowedMcpTools, .permissions.allowedShellCommands)
             | .permissions.allow = (((($target.permissions.allow // []) + ($source.permissions.allow // [])) | map(select((startswith("read(") or startswith("write(")) | not)) | unique))
             | .permissions.deny = (((($target.permissions.deny // []) + ($source.permissions.deny // [])) | unique))
             | .permissions.ask = (((($target.permissions.ask // []) + ($source.permissions.ask // [])) | map(select((startswith("read(") or contains("\\") or contains("%")) | not)) | unique))

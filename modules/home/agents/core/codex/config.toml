@@ -20,12 +20,15 @@ metrics_exporter = "none"
 log_user_prompt = false
 log_agent_responses = false
 log_guardian_assessments = false
+log_sse_deltas = false
+
+[history]
+persistence = "none"
 
 [cloud]
 skills = { enabled = false }
 
 [orchestrator]
-skills = { enabled = false }
 mcp = { enabled = false }
 
 [tool_suggest]
@@ -37,16 +40,24 @@ generate_memories = false
 use_memories = false
 dedicated_tools = false
 disable_on_external_context = true
+dual_write = false
 
 [features]
 code_mode_host = true
+code_mode_tool_search = true
+code_mode_tool_description_first = true
+code_mode_host_output_truncation = true
+code_mode_host_grpc = true
 apps = false
+apps_early_resource_discovery = false
 enable_mcp_apps = false
 codex_apps_mcp_2026_07_28 = false
 plugins = false
+plugin_discovery_prefetch = false
 remote_plugin = false
 plugin_sharing = false
 recommended_plugins = false
+connectors = false
 tool_suggest = false
 skill_search = false
 skill_mcp_dependency_install = false
@@ -57,21 +68,37 @@ in_app_browser = false
 computer_use = false
 in_app_local_automation = false
 in_app_updates = false
+in_app_voice = false
 image_generation = false
 view_image = false
 memories = false
+memory_tool = false
 external_agent_memory_import = false
 chronicle = false
 realtime_conversation = false
 in_app_dictation = false
 analytics_plan_history = false
+critical_path_timing = false
 api_key_model_discovery = false
+api_key_cyber_access_programs = false
 runtime_metrics = false
 agent_message_board = false
 auth_elicitation = false
 tool_call_mcp_elicitation = false
 use_xaa = false
 bedrock_setup_wizard = false
+gcp_setup_wizard = false
+guardian_approval = false
+guardian_native_multi_agent_history = false
+guardian_recorded_items = false
+guardian_trust_orchestrator_connectors = false
+guardianv2 = false
+guardianv2_decisions_comparison = false
+guardianv3 = false
+executor_capability_discovery = false
+executor_capability_discovery_v2 = false
+multi_env_copy_file = false
+telepathy = false
 network_proxy = false
 respect_system_proxy = false
 system_proxy_fallback = false
@@ -104,6 +131,8 @@ inherit = "all"
 ignore_default_excludes = true
 experimental_use_profile = true
 
-[ui]
-enable_animations = false
-show_spinner = false
+[tui]
+animations = false
+notifications = false
+show_tooltips = false
+auto_recap = false

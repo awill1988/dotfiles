@@ -2,25 +2,25 @@ final: prev:
 let
   inherit (prev) lib;
 
-  version = "1.2.17";
+  version = "1.5.5";
   base_url = "https://github.com/google-antigravity/antigravity-cli/releases/download/${version}";
 
   platform_info = {
     aarch64-darwin = {
       url = "${base_url}/agy_cli_mac_arm64.tar.gz";
-      hash = "sha256-cAtMHzVE1Ud4S6oOTHJwGcp/NJRNUmnNY26Jek1jIMY=";
+      hash = "sha256-4Hn1umnVSEQwMdTZpmqZj+J4HG7pOAqbxulWW6fQk7c=";
     };
     x86_64-darwin = {
       url = "${base_url}/agy_cli_mac_x64.tar.gz";
-      hash = "sha256-+pG2DYuLB0547TyEWrfFQovksjEpDKmjUqbsw3VsWgo=";
+      hash = "sha256-jELFzpTXStJVHrwtVQDmzWoEQ/ZfhQHaxfQZk3rTMCE=";
     };
     x86_64-linux = {
       url = "${base_url}/agy_cli_linux_x64.tar.gz";
-      hash = "sha256-sO2KfDdbWvOvlz8IpgHkGuuzi6x+gLkiq1TZc6QnVJM=";
+      hash = "sha256-v+LCXt6t2YwpQkF8mXLuDh+qPwr9yQcR6E1fOmM7UHg=";
     };
     aarch64-linux = {
       url = "${base_url}/agy_cli_linux_arm64.tar.gz";
-      hash = "sha256-Shrxu5E1K3L0D843OgKAI78OR/X86z36SCSYFsDwyuw=";
+      hash = "sha256-9vr/e0etLZpg68qdd0I5oc0j5TqMptgSwelYOQncplU=";
     };
   };
 
