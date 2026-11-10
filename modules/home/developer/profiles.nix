@@ -213,7 +213,8 @@ let
             showSpinner = false;
             seasonalThemes = false;
           };
-          model = "Gemini 3.8 Flash (High)";
+          agentMode = "plan";
+          model = "Gemini 4 Carbon (Medium)";
           permissions = permsLib.toAgyPermissions profile.agents.permissions;
           mcpServers = {
             contextforge = {

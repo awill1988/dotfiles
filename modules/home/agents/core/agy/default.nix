@@ -44,7 +44,8 @@ let
         showSpinner = false;
         seasonalThemes = false;
       };
-      model = "Gemini 3.8 Flash (High)";
+      agentMode = "plan";
+      model = "Gemini 4 Carbon (Medium)";
       permissions = permsLib.toAgyPermissions (
         if config ? developer && config.developer ? baseline then
           config.developer.baseline.agents.permissions
@@ -87,7 +88,8 @@ let
         showSpinner = false;
         seasonalThemes = false;
       };
-      model = "Gemini 3.8 Flash (High)";
+      agentMode = "plan";
+      model = "Gemini 4 Carbon (Medium)";
       permissions = permsLib.toAgyPermissions (
         if config ? developer && config.developer.profiles ? work then
           config.developer.profiles.work.agents.permissions
@@ -175,7 +177,7 @@ let
     export OTEL_METRICS_EXPORTER=none
     export OTEL_LOGS_EXPORTER=none
     export DO_NOT_TRACK=1
-    export CASCADE_DEFAULT_MODEL_OVERRIDE="gemini-3.8-flash"
+    export CASCADE_DEFAULT_MODEL_OVERRIDE="gemini-4-carbon-medium"
 
     run_agy() {
       if [ -n "''${AGY_CONFIG_DIR:-}" ] && [ -f "''${AGY_CONFIG_DIR}/settings.json" ]; then
@@ -276,7 +278,7 @@ in
     home.sessionVariables = {
       ANTIGRAVITY_AGENT = "1";
       AGY_MISSION_CONTROL = "1";
-      CASCADE_DEFAULT_MODEL_OVERRIDE = "gemini-3.8-flash";
+      CASCADE_DEFAULT_MODEL_OVERRIDE = "gemini-4-carbon-medium";
     };
 
     programs.zsh.shellAliases = {
