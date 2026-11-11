@@ -71,7 +71,7 @@
           atlassian = {
             command = "mcp-remote-wrapper";
             args = [
-              "https://mcp.atlassian.com/v1/mcp"
+              "https://mcp.atlassian.com/v2/mcp"
               "43012"
             ];
           };

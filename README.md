@@ -108,7 +108,7 @@ All identity details, profiles, machine definitions, and path overrides are decl
       agents.claude = {
         excludeMcpServers = [ "blender" ];
         mcpServers = {
-          atlassian = { command = "npx"; args = [ "-y" "mcp-remote" "https://mcp.atlassian.com/v1/mcp" ]; };
+          atlassian = { command = "npx"; args = [ "-y" "mcp-remote" "https://mcp.atlassian.com/v2/mcp" ]; };
           linear = { command = "npx"; args = [ "-y" "mcp-remote" "https://mcp.linear.app/mcp" ]; };
         };
       };

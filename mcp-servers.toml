@@ -69,7 +69,7 @@ gateway_register = true
 # [[servers]]
 # name = "atlassian"
 # transport = "http"
-# url = "https://mcp.atlassian.com/v1/mcp"
+# url = "https://mcp.atlassian.com/v2/mcp?tools=all"
 # # oauth_config = { grant_type = "authorization_code", client_id = "...", client_secret = "...", authorization_url = "https://auth.atlassian.com/authorize", token_url = "https://auth.atlassian.com/oauth/token", redirect_uri = "http://127.0.0.1:4444/oauth/callback", scopes = ["read:confluence-content.all", "read:jira-work"] }
 # gateway_register = true
 #
