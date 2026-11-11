@@ -234,40 +234,45 @@ let
 
   mkOpencodeConfig =
     profile:
-    pkgs.writeText "opencode-config-${profile.name}.json" (
-      builtins.toJSON (
-        {
-          provider = profile.agents.opencode.provider;
-          endpoint = profile.agents.opencode.localEndpoint;
-          model = profile.agents.opencode.model;
-          offlineOnly = (profile.agents.opencode.provider == "local");
-          autoupdate = false;
-          share = "disabled";
-          telemetry = {
-            enabled = false;
-          };
-          general = {
-            enableAutoUpdate = false;
-          };
-          ui = {
-            enableAnimations = false;
-          };
-        }
-        // (
-          if profile.agents.opencode.apiKeyEnvVar != null then
-            {
-              providerOptions = {
-                "${profile.agents.opencode.provider}" = {
-                  apiKeyEnvVar = profile.agents.opencode.apiKeyEnvVar;
-                };
+    let
+      baseAttrs = {
+        provider = profile.agents.opencode.provider;
+        endpoint = profile.agents.opencode.localEndpoint;
+        model = profile.agents.opencode.model;
+        offlineOnly = (profile.agents.opencode.provider == "local");
+        autoupdate = false;
+        share = "disabled";
+        telemetry = {
+          enabled = false;
+        };
+        general = {
+          enableAutoUpdate = false;
+        };
+        ui = {
+          enableAnimations = false;
+        };
+      }
+      // (
+        if profile.agents.opencode.apiKeyEnvVar != null then
+          {
+            providerOptions = {
+              "${profile.agents.opencode.provider}" = {
+                apiKeyEnvVar = profile.agents.opencode.apiKeyEnvVar;
               };
-            }
-          else
-            { }
-        )
-        // profile.agents.opencode.config
+            };
+          }
+        else
+          { }
       )
-    );
+      // profile.agents.opencode.config;
+      baseJson = builtins.toJSON baseAttrs;
+      fullJson =
+        if baseAttrs ? permission then
+          baseJson
+        else
+          "${lib.removeSuffix "}" baseJson},\"permission\":${permsLib.toOpencodePermissionsJson profile.agents.permissions}}";
+    in
+    pkgs.writeText "opencode-config-${profile.name}.json" fullJson;
 
   mkOpencodeProfileWrapper =
     p:
@@ -604,7 +609,7 @@ in
         if [ ! -f "$opencode_dest_dir/opencode.json" ]; then
           install -m 600 "${mkOpencodeConfig p}" "$opencode_dest_dir/opencode.json"
         else
-          ${pkgs.jq}/bin/jq -s '.[0] * .[1]' \
+          ${pkgs.jq}/bin/jq -s '.[0] as $target | .[1] as $source | ($target * $source) | .permission = $source.permission' \
             "$opencode_dest_dir/opencode.json" "${mkOpencodeConfig p}" > "$opencode_dest_dir/opencode.json.tmp"
           chmod 600 "$opencode_dest_dir/opencode.json.tmp"
           mv "$opencode_dest_dir/opencode.json.tmp" "$opencode_dest_dir/opencode.json"
@@ -619,7 +624,7 @@ in
           if [ ! -f "$primary_opencode_dir/opencode.json" ]; then
             install -m 600 "${mkOpencodeConfig p}" "$primary_opencode_dir/opencode.json"
           else
-            ${pkgs.jq}/bin/jq -s '.[0] * .[1]' \
+            ${pkgs.jq}/bin/jq -s '.[0] as $target | .[1] as $source | ($target * $source) | .permission = $source.permission' \
               "$primary_opencode_dir/opencode.json" "${mkOpencodeConfig p}" > "$primary_opencode_dir/opencode.json.tmp"
             chmod 600 "$primary_opencode_dir/opencode.json.tmp"
             mv "$primary_opencode_dir/opencode.json.tmp" "$primary_opencode_dir/opencode.json"
@@ -634,8 +639,7 @@ in
           ${pkgs.jq}/bin/jq -s '
             .[0] as $target | .[1] as $source
             | (($target * $source) | del(.env.CLAUDE_AX_SCREEN_READER) | del(.autoMode))
-            | .permissions.allow = (((($target.permissions.allow // []) + ($source.permissions.allow // [])) | unique))
-            | .permissions.deny = (((($target.permissions.deny // []) + ($source.permissions.deny // [])) | unique))
+            | .permissions = $source.permissions
           ' "$claude_dest_dir/settings.json" "${mkClaudeSettings p}" > "$claude_dest_dir/settings.json.tmp"
           chmod 600 "$claude_dest_dir/settings.json.tmp"
           mv "$claude_dest_dir/settings.json.tmp" "$claude_dest_dir/settings.json"
@@ -650,8 +654,7 @@ in
               ${pkgs.jq}/bin/jq -s '
                 .[0] as $target | .[1] as $source
                 | (($target * $source) | del(.env.CLAUDE_AX_SCREEN_READER) | del(.autoMode))
-                | .permissions.allow = (((($target.permissions.allow // []) + ($source.permissions.allow // [])) | unique))
-                | .permissions.deny = (((($target.permissions.deny // []) + ($source.permissions.deny // [])) | unique))
+                | .permissions = $source.permissions
               ' "$base_claude_dir/settings.json" "${mkClaudeSettings p}" > "$base_claude_dir/settings.json.tmp"
               chmod 600 "$base_claude_dir/settings.json.tmp"
               mv "$base_claude_dir/settings.json.tmp" "$base_claude_dir/settings.json"
@@ -666,10 +669,7 @@ in
         else
           ${pkgs.jq}/bin/jq -s '
             .[0] as $target | .[1] as $source | ($target * $source)
-            | del(.permissions.allowAllPathCommands, .permissions.allowReadTools, .permissions.allowedMcpTools, .permissions.allowedShellCommands)
-            | .permissions.allow = (((($target.permissions.allow // []) + ($source.permissions.allow // [])) | unique))
-            | .permissions.deny = (((($target.permissions.deny // []) + ($source.permissions.deny // [])) | unique))
-            | .permissions.ask = (((($target.permissions.ask // []) + ($source.permissions.ask // [])) | unique))
+            | .permissions = $source.permissions
           ' "$agy_dest_dir/settings.json" "${mkAgySettings p}" > "$agy_dest_dir/settings.json.tmp"
           chmod 600 "$agy_dest_dir/settings.json.tmp"
           mv "$agy_dest_dir/settings.json.tmp" "$agy_dest_dir/settings.json"
@@ -683,10 +683,7 @@ in
             else
               ${pkgs.jq}/bin/jq -s '
                 .[0] as $target | .[1] as $source | ($target * $source)
-                | del(.permissions.allowAllPathCommands, .permissions.allowReadTools, .permissions.allowedMcpTools, .permissions.allowedShellCommands)
-                | .permissions.allow = (((($target.permissions.allow // []) + ($source.permissions.allow // [])) | unique))
-                | .permissions.deny = (((($target.permissions.deny // []) + ($source.permissions.deny // [])) | unique))
-                | .permissions.ask = (((($target.permissions.ask // []) + ($source.permissions.ask // [])) | unique))
+                | .permissions = $source.permissions
               ' "$base_agy_dir/settings.json" "${mkAgySettings p}" > "$base_agy_dir/settings.json.tmp"
               chmod 600 "$base_agy_dir/settings.json.tmp"
               mv "$base_agy_dir/settings.json.tmp" "$base_agy_dir/settings.json"
@@ -702,10 +699,7 @@ in
           else
             ${pkgs.jq}/bin/jq -s '
               .[0] as $target | .[1] as $source | ($target * $source)
-              | del(.permissions.allowAllPathCommands, .permissions.allowReadTools, .permissions.allowedMcpTools, .permissions.allowedShellCommands)
-              | .permissions.allow = (((($target.permissions.allow // []) + ($source.permissions.allow // [])) | unique))
-              | .permissions.deny = (((($target.permissions.deny // []) + ($source.permissions.deny // [])) | unique))
-              | .permissions.ask = (((($target.permissions.ask // []) + ($source.permissions.ask // [])) | unique))
+              | .permissions = $source.permissions
             ' "$restricted_agy_dir/settings.json" "${mkAgySettings p}" > "$restricted_agy_dir/settings.json.tmp"
             chmod 600 "$restricted_agy_dir/settings.json.tmp"
             mv "$restricted_agy_dir/settings.json.tmp" "$restricted_agy_dir/settings.json"
@@ -713,9 +707,15 @@ in
         ''}
 
         mkdir -p "$codex_dest_dir/rules"
+        if [ -L "$codex_dest_dir/rules/default.rules" ]; then
+          rm -f "$codex_dest_dir/rules/default.rules"
+        fi
         install -m 600 "${mkCodexRules p}" "$codex_dest_dir/rules/default.rules"
         ${optionalString (p.name == primaryProfile.name) ''
           mkdir -p "${config.xdg.configHome}/codex/rules"
+          if [ -L "${config.xdg.configHome}/codex/rules/default.rules" ]; then
+            rm -f "${config.xdg.configHome}/codex/rules/default.rules"
+          fi
           install -m 600 "${mkCodexRules p}" "${config.xdg.configHome}/codex/rules/default.rules"
         ''}
 

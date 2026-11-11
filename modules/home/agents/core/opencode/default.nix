@@ -11,24 +11,33 @@ let
   opencode_cache_dir = "${config.xdg.cacheHome}/opencode";
   opencode_state_dir = "${config.xdg.stateHome}/opencode";
 
+  permsLib = import ../../../../developer/permissions.nix { inherit lib; };
+  baseline_permissions =
+    if config ? developer && config.developer ? baseline then
+      config.developer.baseline.agents.permissions
+    else
+      permsLib.defaultPermissions;
+
+  base_opencode_json = builtins.toJSON {
+    provider = "local";
+    endpoint = cfg.localEndpoint;
+    model = cfg.model;
+    offlineOnly = true;
+    autoupdate = false;
+    share = "disabled";
+    telemetry = {
+      enabled = false;
+    };
+    general = {
+      enableAutoUpdate = false;
+    };
+    ui = {
+      enableAnimations = false;
+    };
+  };
+
   default_opencode_config = pkgs.writeText "opencode-default.json" (
-    builtins.toJSON {
-      provider = "local";
-      endpoint = cfg.localEndpoint;
-      model = cfg.model;
-      offlineOnly = true;
-      autoupdate = false;
-      share = "disabled";
-      telemetry = {
-        enabled = false;
-      };
-      general = {
-        enableAutoUpdate = false;
-      };
-      ui = {
-        enableAnimations = false;
-      };
-    }
+    "${lib.removeSuffix "}" base_opencode_json},\"permission\":${permsLib.toOpencodePermissionsJson baseline_permissions}}"
   );
 
   opencode_wrapper = pkgs.writeShellApplication {
@@ -100,9 +109,21 @@ in
       OPENCODE_STATE_DIR = lib.mkDefault opencode_state_dir;
     };
 
-    xdg.configFile."opencode/opencode.json" = {
-      source = default_opencode_config;
-      force = true;
-    };
+    home.activation.ensureOpencodeConfig = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+      set -euo pipefail
+      target="${opencode_config_dir}/opencode.json"
+      mkdir -p "${opencode_config_dir}"
+      if [[ -L "$target" ]]; then
+        rm -f "$target"
+      fi
+      if [[ ! -e "$target" ]]; then
+        install -m 600 "${default_opencode_config}" "$target"
+      else
+        ${pkgs.jq}/bin/jq -s '.[0] as $target | .[1] as $source | ($target * $source) | .permission = $source.permission' \
+          "$target" "${default_opencode_config}" > "$target.tmp"
+        chmod 600 "$target.tmp"
+        mv "$target.tmp" "$target"
+      fi
+    '';
   };
 }

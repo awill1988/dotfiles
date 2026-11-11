@@ -188,10 +188,7 @@ let
         else
           ${pkgs.jq}/bin/jq -s '
             .[0] as $target | .[1] as $source | ($target * $source)
-            | del(.permissions.allowAllPathCommands, .permissions.allowReadTools, .permissions.allowedMcpTools, .permissions.allowedShellCommands)
-            | .permissions.allow = (((($target.permissions.allow // []) + ($source.permissions.allow // [])) | map(select((startswith("read(") or startswith("write(")) | not)) | unique))
-            | .permissions.deny = (((($target.permissions.deny // []) + ($source.permissions.deny // [])) | unique))
-            | .permissions.ask = (((($target.permissions.ask // []) + ($source.permissions.ask // [])) | map(select((startswith("read(") or contains("\\") or contains("%")) | not)) | unique))
+            | .permissions = $source.permissions
           ' "$target" "''${AGY_CONFIG_DIR}/settings.json" > "$target.tmp"
           ${pkgs.coreutils}/bin/chmod 600 "$target.tmp"
           ${pkgs.coreutils}/bin/mv "$target.tmp" "$target"
@@ -260,10 +257,7 @@ in
         else
           ${pkgs.jq}/bin/jq -s '
             .[0] as $target | .[1] as $source | ($target * $source)
-            | del(.permissions.allowAllPathCommands, .permissions.allowReadTools, .permissions.allowedMcpTools, .permissions.allowedShellCommands)
-            | .permissions.allow = (((($target.permissions.allow // []) + ($source.permissions.allow // [])) | map(select((startswith("read(") or startswith("write(")) | not)) | unique))
-            | .permissions.deny = (((($target.permissions.deny // []) + ($source.permissions.deny // [])) | unique))
-            | .permissions.ask = (((($target.permissions.ask // []) + ($source.permissions.ask // [])) | map(select((startswith("read(") or contains("\\") or contains("%")) | not)) | unique))
+            | .permissions = $source.permissions
           ' "$target" "$source" > "$target.tmp"
           chmod 600 "$target.tmp"
           mv "$target.tmp" "$target"

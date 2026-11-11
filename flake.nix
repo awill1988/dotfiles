@@ -281,6 +281,9 @@
       };
 
       checks = forAllSystems (system: {
+        agent-permissions = import ./modules/developer/permissions-check.nix {
+          pkgs = import inputs.nixpkgs { inherit system; };
+        };
         git-signing = import ./modules/home/vcs/git/check.nix {
           pkgs = import inputs.nixpkgs { inherit system; };
         };

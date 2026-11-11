@@ -91,24 +91,24 @@ in
       home.file.".local/bin/codex".source = "${codex_wrapper}/bin/codex";
       home.file.".local/bin/codex-code-mode-host".source = "${cfg.package}/bin/codex-code-mode-host";
 
-      xdg.configFile."codex/rules/default.rules" = {
-        text = default_rules;
-        force = true;
-      };
-
       home.activation.ensureCodexConfig = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
         set -euo pipefail
 
         config_target="${codex_config_dir}/config.toml"
+        rules_target="${codex_config_dir}/rules/default.rules"
 
-        mkdir -p "${codex_config_dir}"
+        mkdir -p "${codex_config_dir}/rules"
 
-        # Replace the read-only nix store symlink with a writable file Codex can update in place.
+        # Replace read-only nix store symlinks with writable files managed in user space.
         if [[ -L "$config_target" ]]; then
           rm -f "$config_target"
         fi
+        if [[ -L "$rules_target" ]]; then
+          rm -f "$rules_target"
+        fi
 
         install -m 600 "${config_source}" "$config_target"
+        install -m 600 "${pkgs.writeText "codex-default.rules" default_rules}" "$rules_target"
       '';
     })
   ];

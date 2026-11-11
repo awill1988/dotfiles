@@ -242,6 +242,11 @@ let
             default = permsLib.defaultPermissions.commands.allow;
             description = "Allowed shell command patterns (e.g. 'aws *', 'git *', 'nix *')";
           };
+          ask = mkOption {
+            type = types.listOf types.str;
+            default = permsLib.defaultPermissions.commands.ask;
+            description = "Shell command patterns requiring interactive confirmation";
+          };
           deny = mkOption {
             type = types.listOf types.str;
             default = permsLib.defaultPermissions.commands.deny;
