@@ -2,6 +2,7 @@
 
 modes (selected by argv[1]):
   bridge    stdio<->http mcp bridge for drivemcp.googleapis.com (default)
+  serve     local streamable-http mcp server on 127.0.0.1:4445/mcp (per-request X-Drive-Account)
   login     run oauth installed-app flow, save tokens for an account
   use       set the active account
   list      list cached accounts
@@ -13,6 +14,7 @@ state lives under $DRIVE_MCP_DIR (default ~/.config/drive-mcp):
   active                text file: email of active account
 """
 
+import argparse
 import http.server
 import json
 import os
@@ -41,12 +43,42 @@ CLIENT_FILE = os.path.join(CONFIG_DIR, "client.json")
 TOKENS_DIR = os.path.join(CONFIG_DIR, "tokens")
 ACTIVE_FILE = os.path.join(CONFIG_DIR, "active")
 
-_session_id = None
+_locks_guard = threading.Lock()
+_account_locks: dict[str, threading.Lock] = {}
+
+_sessions_guard = threading.Lock()
+_upstream_sessions: dict[tuple[str, str], str] = {}
 
 
 def log(msg: str) -> None:
     sys.stderr.write(f"drive-mcp: {msg}\n")
     sys.stderr.flush()
+
+
+def account_lock(email: str) -> threading.Lock:
+    with _locks_guard:
+        lock = _account_locks.get(email)
+        if lock is None:
+            lock = threading.Lock()
+            _account_locks[email] = lock
+        return lock
+
+
+def get_upstream_session(key: tuple[str, str]) -> str | None:
+    with _sessions_guard:
+        return _upstream_sessions.get(key)
+
+
+def set_upstream_session(key: tuple[str, str], sid: str) -> None:
+    with _sessions_guard:
+        _upstream_sessions[key] = sid
+
+
+def clear_upstream_session_by_client_sid(client_sid: str) -> None:
+    with _sessions_guard:
+        stale = [k for k in _upstream_sessions if k[1] == client_sid]
+        for k in stale:
+            _upstream_sessions.pop(k, None)
 
 
 def load_client() -> dict:
@@ -61,7 +93,7 @@ def load_client() -> dict:
     cid = inner.get("client_id")
     secret = inner.get("client_secret")
     if not cid or not secret:
-        raise RuntimeError(f"client.json missing client_id/client_secret")
+        raise RuntimeError("client.json missing client_id/client_secret")
     return {
         "client_id": cid,
         "client_secret": secret,
@@ -98,7 +130,7 @@ def read_active() -> str | None:
 
 def write_active(email: str) -> None:
     os.makedirs(CONFIG_DIR, exist_ok=True)
-    tmp = ACTIVE_FILE + ".tmp"
+    tmp = ACTIVE_FILE + f".{secrets.token_hex(4)}.tmp"
     with open(tmp, "w", encoding="utf-8") as fh:
         fh.write(email + "\n")
     os.replace(tmp, ACTIVE_FILE)
@@ -111,7 +143,7 @@ def save_tokens(email: str, payload: dict) -> None:
         payload["expires_at"] = time.time() + int(payload["expires_in"]) - TOKEN_REFRESH_LEEWAY
     payload["email"] = email
     path = token_path(email)
-    tmp = path + ".tmp"
+    tmp = path + f".{secrets.token_hex(4)}.tmp"
     fd = os.open(tmp, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
     with os.fdopen(fd, "w") as fh:
         json.dump(payload, fh)
@@ -148,17 +180,18 @@ def refresh_access(email: str, tokens: dict, client: dict) -> dict:
             payload = json.loads(resp.read())
     except urllib.error.HTTPError as exc:
         text = exc.read().decode("utf-8", errors="replace")
-        raise RuntimeError(f"refresh failed: http {exc.code}: {text[:200]}")
+        raise RuntimeError(f"refresh failed for {email}: http {exc.code}: {text[:200]}")
     payload.setdefault("refresh_token", rt)
     save_tokens(email, payload)
     return payload
 
 
-def current_access_token(email: str, client: dict) -> str:
-    tokens = load_tokens(email)
-    if time.time() >= float(tokens.get("expires_at", 0)):
-        tokens = refresh_access(email, tokens, client)
-    return tokens["access_token"]
+def current_access_token(email: str, client: dict, force_refresh: bool = False) -> str:
+    with account_lock(email):
+        tokens = load_tokens(email)
+        if force_refresh or time.time() >= float(tokens.get("expires_at", 0)):
+            tokens = refresh_access(email, tokens, client)
+        return tokens["access_token"]
 
 
 def fetch_userinfo(access_token: str) -> dict:
@@ -299,19 +332,25 @@ def cmd_current(_argv: list[str]) -> int:
 
 
 def parse_sse(payload: bytes) -> dict | None:
+    last_json = None
     for line in payload.decode("utf-8", errors="replace").splitlines():
         if line.startswith("data:"):
             data = line[5:].strip()
             if data:
                 try:
-                    return json.loads(data)
+                    last_json = json.loads(data)
                 except json.JSONDecodeError:
-                    return None
-    return None
+                    continue
+    return last_json
 
 
-def post(message: dict, ctx: dict, retry_on_401: bool = True) -> dict | None:
-    global _session_id
+def post(
+    message: dict,
+    ctx: dict,
+    session_key: tuple[str, str] | None = None,
+    retry_on_401: bool = True,
+) -> dict | None:
+    is_init = isinstance(message, dict) and message.get("method") == "initialize"
     body = json.dumps(message).encode("utf-8")
     headers = {
         "Content-Type": "application/json",
@@ -320,15 +359,17 @@ def post(message: dict, ctx: dict, retry_on_401: bool = True) -> dict | None:
     }
     if ctx.get("project_id"):
         headers["X-Goog-User-Project"] = ctx["project_id"]
-    if _session_id:
-        headers["Mcp-Session-Id"] = _session_id
+    if session_key and not is_init:
+        upstream_sid = get_upstream_session(session_key)
+        if upstream_sid:
+            headers["Mcp-Session-Id"] = upstream_sid
 
     req = urllib.request.Request(ENDPOINT, data=body, headers=headers, method="POST")
     try:
         with urllib.request.urlopen(req, timeout=HTTP_TIMEOUT) as resp:
             sid = resp.headers.get("Mcp-Session-Id")
-            if sid:
-                _session_id = sid
+            if sid and session_key:
+                set_upstream_session(session_key, sid)
             ctype = (resp.headers.get("Content-Type") or "").lower()
             data = resp.read()
             if not data:
@@ -342,11 +383,12 @@ def post(message: dict, ctx: dict, retry_on_401: bool = True) -> dict | None:
     except urllib.error.HTTPError as exc:
         if exc.code == 401 and retry_on_401:
             try:
-                tokens = refresh_access(ctx["email"], load_tokens(ctx["email"]), ctx["client"])
-                ctx["access_token"] = tokens["access_token"]
+                ctx["access_token"] = current_access_token(
+                    ctx["email"], ctx["client"], force_refresh=True
+                )
             except RuntimeError as token_exc:
                 return error_frame(message, -32000, str(token_exc))
-            return post(message, ctx, retry_on_401=False)
+            return post(message, ctx, session_key=session_key, retry_on_401=False)
         text = exc.read().decode("utf-8", errors="replace")
         return error_frame(message, -32000, f"http {exc.code}: {text[:300]}")
     except urllib.error.URLError as exc:
@@ -386,6 +428,7 @@ def cmd_bridge(_argv: list[str]) -> int:
         "access_token": access_token,
         "project_id": client.get("project_id", ""),
     }
+    session_key = (email, "__stdio__")
     log(f"active account: {email}")
 
     for raw in sys.stdin:
@@ -398,7 +441,8 @@ def cmd_bridge(_argv: list[str]) -> int:
             log(f"invalid json on stdin: {line[:120]}")
             continue
         try:
-            resp = post(msg, ctx)
+            ctx["access_token"] = current_access_token(email, client)
+            resp = post(msg, ctx, session_key=session_key)
         except RuntimeError as exc:
             resp = error_frame(msg, -32000, str(exc))
         if resp is None:
@@ -408,8 +452,175 @@ def cmd_bridge(_argv: list[str]) -> int:
     return 0
 
 
+class ReusableThreadingHTTPServer(http.server.ThreadingHTTPServer):
+    allow_reuse_address = True
+    daemon_threads = True
+
+
+def dispatch_single_rpc(msg: dict, header_account: str, client_sid: str) -> dict | None:
+    method = msg.get("method")
+    if method == "ping":
+        return {"jsonrpc": "2.0", "id": msg.get("id", 0), "result": {}}
+
+    try:
+        client = load_client()
+    except RuntimeError as exc:
+        return error_frame(msg, -32000, str(exc))
+
+    # Strict profile isolation: never fall back to `active` when X-Drive-Account is supplied.
+    if header_account:
+        email = header_account
+    else:
+        email = read_active()
+        if not email:
+            return error_frame(
+                msg, -32000, "no active drive account; run `drive-account login` first"
+            )
+
+    try:
+        access_token = current_access_token(email, client)
+    except RuntimeError as exc:
+        return error_frame(msg, -32000, str(exc))
+
+    ctx = {
+        "client": client,
+        "email": email,
+        "access_token": access_token,
+        "project_id": client.get("project_id", ""),
+    }
+    return post(msg, ctx, session_key=(email, client_sid))
+
+
+def cmd_serve(argv: list[str]) -> int:
+    parser = argparse.ArgumentParser(prog="drive-mcp serve")
+    parser.add_argument("--host", default="127.0.0.1")
+    parser.add_argument("--port", type=int, default=4445)
+    opts = parser.parse_args(argv)
+
+    class McpHandler(http.server.BaseHTTPRequestHandler):
+        protocol_version = "HTTP/1.1"
+
+        def _write_json(
+            self, status: int, payload: dict | list, session_id: str | None = None
+        ) -> None:
+            raw = json.dumps(payload).encode("utf-8")
+            self.send_response(status)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Content-Length", str(len(raw)))
+            if session_id:
+                self.send_header("Mcp-Session-Id", session_id)
+            self.end_headers()
+            self.wfile.write(raw)
+
+        def _write_empty(self, status: int, extra_headers: dict[str, str] | None = None) -> None:
+            self.send_response(status)
+            self.send_header("Content-Length", "0")
+            for k, v in (extra_headers or {}).items():
+                self.send_header(k, v)
+            self.end_headers()
+
+        def do_GET(self):
+            path = urllib.parse.urlparse(self.path).path.rstrip("/") or "/"
+            if path == "/health":
+                self._write_json(200, {"status": "ok", "accounts": list_accounts()})
+                return
+            if path == "/mcp":
+                self._write_empty(405, {"Allow": "POST, DELETE"})
+                return
+            self._write_empty(404)
+
+        def do_DELETE(self):
+            path = urllib.parse.urlparse(self.path).path.rstrip("/") or "/"
+            if path != "/mcp":
+                self._write_empty(404)
+                return
+            sid = (self.headers.get("Mcp-Session-Id") or "").strip()
+            if sid:
+                clear_upstream_session_by_client_sid(sid)
+            self._write_empty(200)
+
+        def do_POST(self):
+            path = urllib.parse.urlparse(self.path).path.rstrip("/") or "/"
+            if path != "/mcp":
+                self._write_empty(404)
+                return
+
+            length = int(self.headers.get("Content-Length") or "0")
+            raw = self.rfile.read(length) if length > 0 else b""
+            if not raw.strip():
+                self._write_json(200, {})
+                return
+
+            try:
+                payload = json.loads(raw)
+            except json.JSONDecodeError:
+                self._write_json(
+                    400,
+                    {"jsonrpc": "2.0", "id": None, "error": {"code": -32700, "message": "parse error"}},
+                )
+                return
+
+            # Empty object probe used by contextforge-mcp-sync readiness checks
+            if payload == {}:
+                self._write_json(200, {})
+                return
+
+            header_account = (self.headers.get("X-Drive-Account") or "").strip()
+            client_sid = (self.headers.get("Mcp-Session-Id") or "").strip()
+
+            if isinstance(payload, dict):
+                if payload.get("method") == "initialize" or not client_sid:
+                    client_sid = client_sid or secrets.token_urlsafe(16)
+                is_request = "id" in payload and payload.get("id") is not None
+                resp = dispatch_single_rpc(payload, header_account, client_sid)
+                if not is_request:
+                    self._write_empty(202, {"Mcp-Session-Id": client_sid})
+                    return
+                if resp is None:
+                    resp = error_frame(payload, -32603, "empty upstream response")
+                self._write_json(200, resp, session_id=client_sid)
+                return
+
+            if isinstance(payload, list):
+                client_sid = client_sid or secrets.token_urlsafe(16)
+                responses = []
+                for item in payload:
+                    if not isinstance(item, dict):
+                        continue
+                    is_request = "id" in item and item.get("id") is not None
+                    resp = dispatch_single_rpc(item, header_account, client_sid)
+                    if is_request:
+                        responses.append(
+                            resp if resp is not None else error_frame(item, -32603, "empty upstream response")
+                        )
+                if not responses:
+                    self._write_empty(202, {"Mcp-Session-Id": client_sid})
+                    return
+                self._write_json(200, responses, session_id=client_sid)
+                return
+
+            self._write_json(
+                400,
+                {"jsonrpc": "2.0", "id": None, "error": {"code": -32600, "message": "invalid request"}},
+            )
+
+        def log_message(self, *_args, **_kwargs):
+            return
+
+    server = ReusableThreadingHTTPServer((opts.host, opts.port), McpHandler)
+    log(f"listening on http://{opts.host}:{opts.port}/mcp")
+    try:
+        server.serve_forever()
+    except KeyboardInterrupt:
+        pass
+    finally:
+        server.server_close()
+    return 0
+
+
 COMMANDS = {
     "bridge": cmd_bridge,
+    "serve": cmd_serve,
     "login": cmd_login,
     "use": cmd_use,
     "list": cmd_list,

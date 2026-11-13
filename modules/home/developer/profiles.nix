@@ -88,49 +88,60 @@ let
       ]
       (if str == "~" || str == "$HOME" || str == "\${HOME}" then config.home.homeDirectory else str);
 
+  resolveDriveAccount =
+    profile: if profile.drive.account != null then profile.drive.account else profile.identity.email;
+
   mkClaudeSettings =
     profile:
+    let
+      driveAccount = resolveDriveAccount profile;
+    in
     pkgs.writeText "claude-settings-${profile.name}.json" (
       builtins.toJSON (
         {
-          env = (mapAttrs (_: expandHome) (profile.sessionEnv // profile.env)) // {
-            CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC = "1";
-            DISABLE_NON_ESSENTIAL_MODEL_CALLS = "1";
-            CLAUDE_CODE_ENABLE_TELEMETRY = "0";
-            CLAUDE_CODE_DISABLE_FEATURE_FLAGS = "1";
-            CLAUDE_CODE_AUTO_MODE_SERVER = "0";
-            CLAUDE_CODE_ATTRIBUTION_HEADER = "0";
-            CLAUDE_CODE_SUPPRESS_SESSION_ATTRIBUTION = "1";
-            CLAUDE_CODE_MAX_OUTPUT_TOKENS = "128000";
-            ENABLE_CLAUDEAI_MCP_SERVERS =
-              if profile.agents.claude.enableOrganizationalMcp then "true" else "false";
-            DISABLE_AUTOUPDATER = "1";
-            DISABLE_UPDATES = "1";
-            DISABLE_UPGRADE_COMMAND = "1";
-            DISABLE_BUG_COMMAND = "1";
-            DISABLE_FEEDBACK_COMMAND = "1";
-            CLAUDE_CODE_DISABLE_AUTO_MEMORY = "1";
-            CLAUDE_CODE_DISABLE_ORG_MEMORY = "1";
-            CLAUDE_CODE_DISABLE_FEEDBACK_SURVEY = "1";
-            CLAUDE_CODE_SEND_FEEDBACK = "0";
-            CLAUDE_CODE_DISABLE_TERMINAL_TITLE = "1";
-            CLAUDE_CODE_DISABLE_AWAY_SUMMARY = "1";
-            CLAUDE_CODE_DISABLE_OFFICIAL_MARKETPLACE_AUTOINSTALL = "1";
-            CLAUDE_CODE_PACKAGE_MANAGER_AUTO_UPDATE = "0";
-            BUN_ENABLE_CRASH_REPORTING = "0";
-            ENABLE_LSP_TOOL = "1";
-            CLAUDE_CODE_BASH_SANDBOX_SHOW_INDICATOR = "1";
-            CLAUDE_CODE_NO_FLICKER = "1";
-            CLAUDE_CODE_USE_NATIVE_FILE_SEARCH = "1";
-            OTEL_SDK_DISABLED = "true";
-            OTEL_TRACES_EXPORTER = "none";
-            OTEL_METRICS_EXPORTER = "none";
-            OTEL_LOGS_EXPORTER = "none";
-            DISABLE_TELEMETRY = "1";
-            DISABLE_GROWTHBOOK = "1";
-            DISABLE_ERROR_REPORTING = "1";
-            DO_NOT_TRACK = "1";
-          };
+          env =
+            (mapAttrs (_: expandHome) (profile.sessionEnv // profile.env))
+            // (optionalAttrs (driveAccount != null) {
+              DRIVE_ACCOUNT = driveAccount;
+            })
+            // {
+              CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC = "1";
+              DISABLE_NON_ESSENTIAL_MODEL_CALLS = "1";
+              CLAUDE_CODE_ENABLE_TELEMETRY = "0";
+              CLAUDE_CODE_DISABLE_FEATURE_FLAGS = "1";
+              CLAUDE_CODE_AUTO_MODE_SERVER = "0";
+              CLAUDE_CODE_ATTRIBUTION_HEADER = "0";
+              CLAUDE_CODE_SUPPRESS_SESSION_ATTRIBUTION = "1";
+              CLAUDE_CODE_MAX_OUTPUT_TOKENS = "128000";
+              ENABLE_CLAUDEAI_MCP_SERVERS =
+                if profile.agents.claude.enableOrganizationalMcp then "true" else "false";
+              DISABLE_AUTOUPDATER = "1";
+              DISABLE_UPDATES = "1";
+              DISABLE_UPGRADE_COMMAND = "1";
+              DISABLE_BUG_COMMAND = "1";
+              DISABLE_FEEDBACK_COMMAND = "1";
+              CLAUDE_CODE_DISABLE_AUTO_MEMORY = "1";
+              CLAUDE_CODE_DISABLE_ORG_MEMORY = "1";
+              CLAUDE_CODE_DISABLE_FEEDBACK_SURVEY = "1";
+              CLAUDE_CODE_SEND_FEEDBACK = "0";
+              CLAUDE_CODE_DISABLE_TERMINAL_TITLE = "1";
+              CLAUDE_CODE_DISABLE_AWAY_SUMMARY = "1";
+              CLAUDE_CODE_DISABLE_OFFICIAL_MARKETPLACE_AUTOINSTALL = "1";
+              CLAUDE_CODE_PACKAGE_MANAGER_AUTO_UPDATE = "0";
+              BUN_ENABLE_CRASH_REPORTING = "0";
+              ENABLE_LSP_TOOL = "1";
+              CLAUDE_CODE_BASH_SANDBOX_SHOW_INDICATOR = "1";
+              CLAUDE_CODE_NO_FLICKER = "1";
+              CLAUDE_CODE_USE_NATIVE_FILE_SEARCH = "1";
+              OTEL_SDK_DISABLED = "true";
+              OTEL_TRACES_EXPORTER = "none";
+              OTEL_METRICS_EXPORTER = "none";
+              OTEL_LOGS_EXPORTER = "none";
+              DISABLE_TELEMETRY = "1";
+              DISABLE_GROWTHBOOK = "1";
+              DISABLE_ERROR_REPORTING = "1";
+              DO_NOT_TRACK = "1";
+            };
           autoUpdaterStatus = "disabled";
           axScreenReader = false;
           prefersReducedMotion = true;
@@ -466,6 +477,10 @@ let
             GIT_COMMITTER_EMAIL="${p.identity.email}"
             export GIT_COMMITTER_EMAIL
           ''}
+          ${optionalString ((resolveDriveAccount p) != null) ''
+            DRIVE_ACCOUNT="${resolveDriveAccount p}"
+            export DRIVE_ACCOUNT
+          ''}
           ${concatMapStringsSep "\n" (k: ''
             ${k}="${builtins.replaceStrings [ "~" ] [ "$HOME" ] p.env.${k}}"
             export ${k}
@@ -476,6 +491,12 @@ let
       case "''${1:-}" in
         --show-profile)
           echo "$active_profile"
+          exit 0
+          ;;
+        --show-drive-account)
+          if [ -n "''${DRIVE_ACCOUNT:-}" ]; then
+            echo "$DRIVE_ACCOUNT"
+          fi
           exit 0
           ;;
         --show-allowed-models)
@@ -491,6 +512,7 @@ let
         --show-env)
           echo "DEVELOPER_PROFILE=$DEVELOPER_PROFILE"
           echo "CODE_AGENT=''${CODE_AGENT:-}"
+          echo "DRIVE_ACCOUNT=''${DRIVE_ACCOUNT:-}"
           echo "CLAUDE_CONFIG_DIR=''${CLAUDE_CONFIG_DIR:-}"
           echo "CODEX_CONFIG_DIR=''${CODEX_CONFIG_DIR:-}"
           echo "AGY_CONFIG_DIR=''${AGY_CONFIG_DIR:-}"

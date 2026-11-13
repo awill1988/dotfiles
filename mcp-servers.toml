@@ -15,6 +15,13 @@ headers = { Authorization = "Bearer $GITHUB_MCP_PAT" }
 command = "github-mcp-server"
 env = { GITHUB_MCP_PAT = "$GITHUB_MCP_PAT" }
 
+[[servers]]
+name = "drive"
+transport = "http"
+url = "http://127.0.0.1:4445/mcp"
+passthrough_headers = ["X-Drive-Account"]
+gateway_register = true
+
 # bridge ports: 4450+ alpha-sorted (gateway on 4444, 4445-4449 reserved)
 
 [[servers]]

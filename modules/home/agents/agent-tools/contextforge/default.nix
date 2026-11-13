@@ -63,6 +63,11 @@ let
       # Local stdio clients retain their token for the lifetime of the process.
       "REQUIRE_TOKEN_EXPIRATION=false"
       "SSRF_ALLOW_LOCALHOST=true"
+      # Gateway-scoped header passthrough (global default allowlist intentionally empty
+      # so only gateways declaring passthrough_headers receive client headers).
+      "ENABLE_HEADER_PASSTHROUGH=true"
+      "PASSTHROUGH_HEADERS_SOURCE=env"
+      "DEFAULT_PASSTHROUGH_HEADERS=[]"
       # The stdio bridges still negotiate the initialize-based protocol era.
       "MCP_CLIENT_CONNECT_MODE=legacy"
       "MCP_INBOUND_PROTOCOL_MODE=legacy"
@@ -415,6 +420,7 @@ let
           "@GATEWAY_HOST@"
           "@GATEWAY_PORT@"
           "@REMOTE_BIN@"
+          "@PROFILE_ROUTER@"
         ]
         [
           "${pkgs.bash}/bin/bash"
@@ -423,6 +429,12 @@ let
           cfg.host
           (toString cfg.port)
           "${gateway_venv}/bin/fastmcp-remote"
+          (
+            if (config ? developer) && (config.developer.profileRouter != null) then
+              "${config.developer.profileRouter}/bin/profile-router"
+            else
+              "profile-router"
+          )
         ]
         (builtins.readFile ./scripts/client-wrapper.sh.tpl);
     executable = true;

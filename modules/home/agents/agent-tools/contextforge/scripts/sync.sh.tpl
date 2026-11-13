@@ -159,6 +159,7 @@ rm -f "$new_reg_marker"
   auth_type="$(echo "$server" | @JQ@ -r '.auth_type // empty')"
   auth_headers="$(echo "$server" | @JQ@ -c '.auth_headers // []')"
   oauth_config="$(echo "$server" | @JQ@ -c '.oauth_config // {}')"
+  passthrough_headers="$(echo "$server" | @JQ@ -c '.passthrough_headers // []')"
 
   if [[ "$register" != "true" ]]; then
     echo "  $name: skip (register=false)"
@@ -243,6 +244,17 @@ rm -f "$new_reg_marker"
     fi
 
     if (( gw_tool_count > 0 )); then
+      if [[ -n "$gw_id" ]]; then
+        current_pt="$(echo "$gateways_json" | @JQ@ -c \
+          --arg gid "$gw_id" \
+          "($gateway_array_filter | map(select(.id == \$gid)) | .[0].passthroughHeaders // .[0].passthrough_headers // [])")"
+        if [[ "$current_pt" != "$passthrough_headers" ]]; then
+          gateway_curl -sf --max-time 5 -X PUT -H "Content-Type: application/json" \
+            -d "{\"passthrough_headers\": $passthrough_headers}" \
+            "$gateway_url/v1/gateways/$gw_id" >/dev/null 2>&1 || true
+          echo "  $name: updated passthrough_headers"
+        fi
+      fi
       echo "  $name: ok ($gw_tool_count tools)"
       continue
     fi
@@ -286,6 +298,7 @@ rm -f "$new_reg_marker"
     --arg transport "$gateway_transport" \
     --argjson auth_headers "$auth_headers" \
     --argjson oauth_config "$oauth_config" \
+    --argjson passthrough_headers "$passthrough_headers" \
     '{
       name: $name,
       url: $url,
@@ -295,6 +308,7 @@ rm -f "$new_reg_marker"
     + (if $auth_type != "" then {auth_type: $auth_type} else {} end)
     + (if ($auth_headers | length) > 0 then {auth_headers: $auth_headers} else {} end)
     + (if ($oauth_config | type) == "object" and ($oauth_config | length) > 0 then {oauth_config: $oauth_config} else {} end)
+    + (if ($passthrough_headers | length) > 0 then {passthrough_headers: $passthrough_headers} else {} end)
     ' )"
 
   resp_file="$(mktemp)"
@@ -376,6 +390,7 @@ if [[ -f "$uuid_file" ]]; then
         gateway_transport="$(echo "$server" | @JQ@ -r '.gateway_transport // empty')"
         auth_type="$(echo "$server" | @JQ@ -r '.auth_type // empty')"
         auth_headers="$(echo "$server" | @JQ@ -c '.auth_headers // []')"
+        passthrough_headers="$(echo "$server" | @JQ@ -c '.passthrough_headers // []')"
 
         body="$(echo "$server" | @JQ@ -c \
           --arg name "$name" \
@@ -383,10 +398,12 @@ if [[ -f "$uuid_file" ]]; then
           --arg auth_type "$auth_type" \
           --arg transport "$gateway_transport" \
           --argjson auth_headers "$auth_headers" \
+          --argjson passthrough_headers "$passthrough_headers" \
           '{name: $name, url: $url, initialize_timeout: null}
           + (if $transport != "" then {transport: $transport} else {} end)
           + (if $auth_type != "" then {auth_type: $auth_type} else {} end)
-          + (if ($auth_headers | length) > 0 then {auth_headers: $auth_headers} else {} end)')"
+          + (if ($auth_headers | length) > 0 then {auth_headers: $auth_headers} else {} end)
+          + (if ($passthrough_headers | length) > 0 then {passthrough_headers: $passthrough_headers} else {} end)')"
 
         http_code="$(gateway_curl -s --max-time 30 -o /dev/null -w '%{http_code}' \
           -X POST -H "Content-Type: application/json" -d "$body" \

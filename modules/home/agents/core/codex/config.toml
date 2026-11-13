@@ -109,10 +109,6 @@ daemon_auto_start = false
 command = "mcpgw-wrapper"
 args = []
 
-[mcp_servers.drive]
-command = "drive-mcp-bridge"
-args = []
-
 [mcp_servers.blender]
 command = "blender-mcp"
 args = []

@@ -83,6 +83,14 @@ let
       };
     };
 
+    drive = {
+      account = mkOption {
+        type = types.nullOr types.str;
+        default = null;
+        description = "Google Drive email for this profile (defaults to identity.email when null)";
+      };
+    };
+
     git = {
       extraConfig = mkOption {
         type = types.attrs;

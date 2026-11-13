@@ -23,4 +23,19 @@ else
   exit 1
 fi
 
-exec @REMOTE_BIN@ "$MCP_SERVER_URL" --auth none --header 'Authorization: ${MCP_AUTH}'
+# Resolve profile-scoped DRIVE_ACCOUNT (falls back to CWD routing for GUI clients)
+if [[ -z "${DRIVE_ACCOUNT:-}" ]]; then
+  if [[ -x "@PROFILE_ROUTER@" ]]; then
+    DRIVE_ACCOUNT="$("@PROFILE_ROUTER@" --show-drive-account 2>/dev/null || true)"
+  elif command -v profile-router >/dev/null 2>&1; then
+    DRIVE_ACCOUNT="$(profile-router --show-drive-account 2>/dev/null || true)"
+  fi
+fi
+
+extra_args=()
+if [[ -n "${DRIVE_ACCOUNT:-}" ]]; then
+  export DRIVE_ACCOUNT
+  extra_args+=(--header 'X-Drive-Account: ${DRIVE_ACCOUNT}')
+fi
+
+exec @REMOTE_BIN@ "$MCP_SERVER_URL" --auth none --header 'Authorization: ${MCP_AUTH}' "${extra_args[@]}"

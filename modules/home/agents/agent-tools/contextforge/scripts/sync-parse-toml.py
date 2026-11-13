@@ -146,6 +146,13 @@ for item in servers:
         # stdio servers can register via their http bridge
         gateway_transport = "STREAMABLEHTTP"
 
+    passthrough_raw = item.get("passthrough_headers")
+    passthrough_headers = (
+        [str(h) for h in passthrough_raw if isinstance(h, str) and h.strip()]
+        if isinstance(passthrough_raw, list)
+        else []
+    )
+
     inventory.append(
         {
             "name": name,
@@ -157,6 +164,7 @@ for item in servers:
             "auth_type": auth_type,
             "auth_headers": auth_headers,
             "oauth_config": oauth_config,
+            "passthrough_headers": passthrough_headers,
             "command": command,
             "args": args,
             "env": env,
