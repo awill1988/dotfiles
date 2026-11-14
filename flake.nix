@@ -299,6 +299,9 @@
           pkgs = import inputs.nixpkgs { inherit system; };
           whip_it_src = inputs.whip-it;
         };
+        drive-mcp = import ./modules/home/agents/agent-tools/drive-mcp/check.nix {
+          pkgs = import inputs.nixpkgs { inherit system; };
+        };
       });
 
       homeManagerModules = {

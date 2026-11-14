@@ -4,14 +4,18 @@ modes (selected by argv[1]):
   bridge    stdio<->http mcp bridge for drivemcp.googleapis.com (default)
   serve     local streamable-http mcp server on 127.0.0.1:4445/mcp (per-request X-Drive-Account)
   login     run oauth installed-app flow, save tokens for an account
+  client    register an oauth client json for an <email> or @<domain>
+  clients   list registered oauth clients and their gcp project ids
   use       set the active account
   list      list cached accounts
   current   print the active account
 
 state lives under $DRIVE_MCP_DIR (default ~/.config/drive-mcp):
-  client.json           oauth client (downloaded from cloud console)
-  tokens/<email>.json   refresh + access tokens per account
-  active                text file: email of active account
+  clients/<email>.json    per-account oauth client (0600, highest precedence)
+  clients/@<domain>.json  per-domain oauth client (0600, second precedence)
+  client.json             legacy fallback oauth client
+  tokens/<email>.json     refresh + access tokens per account (0600)
+  active                  text file: email of active account
 """
 
 import argparse
@@ -38,10 +42,31 @@ SCOPES = [
 HTTP_TIMEOUT = 60
 TOKEN_REFRESH_LEEWAY = 120  # seconds before expiry to refresh
 
-CONFIG_DIR = os.environ.get("DRIVE_MCP_DIR") or os.path.expanduser("~/.config/drive-mcp")
-CLIENT_FILE = os.path.join(CONFIG_DIR, "client.json")
-TOKENS_DIR = os.path.join(CONFIG_DIR, "tokens")
-ACTIVE_FILE = os.path.join(CONFIG_DIR, "active")
+def config_dir() -> str:
+    return os.environ.get("DRIVE_MCP_DIR") or os.path.expanduser("~/.config/drive-mcp")
+
+
+def client_file() -> str:
+    return os.path.join(config_dir(), "client.json")
+
+
+def clients_dir() -> str:
+    return os.path.join(config_dir(), "clients")
+
+
+def tokens_dir() -> str:
+    return os.path.join(config_dir(), "tokens")
+
+
+def active_file() -> str:
+    return os.path.join(config_dir(), "active")
+
+
+CONFIG_DIR = config_dir()
+CLIENT_FILE = client_file()
+CLIENTS_DIR = clients_dir()
+TOKENS_DIR = tokens_dir()
+ACTIVE_FILE = active_file()
 
 _locks_guard = threading.Lock()
 _account_locks: dict[str, threading.Lock] = {}
@@ -81,19 +106,48 @@ def clear_upstream_session_by_client_sid(client_sid: str) -> None:
             _upstream_sessions.pop(k, None)
 
 
-def load_client() -> dict:
-    if not os.path.isfile(CLIENT_FILE):
+def normalize_client_target(target: str) -> str:
+    norm = target.strip().lower()
+    if not norm or "/" in norm or ".." in norm or "@" not in norm:
         raise RuntimeError(
-            f"oauth client missing at {CLIENT_FILE}; create a desktop oauth client "
-            "in google cloud console and place the json there"
+            f"invalid client target '{target}'; expected <email> or @<domain>"
         )
-    with open(CLIENT_FILE, "r", encoding="utf-8") as fh:
-        data = json.load(fh)
+    local, domain = norm.split("@", 1)
+    if not domain or "." not in domain or ("@" in domain):
+        raise RuntimeError(
+            f"invalid client target '{target}'; expected <email> or @<domain>"
+        )
+    if norm.startswith("@"):
+        return f"@{domain}"
+    if not local:
+        raise RuntimeError(
+            f"invalid client target '{target}'; expected <email> or @<domain>"
+        )
+    return f"{local}@{domain}"
+
+
+def client_path(target: str) -> str:
+    norm = normalize_client_target(target)
+    return os.path.join(clients_dir(), f"{norm}.json")
+
+
+def parse_client_file(path: str) -> dict:
+    if not os.path.isfile(path):
+        raise RuntimeError(f"oauth client file not found: {path}")
+    try:
+        with open(path, "r", encoding="utf-8") as fh:
+            data = json.load(fh)
+    except json.JSONDecodeError as exc:
+        raise RuntimeError(f"invalid json in oauth client {path}: {exc}")
+    if not isinstance(data, dict):
+        raise RuntimeError(f"{path} must contain a json object")
     inner = data.get("installed") or data.get("web") or data
+    if not isinstance(inner, dict):
+        raise RuntimeError(f"{path} missing installed/web client object")
     cid = inner.get("client_id")
     secret = inner.get("client_secret")
     if not cid or not secret:
-        raise RuntimeError("client.json missing client_id/client_secret")
+        raise RuntimeError(f"{path} missing client_id/client_secret")
     return {
         "client_id": cid,
         "client_secret": secret,
@@ -101,16 +155,65 @@ def load_client() -> dict:
     }
 
 
+def save_client(target: str, src_path: str) -> tuple[str, dict]:
+    norm = normalize_client_target(target)
+    parsed = parse_client_file(src_path)
+    with open(src_path, "r", encoding="utf-8") as fh:
+        raw_data = json.load(fh)
+    cdir = clients_dir()
+    os.makedirs(cdir, exist_ok=True)
+    dest = os.path.join(cdir, f"{norm}.json")
+    tmp = dest + f".{secrets.token_hex(4)}.tmp"
+    fd = os.open(tmp, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+    with os.fdopen(fd, "w", encoding="utf-8") as fh:
+        json.dump(raw_data, fh)
+    os.replace(tmp, dest)
+    return dest, parsed
+
+
+def resolve_client_file(email: str | None) -> str | None:
+    if email and "@" in email:
+        norm = normalize_client_target(email)
+        exact = os.path.join(clients_dir(), f"{norm}.json")
+        if os.path.isfile(exact):
+            return exact
+        domain = "@" + norm.split("@", 1)[1]
+        by_domain = os.path.join(clients_dir(), f"{domain}.json")
+        if os.path.isfile(by_domain):
+            return by_domain
+    fallback = client_file()
+    if os.path.isfile(fallback):
+        return fallback
+    return None
+
+
+def load_client(email: str | None = None) -> dict:
+    path = resolve_client_file(email)
+    if not path:
+        if email and "@" in email:
+            domain = "@" + email.strip().split("@", 1)[1].lower()
+            raise RuntimeError(
+                f"no oauth client for {email}; run "
+                f"`drive-account client {domain} <client.json>` first"
+            )
+        raise RuntimeError(
+            f"oauth client missing at {client_file()}; register one with "
+            "`drive-account client @<domain> <client.json>`"
+        )
+    return parse_client_file(path)
+
+
 def token_path(email: str) -> str:
     safe = email.replace("/", "_").replace("..", "_")
-    return os.path.join(TOKENS_DIR, f"{safe}.json")
+    return os.path.join(tokens_dir(), f"{safe}.json")
 
 
 def list_accounts() -> list[str]:
-    if not os.path.isdir(TOKENS_DIR):
+    tdir = tokens_dir()
+    if not os.path.isdir(tdir):
         return []
     out = []
-    for name in sorted(os.listdir(TOKENS_DIR)):
+    for name in sorted(os.listdir(tdir)):
         if name.endswith(".json"):
             out.append(name[:-5])
     return out
@@ -120,8 +223,9 @@ def read_active() -> str | None:
     env = os.environ.get("DRIVE_ACCOUNT")
     if env:
         return env
-    if os.path.isfile(ACTIVE_FILE):
-        with open(ACTIVE_FILE, "r", encoding="utf-8") as fh:
+    af = active_file()
+    if os.path.isfile(af):
+        with open(af, "r", encoding="utf-8") as fh:
             value = fh.read().strip()
             return value or None
     accounts = list_accounts()
@@ -129,15 +233,16 @@ def read_active() -> str | None:
 
 
 def write_active(email: str) -> None:
-    os.makedirs(CONFIG_DIR, exist_ok=True)
-    tmp = ACTIVE_FILE + f".{secrets.token_hex(4)}.tmp"
+    os.makedirs(config_dir(), exist_ok=True)
+    af = active_file()
+    tmp = af + f".{secrets.token_hex(4)}.tmp"
     with open(tmp, "w", encoding="utf-8") as fh:
         fh.write(email + "\n")
-    os.replace(tmp, ACTIVE_FILE)
+    os.replace(tmp, af)
 
 
 def save_tokens(email: str, payload: dict) -> None:
-    os.makedirs(TOKENS_DIR, exist_ok=True)
+    os.makedirs(tokens_dir(), exist_ok=True)
     payload = dict(payload)
     if "expires_at" not in payload and "expires_in" in payload:
         payload["expires_at"] = time.time() + int(payload["expires_in"]) - TOKEN_REFRESH_LEEWAY
@@ -281,16 +386,80 @@ def run_oauth_flow(client: dict, hint: str | None) -> dict:
         return json.loads(resp.read())
 
 
+def cmd_client(argv: list[str]) -> int:
+    if len(argv) != 2:
+        log("usage: drive-account client <email|@domain> <client.json>")
+        return 2
+    dest, parsed = save_client(argv[0], argv[1])
+    proj = parsed.get("project_id") or "<none>"
+    log(f"saved oauth client for {normalize_client_target(argv[0])} (project: {proj}) -> {dest}")
+    return 0
+
+
+def list_clients() -> list[tuple[str, str]]:
+    out: list[tuple[str, str]] = []
+    cdir = clients_dir()
+    if os.path.isdir(cdir):
+        for name in sorted(os.listdir(cdir)):
+            if not name.endswith(".json"):
+                continue
+            target = name[:-5]
+            path = os.path.join(cdir, name)
+            try:
+                parsed = parse_client_file(path)
+                out.append((target, parsed.get("project_id") or ""))
+            except RuntimeError:
+                out.append((target, "<invalid>"))
+    fallback = client_file()
+    if os.path.isfile(fallback):
+        try:
+            parsed = parse_client_file(fallback)
+            out.append(("default", parsed.get("project_id") or ""))
+        except RuntimeError:
+            out.append(("default", "<invalid>"))
+    return out
+
+
+def cmd_clients(_argv: list[str]) -> int:
+    entries = list_clients()
+    if not entries:
+        log("no oauth clients configured (run `drive-account client @<domain> <client.json>`)")
+        return 0
+    for target, proj in entries:
+        suffix = f"\t{proj}" if proj else ""
+        sys.stdout.write(f"{target}{suffix}\n")
+    return 0
+
+
 def cmd_login(argv: list[str]) -> int:
-    hint = argv[0] if argv else None
-    client = load_client()
+    parser = argparse.ArgumentParser(prog="drive-account login")
+    parser.add_argument("email", nargs="?", help="account email hint")
+    parser.add_argument("--client", dest="client_json", help="oauth client json path to register")
+    opts = parser.parse_args(argv)
+    hint = opts.email.strip() if opts.email else None
+
+    if opts.client_json:
+        if hint:
+            save_client(hint, opts.client_json)
+            client = load_client(hint)
+        else:
+            client = parse_client_file(opts.client_json)
+    else:
+        client = load_client(hint)
+
     payload = run_oauth_flow(client, hint)
     info = fetch_userinfo(payload["access_token"])
     email = info.get("email")
     if not email:
         raise RuntimeError("could not resolve email from userinfo")
+    if hint and email.strip().lower() != hint.lower():
+        raise RuntimeError(
+            f"authenticated as {email}, expected {hint}; aborting token save"
+        )
+    if opts.client_json and not hint:
+        save_client(email, opts.client_json)
     save_tokens(email, payload)
-    if not os.path.isfile(ACTIVE_FILE):
+    if not os.path.isfile(active_file()):
         write_active(email)
     log(f"saved tokens for {email}")
     log(f"active account: {read_active()}")
@@ -407,16 +576,12 @@ def error_frame(message: dict, code: int, text: str) -> dict | None:
 
 
 def cmd_bridge(_argv: list[str]) -> int:
-    try:
-        client = load_client()
-    except RuntimeError as exc:
-        log(str(exc))
-        return 1
     email = read_active()
     if not email:
         log("no active drive account; run `drive-account login` first")
         return 1
     try:
+        client = load_client(email)
         access_token = current_access_token(email, client)
     except RuntimeError as exc:
         log(str(exc))
@@ -462,11 +627,6 @@ def dispatch_single_rpc(msg: dict, header_account: str, client_sid: str) -> dict
     if method == "ping":
         return {"jsonrpc": "2.0", "id": msg.get("id", 0), "result": {}}
 
-    try:
-        client = load_client()
-    except RuntimeError as exc:
-        return error_frame(msg, -32000, str(exc))
-
     # Strict profile isolation: never fall back to `active` when X-Drive-Account is supplied.
     if header_account:
         email = header_account
@@ -478,6 +638,7 @@ def dispatch_single_rpc(msg: dict, header_account: str, client_sid: str) -> dict
             )
 
     try:
+        client = load_client(email)
         access_token = current_access_token(email, client)
     except RuntimeError as exc:
         return error_frame(msg, -32000, str(exc))
@@ -622,6 +783,8 @@ COMMANDS = {
     "bridge": cmd_bridge,
     "serve": cmd_serve,
     "login": cmd_login,
+    "client": cmd_client,
+    "clients": cmd_clients,
     "use": cmd_use,
     "list": cmd_list,
     "current": cmd_current,
